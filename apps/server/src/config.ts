@@ -13,6 +13,8 @@ const env = z.object({
   HOST: z.string().default("127.0.0.1"),
   DATABASE_URL: z.string().default(DEFAULT_DATABASE_URL),
   DATA_DIR: z.string().default(path.join(ROOT, ".data")),
+  /** The built web app (pnpm web:build); served with an SPA fallback when it exists. */
+  WEB_DIR: z.string().default(path.join(ROOT, "apps", "web", "dist")),
   /** go-judge's REST API; in production only reachable on the Docker network. */
   JUDGE_URL: z.url().default("http://127.0.0.1:5050"),
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters").default(DEV_SECRET),
@@ -29,6 +31,7 @@ export interface Config {
   host: string;
   databaseUrl: string;
   dataDir: string;
+  webDir: string;
   judgeUrl: string;
   sessionSecret: string;
   appUrl: string;
@@ -50,6 +53,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     host: e.HOST,
     databaseUrl: e.DATABASE_URL,
     dataDir: path.resolve(e.DATA_DIR),
+    webDir: path.resolve(e.WEB_DIR),
     judgeUrl: e.JUDGE_URL.replace(/\/+$/, ""),
     sessionSecret: e.SESSION_SECRET,
     appUrl: e.APP_URL.replace(/\/+$/, ""),

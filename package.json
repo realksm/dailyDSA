@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && tsc -p apps/web",
     "test": "vitest run",
     "db:migrate": "pnpm --filter @dailydsa/db migrate",
     "dsa": "tsx packages/cli/src/main.ts",
-    "server": "tsx apps/server/src/main.ts"
+    "server": "tsx apps/server/src/main.ts",
+    "web": "pnpm --filter @dailydsa/web dev",
+    "web:build": "pnpm --filter @dailydsa/web build"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

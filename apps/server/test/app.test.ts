@@ -167,3 +167,42 @@ describe.skipIf(!dbUp)("sessions in Postgres (needs db + migrations)", () => {
     expect((await agent.post("/api/auth/logout").send({})).body).toEqual({ ok: true });
   });
 });
+
+describe("web app serving", () => {
+  async function webApp() {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "dsa-web-"));
+    fs.mkdirSync(path.join(dir, "assets"));
+    fs.writeFileSync(path.join(dir, "index.html"), "<!doctype html><title>dailyDSA</title>");
+    fs.writeFileSync(path.join(dir, "assets", "app-abc123.js"), "console.log(1)");
+    fs.writeFileSync(path.join(dir, "favicon.svg"), "<svg/>");
+    const app = createApp({ config: { ...config, webDir: dir }, pool: fakePool(true), sessionStore: new session.MemoryStore() });
+    return app;
+  }
+
+  it("answers client routes with index.html, never cached, no referrer", async () => {
+    const res = await request(await webApp()).get("/reset-password?token=abc");
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("<title>dailyDSA</title>");
+    expect(res.headers["cache-control"]).toBe("no-cache");
+    expect(res.headers["referrer-policy"]).toBe("no-referrer");
+    expect(res.headers["x-frame-options"]).toBe("DENY");
+  });
+
+  it("serves hashed assets as immutable and 404s unknown ones", async () => {
+    const app = await webApp();
+    const ok = await request(app).get("/assets/app-abc123.js");
+    expect(ok.status).toBe(200);
+    expect(ok.headers["cache-control"]).toMatch(/immutable/);
+    expect((await request(app).get("/assets/app-old.js")).status).toBe(404);
+    expect((await request(app).get("/favicon.svg")).status).toBe(200);
+  });
+
+  it("keeps /api 404s as JSON", async () => {
+    const res = await request(await webApp()).get("/api/nope");
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("not_found");
+  });
+});

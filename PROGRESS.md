@@ -15,8 +15,8 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 0 | go-judge spike | ✅ done — all checks pass (`spike/judge-spike.mjs`) |
 | 1 | Schema | ✅ done — `packages/db/migrations/001_init.sql`, patterns seeded in `002` |
 | 2 | Problem format + validate CLI (+2–3 problems) | ✅ done — `packages/cli`, `problems/README.md`, 3 problems validated + imported |
-| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, 3.2 server skeleton ✅, 3.3 auth + email reset ✅, 3.4 daily ✅, 3.5 problem view ✅, 3.6 Run/Submit ✅, 3.7 history + admin API ✅, **3.8 web app next** |
-| 4 | Solutions tab + polish | ☐ |
+| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ✅ done — 3.1–3.7 API + 3.8 web app (`apps/web`) |
+| 4 | Solutions tab + polish | ☐ **next** |
 | 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ |
 | 6 | Content: a few problems + one track | 🟡 started — first track is **two pointers** (ladder 1/5: `budget-pairs`) |
 | 7 | Go live | ☐ later — server not bought |
@@ -37,12 +37,14 @@ All limits currently sit at the 500 ms floor on the dev box (refs take 14–88 m
 docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0.0.1:55432
 pnpm install
 pnpm db:migrate                     # idempotent
-pnpm typecheck
-pnpm test                           # 86 tests; go-judge / db ones skip if those aren't up
+pnpm typecheck                      # tsc -b (packages + server) && tsc -p apps/web
+pnpm test                           # 89 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
 pnpm server                         # API on 127.0.0.1:3000 (runs migrations first) + judge worker; GET /api/health
+pnpm web                            # Vite on http://127.0.0.1:5173, proxies /api to :3000 (API_URL=… to change)
+pnpm web:build                      # apps/web/dist; the server then serves it too (WEB_DIR), SPA fallback
 pnpm dsa admin create <email> <name...> [--password pw]   # first admin (prints a generated password)
 pnpm dsa admin reset-password <email>                     # lock-out fallback
 pnpm dsa invite create [--uses N] [--role solver|setter|admin] [--days D]
@@ -65,6 +67,7 @@ packages/db          pg pool + SQL migration runner (migrations/NNN_*.sql) + `wi
 packages/cli         `pnpm dsa` — list / new / validate / import / admin / invite
 problems/            one folder per problem (+ _template, README.md)
 apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`), history (`history.ts`), admin API (`admin.ts`, `routes/admin.ts`); `users.ts` is also used by the CLI
+apps/web             Vite + React 19 + Monaco: today, archive, problem/editor, history, submission, account, admin, auth pages
 spike/               throwaway go-judge proof
 .data/               (gitignored) generated tests: .data/tests/<slug>/<hash>/NN.in|NN.ans
 ```
@@ -110,8 +113,16 @@ spike/               throwaway go-judge proof
 - **CSRF guard and DELETE:** bodyless `DELETE` is exempt from the JSON-only rule — it's never a CORS "simple" method, so a cross-site one always needs the preflight we never grant. POST still must be JSON.
 - `randomPassword()` moved to `apps/server/src/users.ts` (CLI and admin route share it).
 - **Line endings:** `.gitattributes` forces LF (test files are compared byte-wise inside Linux).
+- **Web app (`apps/web`):** Vite 8 + React 19, no router library (`src/router.tsx`, ~70 lines, history API) and no state library (`useLoad` in `components/ui.tsx`). `src/api.ts` = typed client over the shared types; non-2xx → `ApiErr` (code, message, per-field `details` shown under form fields); a 401 `unauthorized` anywhere signs the app out and sends you to `/login?next=…` (only same-site paths are followed). Typechecked separately (`tsc -p apps/web`, bundler resolution, imports `@dailydsa/shared` source directly).
+- **Routes:** `/` today (countdown, streak, this week, recent days), `/archive` (paged, filter), `/p/:slug`, `/history` (problems; `?tab=submissions`, `?problem=slug`), `/submissions/:id`, `/account` (change password), `/admin/{schedule,problems,users,invites}` (setters: schedule + problems), `/login`, `/signup?code=` (the admin's "Copy link"), `/forgot-password`, `/reset-password?token=`.
+- **Editor:** Monaco bundled locally (`monaco-editor/editor/editor.main.js` + only the editor worker, `loader.config({ monaco })`, no CDN), lazy-loaded so non-editor pages stay ~220 KB gz. Code per language starts from the local draft (localStorage `dsa.draft.<slug>.<lang>`), else `lastCode`, else the template; "Reset to template". Ctrl+Enter = Run, Ctrl+Shift+Enter = Submit. The client mirrors the 5 s cooldown and the Java `class Main` check, polls `/submissions/:id` every 1 s, and reloads the problem after a Submit (status, pattern reveal).
+- **Streak (client-side):** consecutive days up to today (or yesterday while today is open) whose daily was solved by the end of that IST day. Solving a missed day later doesn't count; a review day already solved does.
+- **Markdown:** react-markdown + remark-gfm + remark-math + rehype-katex; no raw HTML (no rehype-raw), so no separate sanitiser is needed.
+- **Look:** see `.tastemaker/style-lock.md` (tokens, fonts, contrast). Light/dark follow the OS; IBM Plex Sans/Mono via @fontsource (no Google Fonts request). `min-width: 1024px` (laptops only).
+- **Dependency age policy:** pnpm enforces a minimum release age (1 day). If an install fails on a too-new version, pin an older one; never keep the `minimumReleaseAgeExclude` entry pnpm may write into pnpm-workspace.yaml. Vite is pinned to 8.3.7 (same as vitest uses), @vitejs/plugin-react to 6.1.2.
+- **Serving the build:** if `WEB_DIR` (default `apps/web/dist`) has an `index.html`, the server serves `/assets` as immutable (an unknown asset is a 404, not index.html) and answers other non-/api GETs with index.html (`Cache-Control: no-cache`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` so the reset token never leaks).
 
-## Next up — step 3: core app
+## Step 3 log: core app
 
 Suggested order (each piece testable on its own):
 1. ✅ **Editor templates**: `editorTemplate(lang, spec?, body?)` in `packages/shared/src/template.ts`. Conventions are in `problems/README.md`. `packages/cli/test/templates.test.ts` judges every problem's logic through its template within the calibrated limits (all 9 pass, max CPU < 60% of the limit).
@@ -121,16 +132,26 @@ Suggested order (each piece testable on its own):
 5. ✅ **Problem view:** statement + samples (first `sample_count` tests from disk) + template + limits + my status; pattern tag only after solve/unlock.
 6. ✅ **Run/Submit:** queue API, worker, judge lock, progress updates, `lastCode`.
 7. ✅ **History + admin API:** history and own-submissions list; admin users / invites / password reset; staff problem list, schedule view, pins; admin track weeks.
-8. **apps/web** (next): Vite + React + Monaco (laptop only): today, problem/editor, archive, history, admin, plus login / signup / forgot-password / `reset-password?token=` / change-password pages.
+8. ✅ **apps/web:** every page above, checked live in headless Chromium (login → Run → Submit AC → solved + pattern shown; admin invite create, pin/unpin, week schedule/unschedule; light + dark).
+
+## Next up — step 4: Solutions tab + polish
+
+- API: `POST /api/problems/:slug/unlock-solutions` (needs `canUnlockSolutions`, sets `solutions_unlocked_at`) and `GET /api/problems/:slug/solutions?lang=` (accepted code from everyone once solved or unlocked; the setter's ref pinned on top; ref files live in git, so the import has to store them or the server reads them).
+- Web: Statement / Solutions tabs on the left pane, a "Show solutions" button with a confirm, the pattern linking to its track ("a track for this pattern is coming" if not released).
+- Polish ideas: a CSP header for the served app (needs a browser check: Monaco injects inline styles), a draggable split between statement and editor.
 
 ## Open questions / for later
 
 - Upload test inputs to go-judge once per problem (fileId) instead of sending content per run — only if large tests prove slow.
 - Weekend pool needs ≥2 problems per track pattern; we have 1 for two-pointers (`exact-gap`), so a two-pointers weekend shows it Sat and Sun — the user will write more weekend problems (planned, step 6).
 - Remaining two-pointers ladder problems (#2–#5) + lesson.
+- The dev DB has a test admin from the 3.8 browser check: `webcheck@example.test` (id 239). Keep it for trying the UI (`pnpm dsa admin reset-password webcheck@example.test` for a new password) or delete it.
+- Servers from earlier sessions (started 09:37 / 09:50 / 09:52) are still running on ports 3000–3002 with older code; stop them and restart `pnpm server` to get the current API.
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (9)** — Step 3.8: `apps/web` (Vite + React 19 + Monaco): auth pages, today, archive, problem page with editor/Run/Submit/results, history + submissions, submission page, account, admin (schedule + pins + track weeks, problems, users, invites). The server serves the built app (`WEB_DIR`, 3 new tests). 89 tests pass; walked through every page in headless Chromium against a fresh server (PORT=3003). Step 3 is complete. Next: step 4 (Solutions tab).
 
 - **2026-11-11 (8)** — Step 3.7: `GET /api/history`, `GET /api/submissions` (own, paged), `/api/admin/*` (users: role/disable/reset password; invite codes CRUD; problems; tracks; schedule view; day pins for staff; track weeks for admins; future-only edits). Bodyless DELETE allowed past the JSON guard. 86 tests pass; live boot checked on PORT=3002. Next: 3.8 web app (Vite + React + Monaco).
 
