@@ -1,4 +1,4 @@
-import type { ProblemKind, Role, TimeLimits } from "./problem.js";
+import type { Pool, ProblemKind, Role, TimeLimits } from "./problem.js";
 import type { Lang } from "./lang.js";
 import type { JudgeResult, Verdict } from "./verdict.js";
 
@@ -113,4 +113,143 @@ export interface SubmissionView {
   result: JudgeResult | null;
   createdAt: string;
   finishedAt: string | null;
+}
+
+/** One row of GET /api/submissions (no code; open GET /api/submissions/:id for that). */
+export interface SubmissionSummary {
+  id: number;
+  problem: { slug: string; title: string };
+  kind: SubmissionKind;
+  lang: Lang;
+  status: SubmissionStatus;
+  verdict: Verdict | null;
+  maxCpuMs: number | null;
+  maxMemoryKb: number | null;
+  createdAt: string;
+  finishedAt: string | null;
+}
+
+/** GET /api/submissions?problem=&kind=&before=&limit= — the caller's own, newest first; pass `nextBefore` as `before`. */
+export interface SubmissionList {
+  submissions: SubmissionSummary[];
+  nextBefore: number | null;
+}
+
+// ───────────── history ─────────────
+
+/** A problem the signed-in user has touched: any Run/Submit, an unlock or a hint. */
+export interface HistoryEntry {
+  problem: { slug: string; title: string; kind: ProblemKind };
+  status: SolveStatus;
+  /** Judged submits (IE doesn't count). */
+  submitCount: number;
+  runCount: number;
+  /** First real (non-CE) submit. */
+  firstAttemptAt: string | null;
+  solvedAt: string | null;
+  /** Language of the first accepted submit. */
+  solvedLang: Lang | null;
+  /** When the Solutions tab was opened with the button (before solving). */
+  solutionsUnlockedAt: string | null;
+  /** "Solved after viewing solutions" (PLAN §4). */
+  solvedAfterSolutions: boolean;
+  hintsUsed: number;
+  /** Track problems: always. Daily: only after solve/unlock. */
+  pattern: { slug: string; name: string } | null;
+  /** Track problems: the ladder position. */
+  track: { position: number } | null;
+  /** IST days this problem was the daily (oldest first, never after today). */
+  dailyDays: string[];
+  /** Latest Run/Submit or unlock. */
+  lastActivityAt: string | null;
+}
+
+/** GET /api/history — most recent activity first. */
+export interface History {
+  problems: HistoryEntry[];
+}
+
+// ───────────── admin (/api/admin) ─────────────
+
+/** GET /api/admin/users (admin). */
+export interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  role: Role;
+  disabled: boolean;
+  inviteCode: string | null;
+  createdAt: string;
+  solved: number;
+  lastSubmissionAt: string | null;
+}
+
+/** POST /api/admin/users/:id/reset-password (admin): shown once, pass it on to the user. */
+export interface PasswordResetByAdmin {
+  password: string;
+}
+
+export type InviteState = "active" | "expired" | "used_up" | "disabled";
+
+/** GET /api/admin/invites (admin). */
+export interface InviteCode {
+  code: string;
+  role: Role;
+  maxUses: number;
+  uses: number;
+  expiresAt: string | null;
+  disabled: boolean;
+  state: InviteState;
+  createdBy: { id: number; name: string } | null;
+  createdAt: string;
+}
+
+/** GET /api/admin/problems (admin, setter): the whole bank, for pinning and overview. */
+export interface StaffProblem {
+  slug: string;
+  title: string;
+  kind: ProblemKind;
+  pool: Pool | null;
+  pattern: { slug: string; name: string } | null;
+  active: boolean;
+  track: { position: number } | null;
+  /** Daily: days shown up to today, the latest of them, and the next future pin. */
+  timesShown: number;
+  lastShownOn: string | null;
+  nextPinnedOn: string | null;
+  solvedBy: number;
+  validatedAt: string;
+}
+
+/** A day of the daily schedule as staff see it (future pins included). */
+export interface ScheduleDay {
+  day: string;
+  weekend: boolean;
+  problem: { slug: string; title: string; pool: Pool | null; pattern: { slug: string; name: string } | null };
+  /** Set by PUT /api/admin/schedule/days/:day; null = automatic pick. */
+  pinnedBy: { id: number; name: string } | null;
+}
+
+/** A track as the admin schedules it. `ladder` = how many of its 5 problems exist. */
+export interface StaffTrack {
+  id: number;
+  pattern: { slug: string; name: string };
+  title: string;
+  ladder: number;
+}
+
+export interface TrackWeek {
+  /** Monday (IST). */
+  weekStart: string;
+  track: StaffTrack;
+}
+
+/** GET /api/admin/schedule?from=&to= (admin, setter). */
+export interface Schedule {
+  from: string;
+  to: string;
+  today: string;
+  days: ScheduleDay[];
+  /** Weeks overlapping [from, to]. */
+  weeks: TrackWeek[];
 }

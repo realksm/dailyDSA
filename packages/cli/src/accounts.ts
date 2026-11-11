@@ -2,11 +2,10 @@
 //   pnpm dsa admin create <email> <name...> [--password <pw>]   prints a generated password if none given
 //   pnpm dsa admin reset-password <email>                       sets and prints a new random password
 //   pnpm dsa invite create [--uses N] [--role solver|setter|admin] [--days D]
-import { randomBytes } from "node:crypto";
 import { createPool } from "@dailydsa/db";
 import { ROLES, type Role } from "@dailydsa/shared";
 import { MIN_PASSWORD_LENGTH } from "@dailydsa/server/password";
-import { createInvite, createUser, findUserByEmail, setPassword } from "@dailydsa/server/users";
+import { createInvite, createUser, findUserByEmail, randomPassword, setPassword } from "@dailydsa/server/users";
 import { ProblemError } from "./problem.js";
 
 const usage = (s: string) => new ProblemError(`usage: ${s}`);
@@ -32,8 +31,6 @@ const int = (s: string | undefined, name: string, dflt: number) => {
   if (!Number.isInteger(n) || n <= 0) throw new ProblemError(`--${name} must be a positive integer`);
   return n;
 };
-
-const randomPassword = () => randomBytes(12).toString("base64url");
 
 export async function accountsCommand(cmd: string, args: string[], log: (s: string) => void): Promise<number> {
   const [sub, ...rest] = args;

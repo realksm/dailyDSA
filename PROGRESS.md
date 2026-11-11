@@ -15,7 +15,7 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 0 | go-judge spike | ✅ done — all checks pass (`spike/judge-spike.mjs`) |
 | 1 | Schema | ✅ done — `packages/db/migrations/001_init.sql`, patterns seeded in `002` |
 | 2 | Problem format + validate CLI (+2–3 problems) | ✅ done — `packages/cli`, `problems/README.md`, 3 problems validated + imported |
-| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, 3.2 server skeleton ✅, 3.3 auth + email reset ✅, 3.4 daily ✅, 3.5 problem view ✅, 3.6 Run/Submit ✅, **3.7 history + admin next** |
+| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, 3.2 server skeleton ✅, 3.3 auth + email reset ✅, 3.4 daily ✅, 3.5 problem view ✅, 3.6 Run/Submit ✅, 3.7 history + admin API ✅, **3.8 web app next** |
 | 4 | Solutions tab + polish | ☐ |
 | 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ |
 | 6 | Content: a few problems + one track | 🟡 started — first track is **two pointers** (ladder 1/5: `budget-pairs`) |
@@ -38,7 +38,7 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck
-pnpm test                           # 79 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 86 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
@@ -64,7 +64,7 @@ packages/judge       go-judge client + judge() orchestrator (compile once → ru
 packages/db          pg pool + SQL migration runner (migrations/NNN_*.sql) + `withJudgeLock` (advisory lock 727002)
 packages/cli         `pnpm dsa` — list / new / validate / import / admin / invite
 problems/            one folder per problem (+ _template, README.md)
-apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`); `users.ts` is also used by the CLI
+apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`), history (`history.ts`), admin API (`admin.ts`, `routes/admin.ts`); `users.ts` is also used by the CLI
 spike/               throwaway go-judge proof
 .data/               (gitignored) generated tests: .data/tests/<slug>/<hash>/NN.in|NN.ans
 ```
@@ -105,6 +105,10 @@ spike/               throwaway go-judge proof
 - **Judge failures:** go-judge unreachable/hung (`JudgeUnavailableError` from the client: network error or 120 s fetch timeout) → row back to `queued`, retry every 5 s, logged once. Anything else (tests missing on disk, go-judge 5xx) → verdict **IE**, logged, never retried.
 - **Progress (Submit only, one SQL statement with the verdict):** `submit_count`+1 for everything but IE; `first_attempt_at` (= Show solutions button) for anything but CE/IE; first AC sets `solved_at` + `solved_verdict_lang`; later verdicts never unsolve. Times are the **submission's `created_at`**, not the judging time, so a Submit at 23:59 IST counts for that day. `solutions_unlocked_at` stays NULL on solve (only the button sets it), so "solved after viewing solutions" = `solutions_unlocked_at < solved_at`.
 - **Judge lock:** `pnpm dsa validate` takes it per problem (live submissions get judged between problems); without a reachable DB it validates unlocked with a note.
+- **History API** (`requireUser`, own data only): `GET /api/history` → every problem the user ran, submitted, unlocked or took a hint on (status, submit/run counts, first attempt, solved + language, `solvedAfterSolutions` = unlocked before solving, hints, pattern by the usual reveal rule, ladder position, daily days ≤ today, `lastActivityAt`), newest activity first, no paging (~70 problems). `GET /api/submissions?problem=&kind=run|submit&before=&limit=` → own submissions without code, keyset by id (`nextBefore`); the code is in `GET /api/submissions/:id`. Counts/streaks are left to the web app.
+- **Admin API** (`/api/admin`). Admin only: `GET users`, `PATCH users/:id {role?, disabled?}` (not yourself → 400 `self`; disabling also deletes their sessions), `POST users/:id/reset-password` → `{password}` shown once (random 16 chars, logs them out everywhere; not yourself); `GET/POST invites`, `PATCH invites/:code {disabled?, maxUses?, expiresAt?|null}` (maxUses never below uses → `below_uses`, checked in the same UPDATE), `DELETE invites/:code` only if never used (else 409 `invite_used` → disable it); invite `state` = active/expired/used_up/disabled by the DB clock (same as signup); `PUT/DELETE schedule/weeks/:monday {pattern}` (track must exist → 404 `no_track`). Admin + setter: `GET problems` (whole bank: times shown, last shown, next pin, solved-by), `GET tracks` (with ladder size), `GET schedule?from=&to=` (days incl. future pins + weeks overlapping the range; default −7…+56 days, ≤400), `PUT/DELETE schedule/days/:day {slug}` = pin / unpin. **Only the future can change:** days and weeks ≤ today (incl. today and the running week) → 400 `not_future`. Pins must be active daily problems (`not_daily`, `retired`); a pin replaces an earlier pin; unpinning lets the day get an automatic pick.
+- **CSRF guard and DELETE:** bodyless `DELETE` is exempt from the JSON-only rule — it's never a CORS "simple" method, so a cross-site one always needs the preflight we never grant. POST still must be JSON.
+- `randomPassword()` moved to `apps/server/src/users.ts` (CLI and admin route share it).
 - **Line endings:** `.gitattributes` forces LF (test files are compared byte-wise inside Linux).
 
 ## Next up — step 3: core app
@@ -116,8 +120,8 @@ Suggested order (each piece testable on its own):
 4. ✅ **Daily:** IST date helper; `ensureDailyPick(day)` (weekday pool / weekend pool by week's track pattern / no-track weekend = patterns that already ran, fallback weekday pool); called lazily on request + on a timer at IST midnight. Archive endpoint.
 5. ✅ **Problem view:** statement + samples (first `sample_count` tests from disk) + template + limits + my status; pattern tag only after solve/unlock.
 6. ✅ **Run/Submit:** queue API, worker, judge lock, progress updates, `lastCode`.
-7. **History** page data; **admin**: invite codes CRUD, password reset, pin a problem to a date, schedule track weeks.
-8. **apps/web:** Vite + React + Monaco (laptop only): today, problem/editor, archive, history, admin, plus login / signup / forgot-password / `reset-password?token=` / change-password pages.
+7. ✅ **History + admin API:** history and own-submissions list; admin users / invites / password reset; staff problem list, schedule view, pins; admin track weeks.
+8. **apps/web** (next): Vite + React + Monaco (laptop only): today, problem/editor, archive, history, admin, plus login / signup / forgot-password / `reset-password?token=` / change-password pages.
 
 ## Open questions / for later
 
@@ -127,6 +131,8 @@ Suggested order (each piece testable on its own):
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (8)** — Step 3.7: `GET /api/history`, `GET /api/submissions` (own, paged), `/api/admin/*` (users: role/disable/reset password; invite codes CRUD; problems; tracks; schedule view; day pins for staff; track weeks for admins; future-only edits). Bodyless DELETE allowed past the JSON guard. 86 tests pass; live boot checked on PORT=3002. Next: 3.8 web app (Vite + React + Monaco).
 
 - **2026-11-11 (7)** — Step 3.6: Run/Submit endpoints, `submissions`-table queue + worker (lock → claim → judge → store), judge lock shared with `dsa validate`, go-judge outages requeue instead of failing, Submit updates progress, `lastCode` on the problem page. 77 tests pass (incl. real judging of AC/WA/CE/Run+custom/IE). Checked live: `rainfall-ledger` ref.cpp → AC on 12 tests via HTTP, `busy` while queued. Note: a server started 09:37 (old code) was still on port 3000, so the live check ran on PORT=3001 — restart it to get the new routes.
 

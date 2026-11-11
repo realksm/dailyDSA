@@ -6,9 +6,11 @@ import { loadUser } from "./auth.js";
 import type { Config } from "./config.js";
 import { errorHandler, HttpError, notFoundHandler } from "./errors.js";
 import { createMailer, type Mailer } from "./mailer.js";
+import { adminRoutes } from "./routes/admin.js";
 import { authRoutes } from "./routes/auth.js";
 import { dailyRoutes } from "./routes/daily.js";
 import { healthRoutes } from "./routes/health.js";
+import { historyRoutes } from "./routes/history.js";
 import { problemRoutes } from "./routes/problems.js";
 import { submissionRoutes } from "./routes/submissions.js";
 import { pgSessionStore, sessionMiddleware } from "./session.js";
@@ -36,6 +38,8 @@ export interface AppDeps {
  */
 const requireJson: RequestHandler = (req, _res, next) => {
   if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
+  // DELETE carries no body and is never a CORS "simple" method, so a cross-site one always needs the preflight.
+  if (req.method === "DELETE") return next();
   if (!req.is("application/json")) return next(new HttpError(415, "unsupported_media_type", "Send a JSON body (Content-Type: application/json)."));
   next();
 };
@@ -58,6 +62,8 @@ export function createApp(deps: AppDeps): express.Express {
   api.use(dailyRoutes({ pool, now }));
   api.use(problemRoutes({ pool, now, dataDir: config.dataDir }));
   api.use(submissionRoutes({ pool, now, onQueued: deps.onQueued ?? (() => {}) }));
+  api.use(historyRoutes({ pool, now }));
+  api.use(adminRoutes({ pool, now }));
   for (const r of deps.routes ?? []) api.use(r);
   api.use(notFoundHandler);
 

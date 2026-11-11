@@ -79,6 +79,9 @@ export async function signupWithInvite(pool: pg.Pool, u: { email: string; name: 
   }
 }
 
+/** A random 16-character password (admin bootstrap and admin resets; shown once). */
+export const randomPassword = () => randomBytes(12).toString("base64url");
+
 /** Unambiguous alphabet (no 0/O/1/I/L) so codes survive being read out loud. */
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 export function randomCode(groups = 2, size = 4): string {
