@@ -130,8 +130,9 @@ function clock(ms: number): string {
  * The group today, as one square per member (filled = solved), plus the count. Counts only, no names:
  * the point is "others are at it too", not a leaderboard. Large groups get a bar instead of squares.
  */
-function Pulse({ pulse }: { pulse: DailyToday["pulse"] }) {
-  if (pulse.members < 2) return null;
+function Pulse({ pulse }: { pulse: DailyToday["pulse"] | undefined }) {
+  // Missing when the server predates the pulse (a deploy where the web app is newer): show nothing.
+  if (!pulse || pulse.members < 2) return null;
   const label = `${pulse.solved} of ${pulse.members} solved it today`;
   return (
     <div className="pulse" role="img" aria-label={label}>
