@@ -1,0 +1,17 @@
+{
+  "name": "dailydsa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "db:migrate": "pnpm --filter @dailydsa/db migrate",
+    "dsa": "pnpm --filter @dailydsa/cli exec tsx src/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

@@ -3,7 +3,25 @@ services:
     build: ./judge
     privileged: true          # needed by go-judge's sandbox (namespaces + cgroups)
     shm_size: 256m
-    # Dev only: published on localhost so the spike can reach it.
+    # Dev only: published on localhost so local tools can reach it.
     # In production the port is NOT published; only the backend on the Docker network talks to it.
     ports:
       - "127.0.0.1:5050:5050"
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: dailydsa
+      POSTGRES_PASSWORD: dailydsa   # dev only; production reads it from .env
+      POSTGRES_DB: dailydsa
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dailydsa"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  dbdata:

@@ -20,7 +20,7 @@ All problems are original, not copied from other platforms.
 - **Saturday and Sunday:** a harder problem from the weekend pool, from the pattern of that week's track, with the tag still hidden. Solvers know the week's pattern, so this tests applying it unaided on a harder problem. If no track is scheduled that week, see "No-track weekends" below.
 - **Repeats:** when a problem comes round again it is shown as review ("you solved this 30 days ago"), with the solver's earlier result.
 - **Archive:** every past daily problem stays open, so anyone can solve a day they missed.
-- **Picks are stored, not computed per request:** each pool keeps a saved shuffle order; at rollover the next problem in that order is written to a `daily_schedule` row for the date. When a pool's order is used up, it is reshuffled.
+- **Picks are stored, not computed per request:** at rollover the eligible problem shown least recently (never-shown first, ties broken randomly) is written to a `daily_schedule` row for the date and never recomputed. This cycles through each pool, and newly added problems come up soon.
 - **No-track weekends** pick only from weekend problems whose pattern has already run as a track, so a track's weekend problems are never used up before that track runs.
 - If a revealed tag's track isn't released yet, the link is replaced by "a track for this pattern is coming".
 - Admins and setters can pin a problem to a specific date, which replaces that day's pick. A pinned problem also joins its pool and comes round in the normal cycle afterwards. (Problems themselves are added through the problem repo, see section 7.)
@@ -177,7 +177,7 @@ One validate command runs on the production server. A problem cannot go live unt
 - **Frontend:** React + Vite, Monaco editor (laptops only; phones are not a target).
 - **Backend:** Node.js + Express.
 - **Database:** PostgreSQL.
-- **Submission queue:** a PostgreSQL-backed job queue (e.g. pg-boss), so no Redis is needed.
+- **Submission queue:** the `submissions` table itself; a single worker claims the oldest queued row with `FOR UPDATE SKIP LOCKED`, so no Redis or extra queue library is needed. The validate CLI takes the same Postgres advisory lock, so it never judges at the same time as the worker.
 - **Verdict updates:** the page polls for the result about once a second.
 - **Login:** cookie sessions stored in PostgreSQL, passwords hashed with argon2.
 - **Markdown:** statements and lessons are rendered through a sanitiser, with KaTeX for maths.
