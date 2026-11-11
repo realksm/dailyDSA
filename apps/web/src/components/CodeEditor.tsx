@@ -43,7 +43,10 @@ function useEditorTheme() {
     const q = window.matchMedia("(prefers-color-scheme: dark)");
     const on = () => { setFont(build()); monaco.editor.setTheme("dsa"); };
     q.addEventListener("change", on);
-    return () => q.removeEventListener("change", on);
+    // A forced theme (html data-theme, which the CSS tokens honour) also recolours the editor.
+    const mo = new MutationObserver(on);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => { q.removeEventListener("change", on); mo.disconnect(); };
   }, []);
   return font;
 }

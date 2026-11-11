@@ -1,23 +1,25 @@
 /* dailyDSA — "Streak": the daily habit, played loud. Chunky ink outlines with hard offset shadows,
-   a heavy grotesque (Bricolage) for headings, coral as the brand colour, IBM Plex Sans/Mono for text.
+   a heavy grotesque (Bricolage) for headings, IBM Plex Sans/Mono for text. Palette "Ultraviolet + Lime":
+   lilac-grey paper, grape ink, ultraviolet as the brand colour, acid lime for the streak.
    The problem page stays calm: hairline panels, no hard shadows around the editor.
-   --primary is a fill colour (coral, ink text on top); text in the brand colour uses --primary-text.
+   --primary is a fill colour (ultraviolet, white text on top); text in the brand colour uses --primary-text.
+   --accent (lime, ink text on top) is the streak / habit colour only: 30-day squares, the streak card.
    Spacing scale: 4 8 12 16 24 32 48. Radius: 9 controls, 14 panels. */
 
 :root {
-  --bg: #fdf3e4;
-  --surface: #fffbf5;
-  --sunk: #f6e8d3;
-  --text: #221a2c;
-  --muted: #5d5468;
-  --line: #e7d8c2;
-  --line-strong: #8a7d8f;
-  --ink: #221a2c;
-  --primary: #ff6a4a;
-  --primary-hover: #ff8266;
-  --primary-soft: #ffe0d6;
-  --primary-text: #b8371b;
-  --on-primary: #221a2c;
+  --bg: #f2f0f8;
+  --surface: #fcfbff;
+  --sunk: #e8e4f3;
+  --text: #1a1430;
+  --muted: #574f6e;
+  --line: #dcd6eb;
+  --line-strong: #827a9b;
+  --ink: #1a1430;
+  --primary: #6a4cff;
+  --primary-hover: #5838f0;
+  --primary-soft: #e6e0ff;
+  --primary-text: #5230e0;
+  --on-primary: #ffffff;
   --ok: #176a39;
   --ok-soft: #d9f0de;
   --bad: #b4251d;
@@ -26,7 +28,29 @@
   --warn-soft: #fbe9c9;
   --info: #3a55a0;
   --info-soft: #e2e8f8;
-  --focus: #b8371b;
+  --focus: #5230e0;
+  /* Streak / habit colour (30-day squares, streak card, the landing's week strip and month). */
+  --accent: #c6f432;
+  --accent-soft: #ecfabf;
+  --on-accent: #1a1430;
+  /* Display accent line (hero): text colour and an optional highlighter swipe behind it (none here). */
+  --mark: transparent;
+  --mark-text: var(--primary-text);
+  /* Theme-independent ink and paper (things that stay light or dark in both themes). */
+  --c-ink: #1a1430;
+  --c-paper: #fcfbff;
+  /* The always-dark panels: the landing's judge section, the auth side panel, the hero code card. */
+  --pn-bg: #1a1430;
+  --pn-surface: #251d40;
+  --pn-sunk: #150f27;
+  --pn-line: #352c54;
+  --pn-line-strong: #6d6590;
+  --pn-text: #f3f0fc;
+  --pn-muted: #b0a8c8;
+  --pn-brand: #bba9ff;
+  --pn-primary: #6e50ff;
+  --pn-info: #9db4f5;
+  --pn-info-soft: #1b2133;
   --hard: 4px 4px 0 var(--ink);
   --edge: var(--ink); /* outline of floating things (menus, dialogs, the logout pill); line-strong in dark */
   --shadow: var(--hard);
@@ -42,19 +66,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #161219;
-    --surface: #201a25;
-    --sunk: #120e15;
-    --text: #f5eefb;
-    --muted: #b2a8bf;
-    --line: #342b3c;
-    --line-strong: #6f6479;
+    --bg: #110e1b;
+    --surface: #1a1628;
+    --sunk: #0b0914;
+    --text: #f3f0fc;
+    --muted: #b0a8c8;
+    --line: #2d2743;
+    --line-strong: #6d6590;
     --ink: #000000;
-    --primary: #ff7656;
-    --primary-hover: #ff9077;
-    --primary-soft: #3b1d17;
-    --primary-text: #ff9a80;
-    --on-primary: #221a2c;
+    --primary: #6e50ff;
+    --primary-hover: #5a3cf5;
+    --primary-soft: #261c52;
+    --primary-text: #bba9ff;
+    --on-primary: #ffffff;
     --ok: #6fdc98;
     --ok-soft: #15291d;
     --bad: #ff8a80;
@@ -63,26 +87,28 @@
     --warn-soft: #2f2414;
     --info: #9db4f5;
     --info-soft: #1b2133;
-    --focus: #ff9a80;
+    --focus: #bba9ff;
+    --accent-soft: #263010;
+    --pn-bg: #08060f;
     --hard: 4px 4px 0 #000;
     --edge: var(--line-strong);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #161219;
-  --surface: #201a25;
-  --sunk: #120e15;
-  --text: #f5eefb;
-  --muted: #b2a8bf;
-  --line: #342b3c;
-  --line-strong: #6f6479;
+  --bg: #110e1b;
+  --surface: #1a1628;
+  --sunk: #0b0914;
+  --text: #f3f0fc;
+  --muted: #b0a8c8;
+  --line: #2d2743;
+  --line-strong: #6d6590;
   --ink: #000000;
-  --primary: #ff7656;
-  --primary-hover: #ff9077;
-  --primary-soft: #3b1d17;
-  --primary-text: #ff9a80;
-  --on-primary: #221a2c;
+  --primary: #6e50ff;
+  --primary-hover: #5a3cf5;
+  --primary-soft: #261c52;
+  --primary-text: #bba9ff;
+  --on-primary: #ffffff;
   --ok: #6fdc98;
   --ok-soft: #15291d;
   --bad: #ff8a80;
@@ -91,7 +117,9 @@
   --warn-soft: #2f2414;
   --info: #9db4f5;
   --info-soft: #1b2133;
-  --focus: #ff9a80;
+  --focus: #bba9ff;
+  --accent-soft: #263010;
+  --pn-bg: #08060f;
   --hard: 4px 4px 0 #000;
   --edge: var(--line-strong);
   color-scheme: dark;
@@ -314,15 +342,15 @@ body:has(.auth) { min-width: 0; }
   .auth-aside {
     display: flex; flex-direction: column; justify-content: space-between; gap: 40px;
     position: sticky; top: 0; height: 100svh; min-height: 560px; overflow: hidden;
-    padding: clamp(40px, 5vw, 72px); background: #221a2c; border-left: 2px solid var(--ink);
+    padding: clamp(40px, 5vw, 72px); background: var(--pn-bg); border-left: 2px solid var(--ink);
   }
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .auth-aside { background: #0e0b11; border-left-color: var(--line); }
+  :root:not([data-theme="light"]) .auth-aside { border-left-color: var(--line); }
 }
-:root[data-theme="dark"] .auth-aside { background: #0e0b11; border-left-color: var(--line); }
+:root[data-theme="dark"] .auth-aside { border-left-color: var(--line); }
 
-/* Fields: taller than the app's, outlined like the Streak buttons. Focus is an ink border with a coral
+/* Fields: taller than the app's, outlined like the Streak buttons. Focus is an ink border with an ultraviolet
    offset shadow, so it can't be mistaken for the red error state. */
 .afield { display: flex; flex-direction: column; gap: 7px; }
 .afield-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -700,17 +728,17 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .stat .v { font: 800 64px/0.95 var(--display); letter-spacing: -0.04em; color: var(--primary-text); }
 .stat .v small { letter-spacing: 0; margin-left: 8px; font-size: 14px; }
 .stat .k, .wg-label { font-weight: 700; letter-spacing: 0.06em; color: var(--text); }
-.today-side { background: var(--primary-soft); }
+.today-side { background: var(--accent-soft); }
 .badge { font-weight: 600; height: 24px; padding: 0 10px; }
 .wg-cell { border-radius: 10px; border-width: 1.5px; }
 .wg-cell[data-today] { border: 2px solid var(--ink); background: var(--primary-soft); box-shadow: 2px 2px 0 var(--ink); }
 .wg-cell[data-empty] { border-style: dashed; background: transparent; }
 .wg-day[data-today] { color: var(--primary-text); font-weight: 700; }
 .d30 { border-radius: 5px; }
-.d30[data-s="solved"] { background: var(--primary); }
-.d30[data-s="late"] { background: var(--primary-soft); border-color: var(--primary); }
+.d30[data-s="solved"] { background: var(--accent); }
+.d30[data-s="late"] { background: var(--accent-soft); border-color: var(--accent); }
 .d30[data-s="none"] { border-color: color-mix(in srgb, var(--text) 18%, transparent); }
-.d30[data-today] { box-shadow: 0 0 0 2px var(--primary-soft), 0 0 0 4px var(--ink); }
+.d30[data-today] { box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 4px var(--ink); }
 .track-card { transition: transform 120ms ease-out, box-shadow 120ms ease-out; }
 @media (hover: hover) { .track-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); } }
 .track-card[data-running] { background: var(--primary-soft); }
@@ -789,7 +817,7 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
   border: 2px solid var(--edge); border-radius: var(--r); box-shadow: 6px 6px 0 var(--ink);
 }
 .confirm[open] { animation: dialog-in 160ms ease-out; }
-.confirm::backdrop { background: color-mix(in srgb, #221a2c 45%, transparent); animation: fade 160ms ease-out; }
+.confirm::backdrop { background: color-mix(in srgb, var(--c-ink) 45%, transparent); animation: fade 160ms ease-out; }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } }
 .confirm-inner { padding: 24px; display: flex; flex-direction: column; gap: 8px; }

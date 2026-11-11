@@ -1,29 +1,35 @@
 # dailyDSA style lock
 
 Surface: app shell (laptop-only internal tool for ~50 people), with an editor/canvas on the problem page.
-Mood: **"Streak"** — the daily habit, played loud. Chunky ink outlines with hard offset shadows, a heavy grotesque for headings, coral as the brand colour, warm paper background. The problem page stays calm (hairline panels, no hard shadows near the editor) so the statement and code still come first.
-Source: picked by the user on 2026-11-11 from three previewed directions (A · Puzzle page, B · Console, C · Streak); it replaced the earlier quiet teal look. The tokens live in `apps/web/src/styles.css` `:root`; the Streak component rules are at the end of that file.
+Mood: **"Streak"** — the daily habit, played loud. Chunky ink outlines with hard offset shadows, a heavy grotesque for headings. Palette **Ultraviolet + Lime**: cool lilac-grey paper, grape ink, ultraviolet as the brand colour, acid lime for the streak. The problem page stays calm (hairline panels, no hard shadows near the editor) so the statement and code still come first.
+Source: picked by the user on 2026-11-11 from three previewed directions (A · Puzzle page, B · Console, C · Streak); it replaced the earlier quiet teal look. Palette changed 2026-11-12 from coral on cream (it read as Claude's own colours at first glance) to Ultraviolet + Lime, picked from three previews (A · Cobalt + Signal Yellow, B · Ultraviolet + Lime, C · Ink + Highlighter); shapes, type and layout unchanged. The tokens live in `apps/web/src/styles.css` `:root`; the Streak component rules are at the end of that file.
 
 ## Color contract (WCAG, checked with a script)
 
 | token | light | dark |
 |---|---|---|
-| bg | #fdf3e4 | #161219 |
-| surface | #fffbf5 | #201a25 |
-| sunk | #f6e8d3 | #120e15 |
-| text | #221a2c | #f5eefb |
-| muted | #5d5468 | #b2a8bf |
-| ink (outlines, hard shadows) | #221a2c | #000000 |
-| primary (fill: coral) | #ff6a4a | #ff7656 |
-| primary-soft (fill) | #ffe0d6 | #3b1d17 |
-| primary-text (brand-coloured text) | #b8371b | #ff9a80 |
-| on-primary | #221a2c | #221a2c |
+| bg | #f2f0f8 | #110e1b |
+| surface | #fcfbff | #1a1628 |
+| sunk | #e8e4f3 | #0b0914 |
+| text | #1a1430 | #f3f0fc |
+| muted | #574f6e | #b0a8c8 |
+| line / line-strong | #dcd6eb / #827a9b | #2d2743 / #6d6590 |
+| ink (outlines, hard shadows) | #1a1430 | #000000 |
+| primary (fill: ultraviolet) | #6a4cff | #6e50ff |
+| primary-hover (fill) | #5838f0 | #5a3cf5 |
+| primary-soft (fill) | #e6e0ff | #261c52 |
+| primary-text (brand-coloured text) | #5230e0 | #bba9ff |
+| on-primary | #ffffff | #ffffff |
+| accent (fill: lime, streak only) / accent-soft | #c6f432 / #ecfabf | #c6f432 / #263010 |
+| on-accent | #1a1430 | #1a1430 |
 | ok / bad / warn / info | #176a39 / #b4251d / #935000 / #3a55a0 | #6fdc98 / #ff8a80 / #f5b862 / #9db4f5 |
 
-`--primary` is a fill colour only: coral is too light for text on paper. Anything that is brand-coloured *text* (links, the brand's "DSA", today's day, big stats) uses `--primary-text`.
-Text-safe (>= 4.5:1): text, muted, primary-text and the four verdict tones on bg, surface, sunk and primary-soft, in both themes (lowest: primary-text on primary-soft, light, 4.69). Each verdict tone on its own `-soft` badge: >= 5.19. on-primary on primary: 5.92 light, 6.37 dark. (`ok` was darkened from #1d7a43 to #176a39 when Streak became the default: the preview value was 4.31 on primary-soft.)
-Decorative only: `line` borders (~1.4:1). Inputs use `line-strong` instead.
-Dark mode: black ink vanishes on the dark surface, so card outlines use `line-strong`, the top bar's rule uses `line`, and today's week cell is outlined in coral. Hard shadows stay black.
+Always-dark panels (`--pn-*`: the landing's judge section, the auth side panel, the hero code card): bg #1a1430 (#08060f in dark), surface #251d40, sunk #150f27, line #352c54, line-strong #6d6590, text #f3f0fc, muted #b0a8c8, brand text #bba9ff, primary fill #6e50ff; verdicts use the dark-theme tones. `--c-ink` #1a1430 / `--c-paper` #fcfbff are the same in both themes (buttons on the final CTA card, the signup "Day 1" stamp). `--mark` / `--mark-text` style the hero's accent line (`--mark` is a highlighter swipe behind it; transparent in this palette).
+
+`--primary` is a fill colour with white text on it. Anything that is brand-coloured *text* (links, the brand's "DSA", today's day, big stats) uses `--primary-text`. `--accent` (lime) is only for the streak and habit: Today's streak card (accent-soft), solved / review 30-day squares, the landing's week strip and month, the login panel's month. Never put text in lime; ink text goes on top of it (`--on-accent`). Ladder bars and buttons stay `--primary`.
+Text-safe (>= 4.5:1, checked with a script): text, muted, primary-text and the four verdict tones on bg, surface, sunk, primary-soft and accent-soft, in both themes (lowest: warn on primary-soft, light, 4.86). Each verdict tone on its own `-soft` badge >= 4.5. on-primary on primary: 5.13 light, 4.94 dark (and on primary-hover, for button hovers). on-accent on accent and every `--pn-*` text pair also pass.
+Decorative only: `line` borders. Inputs use `line-strong` instead.
+Dark mode: black ink vanishes on the dark surface, so card outlines use `line-strong`, the top bar's rule uses `line`, and today's week cell is outlined in ultraviolet. Hard shadows stay black.
 Verdict tones: AC → ok; WA, RE → bad; TLE, MLE, OLE → warn; CE, IE → info. Each tone has a `-soft` background for badges.
 
 ## Type
@@ -61,4 +67,4 @@ Mark: three rising bars in a rounded square (`apps/web/public/favicon.svg`, `Bra
 
 ## Landing page (2026-11-11)
 
-The one exception to "laptop-only" and "no scroll animation": `apps/web/src/landing/`. Same tokens and fonts; display type goes bigger (hero clamp 48–84px, section h2 clamp 38–76px, −0.045em), cards get 6px hard shadows, and the judge section is always dark (dark-theme tones). Motion there is GSAP + Lenis, all skipped under reduced motion; the one pinned, scrubbed scene is the week (Mon→Sun). Still no photos or illustrations: visuals are the app's own interface (day squares, test squares, verdict badges). Interface icons are Solar via `src/landing/solar.ts` (landing only).
+The one exception to "laptop-only" and "no scroll animation": `apps/web/src/landing/`. Same tokens and fonts (the dark judge section and code card use the `--pn-*` panel tokens); display type goes bigger (hero clamp 48–84px, section h2 clamp 38–76px, −0.045em), cards get 6px hard shadows, and the judge section is always dark (dark-theme tones). Motion there is GSAP + Lenis, all skipped under reduced motion; the one pinned, scrubbed scene is the week (Mon→Sun). Still no photos or illustrations: visuals are the app's own interface (day squares, test squares, verdict badges). Interface icons are Solar via `src/landing/solar.ts` (landing only).

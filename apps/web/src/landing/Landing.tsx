@@ -3,7 +3,7 @@
 // Lazy-loaded from App.tsx, so GSAP and Lenis never reach the app's own bundle.
 //
 // Art direction: the week is the hero. The page reads Monday to Sunday like the product runs, in the
-// Streak look (ink outlines, hard shadows, coral fill, Bricolage Grotesque). Every visual is real
+// Streak look (ink outlines, hard shadows, ultraviolet + lime, Bricolage Grotesque). Every visual is real
 // interface or data (day squares, test squares, verdict badges); no photos, illustrations or proof we
 // don't have. Motion: GSAP + ScrollTrigger, Lenis as the only smooth scroll, both skipped entirely under
 // prefers-reduced-motion (the markup already is the final state). One pinned, scrubbed scene: the week.

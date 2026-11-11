@@ -1,7 +1,7 @@
 // The auth pages' side panel, shown on wide screens only: one piece of the product, always on ink.
 // Lazy-loaded from AuthPages.tsx, so GSAP stays out of the app bundle (it shares its chunk with the landing page).
 //
-// Art direction follows the landing: the same Streak pieces (day squares, ladder bars, coral on ink), no photos
+// Art direction follows the landing: the same Streak pieces (day squares, ladder bars, ultraviolet and lime on ink), no photos
 // or illustrations, and example data labelled as an example. Login shows a month waiting for today's square;
 // signup shows the first week. Motion: a short GSAP intro (headline words rise, then the month or the week
 // fills in) and, after a successful signup, today's column gets stamped before the app opens. No smooth
