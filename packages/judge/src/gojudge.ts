@@ -98,13 +98,18 @@ const LANG_SPEC: Record<Lang, LangSpec> = {
   },
 };
 
-const COMPILE_LIMITS = { cpuMs: 15_000, memoryMb: 1024, outputMb: 1 };
+/** go-judge didn't answer at all (down, restarting, hung) — not the submission's fault. */
+export class JudgeUnavailableError extends Error {
+  override name = "JudgeUnavailableError";
+}
+
+const COMPILE_LIMITS ={ cpuMs: 15_000, memoryMb: 1024, outputMb: 1 };
 
 export class GoJudge {
   constructor(readonly url: string = process.env.JUDGE_URL ?? "http://127.0.0.1:5050") {}
 
   async run(cmd: Cmd): Promise<RawResult> {
-    const res = await fetch(`${this.url}/run`, {
+    const res = await this.fetch("/run", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ cmd: [{ env: ENV, ...cmd }] }),
@@ -116,7 +121,17 @@ export class GoJudge {
   }
 
   async deleteFile(id: string): Promise<void> {
-    await fetch(`${this.url}/file/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await this.fetch(`/file/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  /** Network failures and hangs become JudgeUnavailableError, so the queue can wait and retry. */
+  private async fetch(pathname: string, init: RequestInit): Promise<Response> {
+    try {
+      // Every command has its own wall-clock limit (≤ ~45 s); this only catches a stuck go-judge.
+      return await fetch(`${this.url}${pathname}`, { ...init, signal: AbortSignal.timeout(120_000) });
+    } catch (e) {
+      throw new JudgeUnavailableError(`go-judge unreachable at ${this.url}: ${(e as Error).message}`, { cause: e });
+    }
   }
 
   async release(prog: Program): Promise<void> {

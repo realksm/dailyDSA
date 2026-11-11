@@ -42,6 +42,7 @@ interface Row {
   position: number | null;
   hint_count: number;
   daily_days: string[];
+  last_code: Partial<Record<Lang, string>>;
 }
 
 /** Samples never change for a tests hash, so they are read from disk once per hash. */
@@ -73,7 +74,10 @@ export async function problemView(
             tp.position,
             (SELECT count(*)::int FROM problem_hints h WHERE h.problem_id = p.id) AS hint_count,
             coalesce((SELECT array_agg(d.day::text ORDER BY d.day) FROM daily_schedule d
-                       WHERE d.problem_id = p.id AND d.day <= $2::date), '{}') AS daily_days
+                       WHERE d.problem_id = p.id AND d.day <= $2::date), '{}') AS daily_days,
+            coalesce((SELECT jsonb_object_agg(l.lang, l.code) FROM (
+                        SELECT DISTINCT ON (s.lang) s.lang, s.code FROM submissions s
+                         WHERE s.user_id = $3 AND s.problem_id = p.id ORDER BY s.lang, s.id DESC) l), '{}') AS last_code
        FROM problems p
        LEFT JOIN patterns pt ON pt.slug = p.pattern_slug
        LEFT JOIN user_problems up ON up.problem_id = p.id AND up.user_id = $3
@@ -104,5 +108,6 @@ export async function problemView(
     pattern: showPattern && x.pattern_slug && x.pattern_name ? { slug: x.pattern_slug, name: x.pattern_name } : null,
     track: x.kind === "track" && x.position !== null ? { position: x.position, hints: x.hint_count, hintsUsed: x.hints_used ?? 0 } : null,
     dailyDays: x.daily_days,
+    lastCode: x.last_code,
   };
 }

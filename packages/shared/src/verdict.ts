@@ -23,6 +23,8 @@ export interface TestResult {
   output?: string;
   expected?: string;
   stderr?: string;
+  /** Run only: this test is the solver's custom input (no expected output, so AC = it ran cleanly). */
+  custom?: boolean;
 }
 
 export interface JudgeResult {

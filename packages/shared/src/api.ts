@@ -1,5 +1,6 @@
 import type { ProblemKind, Role, TimeLimits } from "./problem.js";
 import type { Lang } from "./lang.js";
+import type { JudgeResult, Verdict } from "./verdict.js";
 
 /** Error body of every non-2xx /api response. `details` lists per-field problems for `invalid_request`. */
 export interface ApiError {
@@ -71,4 +72,45 @@ export interface ProblemView {
   track: { position: number; hints: number; hintsUsed: number } | null;
   /** IST days this problem was the daily (oldest first, never after today). */
   dailyDays: string[];
+  /** The user's latest code per language (Run or Submit), so the editor reopens where they left off. */
+  lastCode: Partial<Record<Lang, string>>;
+}
+
+export type SubmissionKind = "run" | "submit";
+export type SubmissionStatus = "queued" | "running" | "done";
+
+/** POST /api/problems/:slug/run — the samples, plus `customInput` as an extra test if non-empty. */
+export interface RunRequest {
+  lang: Lang;
+  code: string;
+  customInput?: string;
+}
+
+/** POST /api/problems/:slug/submit — every test, stopping at the first failure. */
+export interface SubmitRequest {
+  lang: Lang;
+  code: string;
+}
+
+/** 202 answer to Run/Submit; poll GET /api/submissions/:id about once a second. */
+export interface SubmissionQueued {
+  id: number;
+  status: "queued";
+}
+
+/** GET /api/submissions/:id */
+export interface SubmissionView {
+  id: number;
+  problem: { slug: string; title: string };
+  kind: SubmissionKind;
+  lang: Lang;
+  code: string;
+  status: SubmissionStatus;
+  /** While queued/running: 1 = being judged or next. */
+  queuePosition: number | null;
+  verdict: Verdict | null;
+  /** Hidden tests only carry input/output when they are the first failure. */
+  result: JudgeResult | null;
+  createdAt: string;
+  finishedAt: string | null;
 }

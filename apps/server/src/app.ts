@@ -10,6 +10,7 @@ import { authRoutes } from "./routes/auth.js";
 import { dailyRoutes } from "./routes/daily.js";
 import { healthRoutes } from "./routes/health.js";
 import { problemRoutes } from "./routes/problems.js";
+import { submissionRoutes } from "./routes/submissions.js";
 import { pgSessionStore, sessionMiddleware } from "./session.js";
 
 export interface AppDeps {
@@ -24,6 +25,8 @@ export interface AppDeps {
   logError?: (err: unknown) => void;
   /** Clock for the IST date; tests move it. */
   now?: () => Date;
+  /** Called after a Run/Submit is queued (main.ts wakes the judge worker). */
+  onQueued?: () => void;
 }
 
 /**
@@ -54,6 +57,7 @@ export function createApp(deps: AppDeps): express.Express {
   const now = deps.now ?? (() => new Date());
   api.use(dailyRoutes({ pool, now }));
   api.use(problemRoutes({ pool, now, dataDir: config.dataDir }));
+  api.use(submissionRoutes({ pool, now, onQueued: deps.onQueued ?? (() => {}) }));
   for (const r of deps.routes ?? []) api.use(r);
   api.use(notFoundHandler);
 

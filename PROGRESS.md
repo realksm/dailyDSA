@@ -15,7 +15,7 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 0 | go-judge spike | ✅ done — all checks pass (`spike/judge-spike.mjs`) |
 | 1 | Schema | ✅ done — `packages/db/migrations/001_init.sql`, patterns seeded in `002` |
 | 2 | Problem format + validate CLI (+2–3 problems) | ✅ done — `packages/cli`, `problems/README.md`, 3 problems validated + imported |
-| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, 3.2 server skeleton ✅, 3.3 auth + email reset ✅, 3.4 daily ✅, 3.5 problem view ✅, **3.6 Run/Submit next** |
+| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, 3.2 server skeleton ✅, 3.3 auth + email reset ✅, 3.4 daily ✅, 3.5 problem view ✅, 3.6 Run/Submit ✅, **3.7 history + admin next** |
 | 4 | Solutions tab + polish | ☐ |
 | 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ |
 | 6 | Content: a few problems + one track | 🟡 started — first track is **two pointers** (ladder 1/5: `budget-pairs`) |
@@ -38,11 +38,11 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck
-pnpm test                           # 70 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 77 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
-pnpm server                         # API on 127.0.0.1:3000 (runs migrations first); GET /api/health
+pnpm server                         # API on 127.0.0.1:3000 (runs migrations first) + judge worker; GET /api/health
 pnpm dsa admin create <email> <name...> [--password pw]   # first admin (prints a generated password)
 pnpm dsa admin reset-password <email>                     # lock-out fallback
 pnpm dsa invite create [--uses N] [--role solver|setter|admin] [--days D]
@@ -61,10 +61,10 @@ If Docker Desktop isn't running: start it, wait for `docker info`; the first bui
 judge/               go-judge image (Dockerfile, mount.yaml); runs with -parallelism 1
 packages/shared      types shared by front+back: Lang, Verdict, JudgeResult, InputSpec, pools/roles/patterns
 packages/judge       go-judge client + judge() orchestrator (compile once → run per test → checker → cleanup) + on-disk tests store (`tests-store.ts`, used by CLI and server)
-packages/db          pg pool + SQL migration runner (migrations/NNN_*.sql)
+packages/db          pg pool + SQL migration runner (migrations/NNN_*.sql) + `withJudgeLock` (advisory lock 727002)
 packages/cli         `pnpm dsa` — list / new / validate / import / admin / invite
 problems/            one folder per problem (+ _template, README.md)
-apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`); `users.ts` is also used by the CLI. Queue worker comes in 3.6
+apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`); `users.ts` is also used by the CLI
 spike/               throwaway go-judge proof
 .data/               (gitignored) generated tests: .data/tests/<slug>/<hash>/NN.in|NN.ans
 ```
@@ -99,6 +99,12 @@ spike/               throwaway go-judge proof
 - **Daily API** (`requireUser`): `GET /api/daily/today` (lazy pick; adds `nextRolloverAt`; 404 `no_daily` if the bank is empty), `GET /api/daily?before=&limit=` (archive, newest first, ≤ today, keyset paging via `nextBefore`), `GET /api/daily/:day` (future days 404 so pins can't be peeked). Entries carry status new/attempted/solved, `solvedAt`, `pattern` only after solve/unlock, `review.lastShownOn` for repeats. Types `DailyEntry`/`DailyToday`/`DailyArchive` in shared. `startDailyRollover` picks on boot and ~2 s after each IST midnight. `createApp` takes an injectable `now` clock.
 - **Problem page** (`GET /api/problems/:slug`, `requireUser`, type `ProblemView`): statement, samples (first `sample_count` tests read from disk, cached per tests hash), templates for all 3 langs, limits, status, `solutionsUnlocked` / `canUnlockSolutions`, `anyValidAnswer` (has checker), `dailyDays`, and for track problems `{position, hints, hintsUsed}` (hint bodies come in step 5). **Who sees what:** solvers see a daily problem once it was the daily on a day ≤ today, and a track problem once Monday + position − 1 of any week its track ran has come (then forever); retired problems stay open. Everything else is 404 (same as an unknown slug) so pins/upcoming ladders can't be probed. Setters and admins see every problem. Pattern: track problems always, daily only after solve/unlock. The SQL condition is `openToSolvers()` in `problems.ts` — reuse it for Run/Submit.
 - **Tests store moved** from the CLI to `@dailydsa/judge` (the server can't import the CLI, which depends on it); adds `readSamples()`.
+- **Run/Submit API** (`requireUser`): `POST /api/problems/:slug/run` `{lang, code, customInput?}` and `/submit` `{lang, code}` → 202 `{id, status:"queued"}`; poll `GET /api/submissions/:id` (type `SubmissionView`, owner or admin, else 404; `queuePosition` while waiting). Same release rules as the problem page (`openToSolvers` or staff). Limits: code and custom input 64 KB each; **one submission in flight per user** (409 `busy`) and one Run/Submit per 5 s (429, in-memory, keyed by user, uses the app clock). `ProblemView.lastCode` = latest code per language, so the editor reopens where the user left off.
+- **Run** = the samples (all evaluated, no stop) + the custom input as an extra test (`custom: true`, no expected output — AC means it ran cleanly; empty box = no custom test). **Submit** = every test, stops at the first failure. Neither is shown to anyone else.
+- **Worker** (`startJudgeWorker` in main.ts): loop = take the judge lock → claim the oldest queued row (`UPDATE … WHERE id = (SELECT … FOR UPDATE SKIP LOCKED)`) → judge → store → unlock. Taking the lock *before* claiming means a row never sits in `running` while `dsa validate` holds the lock. Idles 1 s between polls; the routes kick it awake on enqueue. Boot requeues `running` rows; shutdown finishes the current one (10 s cap, else boot requeues it).
+- **Judge failures:** go-judge unreachable/hung (`JudgeUnavailableError` from the client: network error or 120 s fetch timeout) → row back to `queued`, retry every 5 s, logged once. Anything else (tests missing on disk, go-judge 5xx) → verdict **IE**, logged, never retried.
+- **Progress (Submit only, one SQL statement with the verdict):** `submit_count`+1 for everything but IE; `first_attempt_at` (= Show solutions button) for anything but CE/IE; first AC sets `solved_at` + `solved_verdict_lang`; later verdicts never unsolve. Times are the **submission's `created_at`**, not the judging time, so a Submit at 23:59 IST counts for that day. `solutions_unlocked_at` stays NULL on solve (only the button sets it), so "solved after viewing solutions" = `solutions_unlocked_at < solved_at`.
+- **Judge lock:** `pnpm dsa validate` takes it per problem (live submissions get judged between problems); without a reachable DB it validates unlocked with a note.
 - **Line endings:** `.gitattributes` forces LF (test files are compared byte-wise inside Linux).
 
 ## Next up — step 3: core app
@@ -109,19 +115,20 @@ Suggested order (each piece testable on its own):
 3. ✅ **Auth** (`apps/server/src/routes/auth.ts`): `POST /api/auth/signup|login|logout|forgot-password|reset-password`, `GET /api/me`, `POST /api/me/password`. Guards `requireUser` / `requireRole(...)` and `me(req)` in `src/auth.ts`. Mailer: SMTP (nodemailer) or console. CLI: `dsa admin create|reset-password`, `dsa invite create`.
 4. ✅ **Daily:** IST date helper; `ensureDailyPick(day)` (weekday pool / weekend pool by week's track pattern / no-track weekend = patterns that already ran, fallback weekday pool); called lazily on request + on a timer at IST midnight. Archive endpoint.
 5. ✅ **Problem view:** statement + samples (first `sample_count` tests from disk) + template + limits + my status; pattern tag only after solve/unlock.
-6. **Run/Submit:** only for problems `openToSolvers` (or staff); insert into `submissions` (rate limit: one Run/Submit per user every ~5 s), worker loop claims rows (`FOR UPDATE SKIP LOCKED`, reset `running`→`queued` on boot), loads tests from disk, calls `judge()`, updates `user_problems`. Poll `GET /api/submissions/:id`.
+6. ✅ **Run/Submit:** queue API, worker, judge lock, progress updates, `lastCode`.
 7. **History** page data; **admin**: invite codes CRUD, password reset, pin a problem to a date, schedule track weeks.
 8. **apps/web:** Vite + React + Monaco (laptop only): today, problem/editor, archive, history, admin, plus login / signup / forgot-password / `reset-password?token=` / change-password pages.
 
 ## Open questions / for later
 
 - Upload test inputs to go-judge once per problem (fileId) instead of sending content per run — only if large tests prove slow.
-- Advisory lock shared by the queue worker and the validate CLI (key reserved: 727002) — implement with the worker (go-judge `-parallelism 1` already prevents overlapping runs).
 - Weekend pool needs ≥2 problems per track pattern; we have 1 for two-pointers (`exact-gap`), so a two-pointers weekend shows it Sat and Sun — the user will write more weekend problems (planned, step 6).
 - Remaining two-pointers ladder problems (#2–#5) + lesson.
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (7)** — Step 3.6: Run/Submit endpoints, `submissions`-table queue + worker (lock → claim → judge → store), judge lock shared with `dsa validate`, go-judge outages requeue instead of failing, Submit updates progress, `lastCode` on the problem page. 77 tests pass (incl. real judging of AC/WA/CE/Run+custom/IE). Checked live: `rainfall-ledger` ref.cpp → AC on 12 tests via HTTP, `busy` while queued. Note: a server started 09:37 (old code) was still on port 3000, so the live check ran on PORT=3001 — restart it to get the new routes.
 
 - **2026-11-11 (6)** — Step 3.5: problem page endpoint with release rules (daily day / track ladder day / staff), samples from disk, templates, limits, solve + solutions status, pattern reveal. Moved the tests store into `@dailydsa/judge`. 70 tests pass; checked live against `rainfall-ledger`. Open for the web step: the editor should restore the user's last code per language (comes with 3.6 submissions).
 

@@ -1,14 +1,18 @@
 // Entry point: `pnpm server` (dev: `pnpm --filter @dailydsa/server dev`).
 import { createPool, migrate } from "@dailydsa/db";
+import { GoJudge } from "@dailydsa/judge";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { startDailyRollover } from "./daily.js";
+import { startJudgeWorker } from "./submissions.js";
 
 const config = loadConfig();
 await migrate(config.databaseUrl);
 const pool = createPool(config.databaseUrl);
-const app = createApp({ config, pool });
-const stopRollover = startDailyRollover(pool, { info: console.log, error: console.error });
+const log = { info: console.log, error: console.error };
+const worker = startJudgeWorker(pool, { gj: new GoJudge(config.judgeUrl), dataDir: config.dataDir, log });
+const app = createApp({ config, pool, onQueued: worker.kick });
+const stopRollover = startDailyRollover(pool, log);
 
 const server = app.listen(config.port, config.host, () => {
   console.log(`dailyDSA server on http://${config.host}:${config.port}`);
@@ -20,7 +24,8 @@ function shutdown(signal: string) {
   stopping = true;
   stopRollover();
   console.log(`${signal}: shutting down`);
-  server.close(() => void pool.end().finally(() => process.exit(0)));
+  // Let the submission being judged finish; if that takes too long, boot requeues it.
+  server.close(() => void worker.stop().then(() => pool.end()).finally(() => process.exit(0)));
   setTimeout(() => process.exit(1), 10_000).unref(); // don't hang on keep-alive connections
 }
 process.on("SIGINT", () => shutdown("SIGINT"));

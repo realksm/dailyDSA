@@ -6,7 +6,7 @@
 //   pnpm dsa admin create|reset-password …, pnpm dsa invite create …   (see accounts.ts)
 import { cp, stat } from "node:fs/promises";
 import path from "node:path";
-import { createPool } from "@dailydsa/db";
+import { createPool, withJudgeLock } from "@dailydsa/db";
 import { GoJudge } from "@dailydsa/judge";
 import { accountsCommand } from "./accounts.js";
 import { importProblem } from "./importer.js";
@@ -49,22 +49,33 @@ async function main(): Promise<number> {
     }
     case "validate": {
       const gj = new GoJudge();
+      // Hold the judge lock per problem, so live submissions get judged between problems and
+      // never alongside calibration. No database (e.g. a laptop with only go-judge up) = no lock.
+      const pool = createPool();
+      const lockConn = await pool.connect().catch(() => undefined);
+      if (!lockConn) console.log(c.dim("(database not reachable — validating without the judge lock)"));
+      const locked = <T,>(fn: () => Promise<T>) => (lockConn ? withJudgeLock(lockConn, fn) : fn());
       let failed = 0;
-      for (const slug of await targets()) {
-        console.log(c.bold(`\n▶ ${slug}`));
-        const t0 = Date.now();
-        try {
-          const p = await loadProblem(slug);
-          const r = await validate(gj, p, {
-            step: (s) => console.log(`  • ${s}`),
-            info: (s) => console.log(c.dim(`      ${s}`)),
-          });
-          console.log(c.green(`  ✔ valid in ${((Date.now() - t0) / 1000).toFixed(1)}s — limits ${JSON.stringify(r.limitsMs)}, wrote validation.json`));
-        } catch (e) {
-          failed++;
-          if (!(e instanceof ValidationError || e instanceof ProblemError)) throw e;
-          console.log(c.red(`  ✘ ${e.message.replace(/\n/g, "\n    ")}`));
+      try {
+        for (const slug of await targets()) {
+          console.log(c.bold(`\n▶ ${slug}`));
+          const t0 = Date.now();
+          try {
+            const p = await loadProblem(slug);
+            const r = await locked(() => validate(gj, p, {
+              step: (s) => console.log(`  • ${s}`),
+              info: (s) => console.log(c.dim(`      ${s}`)),
+            }));
+            console.log(c.green(`  ✔ valid in ${((Date.now() - t0) / 1000).toFixed(1)}s — limits ${JSON.stringify(r.limitsMs)}, wrote validation.json`));
+          } catch (e) {
+            failed++;
+            if (!(e instanceof ValidationError || e instanceof ProblemError)) throw e;
+            console.log(c.red(`  ✘ ${e.message.replace(/\n/g, "\n    ")}`));
+          }
         }
+      } finally {
+        lockConn?.release();
+        await pool.end();
       }
       return failed ? 1 : 0;
     }
