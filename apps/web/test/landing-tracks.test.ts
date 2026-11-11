@@ -11,7 +11,7 @@ type Data = { TRACKS: { slug: string; name: string; clue: string; ladder: string
 async function build(problemsDir: string): Promise<Data> {
   const plugin = landingTracks(problemsDir);
   const load = plugin.load as (this: unknown, id: string) => Promise<string>;
-  const code = await load.call({ addWatchFile() {} }, "\0virtual:landing-tracks");
+  const code = await load.call({}, "\0virtual:landing-tracks");
   return import(`data:text/javascript,${encodeURIComponent(code)}`) as Promise<Data>;
 }
 
