@@ -9,8 +9,7 @@ import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPool } from "@dailydsa/db";
 import { writeTests } from "@dailydsa/judge";
-import type { History, ProblemView, Role, StaffTrackDetail, TrackLibrary, TrackView } from "@dailydsa/shared";
-import { MAX_LESSON_CHARS } from "../src/routes/admin.js";
+import type { History, ProblemView, Role, StaffTrack, TrackLibrary, TrackView } from "@dailydsa/shared";
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { addDays } from "../src/ist.js";
@@ -209,45 +208,27 @@ describe.skipIf(!dbUp)("tracks", () => {
       expect(h.find((x) => x.problem.slug === p2.slug)!.lastActivityAt).toBe((hintOnly.rows[0].last_hint_at as Date).toISOString());
     }));
 
-  it("lets setters and admins edit lessons, refusing stale saves", () =>
+  it("lists tracks for staff with their imported lessons", () =>
     sandbox(async (db) => {
       const clock = { t: at(MON) };
       const { app, signIn } = harness(db, clock);
       const solver = await signIn();
       const setter = await signIn("setter");
-      const admin = await signIn("admin");
-      const t = await track(db, "two-pointers", [{}]);
-      await db.query(`UPDATE problems SET input_spec = '{"vars":[{"name":"n","type":"int"}],"returns":"int"}' WHERE id = $1`, [t.problems[0]!.id]);
-      const url = "/api/admin/tracks/two-pointers";
+      const t = await track(db, "two-pointers", [{}, {}]);
 
-      expect((await request(app).get(url)).status).toBe(401);
-      expect((await solver.agent.get(url)).status).toBe(403);
-      expect((await solver.agent.patch(url).send({ lessonMd: "x" })).status).toBe(403);
-      expect((await setter.agent.get("/api/admin/tracks/dp-1d")).status).toBe(404);
+      expect((await request(app).get("/api/admin/tracks")).status).toBe(401);
+      expect((await solver.agent.get("/api/admin/tracks")).status).toBe(403);
+      const before = (await setter.agent.get("/api/admin/tracks")).body as StaffTrack[];
+      expect(before).toEqual([{
+        id: t.id, title: "two-pointers", pattern: { slug: "two-pointers", name: "Two pointers" }, ladder: 2, hasLesson: false, updatedAt: expect.any(String),
+      }]);
 
-      const d = (await setter.agent.get(url)).body as StaffTrackDetail;
-      expect(d).toMatchObject({ id: t.id, title: "two-pointers", lessonMd: "", hasLesson: false, ladder: 1 });
-      expect(d.problems).toHaveLength(1);
-      expect(d.problems[0]).toMatchObject({ position: 1, slug: t.problems[0]!.slug, title: "Step 1" });
-      expect(d.problems[0]!.templates.py).toContain("def solve(n");
-
-      const saved = await setter.agent.patch(url).send({ lessonMd: "## How to spot it\n\nPairs.", title: "Two pointers", expectedUpdatedAt: d.updatedAt });
-      expect(saved.status).toBe(200);
-      const s = saved.body as StaffTrackDetail;
-      expect(s).toMatchObject({ title: "Two pointers", lessonMd: "## How to spot it\n\nPairs.", hasLesson: true });
-      expect(s.updatedAt).not.toBe(d.updatedAt);
-
-      // A save based on the old version is refused; without the token it goes through.
-      expect((await admin.agent.patch(url).send({ lessonMd: "mine", expectedUpdatedAt: d.updatedAt })).body.error.code).toBe("stale");
-      expect((await admin.agent.patch(url).send({ lessonMd: "mine", expectedUpdatedAt: s.updatedAt })).status).toBe(200);
-      expect((await admin.agent.patch(url).send({})).body.error.code).toBe("invalid_request");
-      expect((await admin.agent.patch(url).send({ title: "  " })).body.error.code).toBe("invalid_request");
-      expect((await admin.agent.patch(url).send({ lessonMd: "x".repeat(MAX_LESSON_CHARS + 1) })).body.error.code).toBe("invalid_request");
-      expect((await admin.agent.patch("/api/admin/tracks/dp-1d").send({ lessonMd: "x" })).status).toBe(404);
-
-      // Solvers read it on the track page once the week starts.
+      // `dsa lesson import` writes the lesson; staff can read it before the track's week.
+      await db.query("UPDATE tracks SET title = 'Two pointers', lesson_md = '## How to spot it' WHERE id = $1", [t.id]);
+      expect(((await setter.agent.get("/api/admin/tracks")).body as StaffTrack[])[0]).toMatchObject({ title: "Two pointers", hasLesson: true });
+      expect((await setter.agent.get("/api/tracks/two-pointers")).body).toMatchObject({ lessonMd: "## How to spot it", released: false });
+      expect((await solver.agent.get("/api/tracks/two-pointers")).status).toBe(404);
       await week(db, MON, t.id);
-      expect((await solver.agent.get("/api/tracks/two-pointers")).body).toMatchObject({ title: "Two pointers", lessonMd: "mine" });
-      expect(((await admin.agent.get("/api/admin/tracks")).body as { hasLesson: boolean }[])[0]!.hasLesson).toBe(true);
+      expect((await solver.agent.get("/api/tracks/two-pointers")).body).toMatchObject({ title: "Two pointers", lessonMd: "## How to spot it" });
     }));
 });

@@ -2,8 +2,8 @@
 // server's { error: { code, message, details } } body (packages/shared/src/api.ts).
 import type {
   AdminUser, DailyArchive, DailyEntry, DailyToday, History, InviteCode, Lang, Me, PasswordResetByAdmin,
-  ProblemView, Role, Schedule, Solutions, ScheduleDay, StaffProblem, StaffTrack, StaffTrackDetail, SubmissionKind, SubmissionList,
-  SubmissionQueued, SubmissionView, TrackLibrary, TrackPatch, TrackView, TrackWeek,
+  ProblemView, Role, Schedule, Solutions, ScheduleDay, StaffProblem, StaffTrack, SubmissionKind, SubmissionList,
+  SubmissionQueued, SubmissionView, TrackLibrary, TrackView, TrackWeek,
 } from "@dailydsa/shared";
 
 export class ApiErr extends Error {
@@ -106,8 +106,6 @@ export const api = {
     deleteInvite: (code: string) => call<void>("DELETE", `/admin/invites/${enc(code)}`),
     problems: () => call<StaffProblem[]>("GET", "/admin/problems"),
     tracks: () => call<StaffTrack[]>("GET", "/admin/tracks"),
-    track: (pattern: string) => call<StaffTrackDetail>("GET", `/admin/tracks/${enc(pattern)}`),
-    updateTrack: (pattern: string, patch: TrackPatch) => call<StaffTrackDetail>("PATCH", `/admin/tracks/${enc(pattern)}`, patch),
     schedule: (from?: string, to?: string) => call<Schedule>("GET", `/admin/schedule${q({ from, to })}`),
     pin: (day: string, slug: string) => call<ScheduleDay>("PUT", `/admin/schedule/days/${enc(day)}`, { slug }),
     unpin: (day: string) => call<void>("DELETE", `/admin/schedule/days/${enc(day)}`),

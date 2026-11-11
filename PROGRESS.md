@@ -42,7 +42,8 @@ pnpm test                           # 100 tests; go-judge / db ones skip if thos
 pnpm dsa list                       # problem states
 pnpm dsa template <slug> cpp > problems/<slug>/ref.cpp   # start a ref from the editor template
 pnpm dsa validate --all             # ~11 s per problem
-pnpm dsa import --all
+pnpm dsa import --all                # problems + track lessons (problems/_tracks/*.md)
+pnpm dsa lesson new|check|import <pattern>|--all
 pnpm server                         # API on 127.0.0.1:3000 (runs migrations first) + judge worker; GET /api/health
 pnpm web                            # Vite on http://127.0.0.1:5173, proxies /api to :3000 (API_URL=… to change)
 pnpm web:build                      # apps/web/dist; the server then serves it too (WEB_DIR), SPA fallback
@@ -130,9 +131,9 @@ spike/               throwaway go-judge proof
 - **Monaco keybindings are global:** `editor.addCommand` bindings are shared by every editor on the page (last registered wins), so read-only viewers register none — otherwise Ctrl+Enter in the real editor broke once a solution card opened. Read-only viewers also pass the mouse wheel to the page at their ends and hide the line highlight.
 - **Tracks API** (`requireUser`): `GET /api/tracks` (type `TrackLibrary`: running track first, then released by first week; staff also see unreleased/unscheduled ones, marked `released: false`) and `GET /api/tracks/:pattern` (`TrackView` = summary + `lessonMd`). Solvers see a track once one of its weeks has started (404 before, like problems). Each ladder step: `open` by exactly the `openToSolvers` rule, `opensOn` (next ladder day of a scheduled run) while locked, `problem` hidden while locked (staff always get it), status, hints/hintsUsed. `weeks` lists every run, past and future; `runningWeek` = the Monday of the week containing today. Progress = solved / ladder size (not a fixed 5, while ladders are being written).
 - **Hints:** `POST /api/problems/:slug/hints {level}` → updated `ProblemView`. Only the next level (`hint_order` otherwise); a level already taken is a no-op (double clicks); `no_hints` for daily or hintless problems, `no_such_hint` above the count; same 404 release rules. `ProblemView.track.revealed` = bodies of the hints taken. Migration 004 adds `user_problems.first_hint_at`/`last_hint_at`: history's `solvedWithHints` = first hint before solving (like "solved after viewing solutions"), and the latest hint counts as activity. Hints after solving are allowed and don't mark it. The web asks for a confirm before the first hint on an unsolved problem.
-- **Lessons** live in the DB (`tracks.lesson_md`), edited by admins *and setters*: `GET /api/admin/tracks/:pattern` (`StaffTrackDetail`: lesson + each ladder problem's editor templates) and `PATCH /api/admin/tracks/:pattern {title?, lessonMd?, expectedUpdatedAt?}` (≤ 100 000 chars; `expectedUpdatedAt` → 409 `stale` if someone saved in between; `updated_at` uses `clock_timestamp()`). The ladder (lesson section 5) is drawn by the track page, not written in the lesson.
-- **Lesson code blocks:** C++/Java/Python fences (`cpp`/`c++`, `java`, `py`/`python`) separated only by blank lines render as one read-only Monaco block with a tab per language, starting on the solver's editor language (`components/Lesson.tsx` `lessonParts`). The editor's "Insert template code…" inserts a ladder problem's editor template in all three languages, so lesson code matches the editor (PLAN §2). "Start from the outline" fills the five sections.
-- **Web tracks:** `/tracks` (cards: when it runs, ladder dots, n/m solved), `/tracks/:pattern` (lesson + sticky ladder), "This week's track" card on Today (today's ladder problem Mon–Fri, else the first unsolved open one), Tracks nav link, breadcrumb + hints box on ladder problems, Admin → Tracks tab (`/admin/tracks`, `/admin/tracks/:pattern`: Markdown left, live preview right, asks before leaving with unsaved changes).
+- **Lessons live in git** (user's call, replacing the first admin-page editor): `problems/_tracks/<pattern>.md`, first line `# Title`, then the sections `LESSON_SECTIONS` (shared) in order. `pnpm dsa lesson new|check|import <pattern>|--all`; `dsa import --all` also imports every lesson; `dsa list` shows lessons. Why git: lessons are coupled to the ladder problems (already in git), get history/diffs, move to the real server with everything else, and can be checked. **Check:** title 3–100 chars, the four sections, and `## Template code` has exactly one C++, Java and Python block per group, each passing `templateMismatch` against a ladder problem's `input:` (problems loaded from git; the generic template only counts if a ladder problem uses it, since it matches almost anything). Import upserts `tracks` (creates the row if no ladder problem was imported yet) and only bumps `updated_at` when the title or text changed; problem import never touches a track's title or lesson. The ladder (lesson section 5) is drawn by the track page. Setters/admins preview an imported lesson on `/tracks/<pattern>` (they see unreleased tracks).
+- **Lesson code blocks:** C++/Java/Python fences (`cpp`/`c++`, `java`, `py`/`python`) separated only by blank lines are one group (`lessonParts` in `packages/shared/src/lesson.ts`, used by both the CLI check and the site), shown as one read-only Monaco block with a tab per language, starting on the solver's editor language.
+- **Web tracks:** `/tracks` (cards: when it runs, ladder dots, n/m solved), `/tracks/:pattern` (lesson + sticky ladder), "This week's track" card on Today (today's ladder problem Mon–Fri, else the first unsolved open one), Tracks nav link, breadcrumb + hints box on ladder problems, Admin → Tracks tab (read-only: each track, ladder size, lesson imported or missing, last import).
 
 ## Step 3 log: core app
 
@@ -149,7 +150,7 @@ Suggested order (each piece testable on its own):
 ## Next up — step 6: Content (PLAN §10)
 
 - Two-pointers ladder #2–#5 (`problems/<slug>/`, `kind: track`, `position`, 3 hints each) and at least one more two-pointers **weekend** problem.
-- The two-pointers lesson, written in Admin → Tracks (outline button + "Insert template code").
+- The two-pointers lesson: `pnpm dsa lesson new two-pointers`, write it, `pnpm dsa lesson check`/`import` (see `problems/README.md` → Track lessons).
 - A few more weekday problems so the daily bank isn't just `rainfall-ledger`.
 
 ## Open questions / for later
@@ -160,11 +161,12 @@ Suggested order (each piece testable on its own):
 - The dev DB has a test admin from the 3.8 browser check: `webcheck@example.test` (id 239); the step 4 check also left it a WA Submit on `exact-gap` and an unlock (solutions opened before solving). Keep it for trying the UI (`pnpm dsa admin reset-password webcheck@example.test` for a new password) or delete it.
 - Servers from earlier sessions (started 09:37 / 09:50 / 09:52) may still be running on ports 3000–3002 with older code; stop them and restart `pnpm server` to get the current API.
 - **Dev DB:** two-pointers is scheduled for the week of 2026-11-09 (inserted by SQL for the step 5 browser check, since the API only schedules future weeks), so the Today card and `/tracks` show it. Undo with `DELETE FROM track_weeks WHERE week_start = '2026-11-09'`. The `webcheck` admin also took hint 1 on `budget-pairs`.
-- Lessons live only in the DB (backed up nightly), not in git like problems. If that feels fragile, a `dsa lesson export/import` could mirror them into `problems/_tracks/<pattern>.md`.
 - Polish left from step 4: a CSP header for the served app (needs a browser check: Monaco injects inline styles), a draggable split between statement and editor.
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (13)** — Lessons moved to git: `problems/_tracks/<pattern>.md`, `dsa lesson new|check|import` (checks title, sections and that the template code follows a ladder problem's editor template), `dsa import --all` includes lessons. Removed the admin lesson editor and its API (`GET/PATCH /api/admin/tracks/:pattern`); Admin → Tracks is a read-only list. `lessonParts` moved to `packages/shared`. 107 tests pass; CLI checked on a scratch copy of `problems/`.
 
 - **2026-11-11 (12)** — Step 5: tracks. `GET /api/tracks` + `/tracks/:pattern` (release rule, ladder open/locked/opensOn, progress), hints `POST …/hints` (in order, idempotent; migration 004 hint times → history `solvedWithHints`), admin/setter lesson editing with a stale-save guard and per-problem template insertion. Web: Tracks library, lesson page with language-tabbed code, Today's week-track card, hints box, Admin → Tracks editor. 100 tests pass; walked through in headless Chromium on PORT=3005 (library → outline + template → save → lesson page → Today card → hint 1 → history), no page errors. Next: step 6 content (two-pointers ladder #2–#5 + lesson).
 

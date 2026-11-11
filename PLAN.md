@@ -57,7 +57,7 @@ All problems are original, not copied from other platforms.
 
 ### Scheduling
 - Admins schedule which track runs in which week.
-- Lessons are written in Markdown from the admin page, so setters can write them too.
+- Lessons are Markdown files in the problem repo (`problems/_tracks/<pattern>.md`), checked and imported by the same CLI as problems (decided while building step 5: they belong with their ladder problems and get git history).
 
 ### Starting patterns (8)
 1. Two pointers
@@ -152,7 +152,7 @@ Python skips step 1.
 
 ### Where problems live (decided)
 - Problems are **folders in a git repo** (`problems/<slug>/`), one folder per problem: `problem.yaml` (title, pool, pattern, limits), `statement.md`, `gen.py`, `tests/`, `ref.cpp`, `ref.java`, `ref.py`, `naive.cpp`, optional `checker.py`.
-- A CLI validates a folder and imports it into the database. The admin page only schedules, pins and edits lessons; it does not upload problems.
+- A CLI validates a folder and imports it into the database. Track lessons live there too (`problems/_tracks/`). The admin page only schedules and pins; it does not upload problems or edit lessons.
 - Validation runs through the same one-at-a-time judge queue as submissions, so calibration never competes with live judging.
 
 ### Validation

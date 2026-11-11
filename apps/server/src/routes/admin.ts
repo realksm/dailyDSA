@@ -1,13 +1,13 @@
 // The admin page API under /api/admin. Admins: users, invite codes, track weeks.
-// Admins and setters: the problem bank, the schedule view, day pins (PLAN §1) and lessons (PLAN §2).
+// Admins and setters: the problem bank, the schedule view, day pins (PLAN §1). Lessons come from git (dsa lesson import).
 // Only the future can be changed: today's problem and started weeks are already out.
 import { Router } from "express";
 import type pg from "pg";
 import { z } from "zod";
 import { ROLES, type PasswordResetByAdmin, type Schedule } from "@dailydsa/shared";
 import {
-  adminUsers, deleteInvite, invites, pinDay, scheduleDays, scheduleWeek, staffProblems, staffTrackDetail, staffTracks, trackWeeks,
-  unpinDay, unscheduleWeek, updateInvite, updateTrack, updateUser,
+  adminUsers, deleteInvite, invites, pinDay, scheduleDays, scheduleWeek, staffProblems, staffTracks, trackWeeks,
+  unpinDay, unscheduleWeek, updateInvite, updateUser,
 } from "../admin.js";
 import { me, requireRole } from "../auth.js";
 import { badRequest, conflict, HttpError, notFound, parse } from "../errors.js";
@@ -33,15 +33,6 @@ const InvitePatch = z
 const PinBody = z.object({ slug: Slug });
 const WeekBody = z.object({ pattern: Slug });
 const ScheduleQuery = z.object({ from: Day.optional(), to: Day.optional() });
-/** Longest lesson, in characters (the JSON body limit is 256 KB). */
-export const MAX_LESSON_CHARS = 100_000;
-const TrackPatchBody = z
-  .object({
-    title: z.string().trim().min(1).max(100).optional(),
-    lessonMd: z.string().max(MAX_LESSON_CHARS, `At most ${MAX_LESSON_CHARS} characters.`).optional(),
-    expectedUpdatedAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)).optional(),
-  })
-  .refine((o) => o.title !== undefined || o.lessonMd !== undefined, "Send title and/or lessonMd.");
 
 /** Longest range GET /admin/schedule returns. */
 export const MAX_SCHEDULE_DAYS = 400;
@@ -121,23 +112,6 @@ export function adminRoutes({ pool, now }: { pool: pg.Pool; now: () => Date }): 
 
   r.get("/admin/tracks", staff, async (_req, res) => {
     res.json(await staffTracks(pool));
-  });
-
-  /** The lesson editor: lesson Markdown + the ladder problems' editor templates. */
-  r.get("/admin/tracks/:pattern", staff, async (req, res) => {
-    const t = await staffTrackDetail(pool, parse(Slug, req.params.pattern));
-    if (!t) throw notFound("No such track.");
-    res.json(t);
-  });
-
-  /** Edit the title and/or lesson (PLAN §2: setters write lessons too). 409 `stale` if someone saved in between. */
-  r.patch("/admin/tracks/:pattern", staff, async (req, res) => {
-    const pattern = parse(Slug, req.params.pattern);
-    const body = parse(TrackPatchBody, req.body);
-    const result = await updateTrack(pool, pattern, body);
-    if (result === "missing") throw notFound("No such track.");
-    if (result === "stale") throw conflict("Someone else saved this track since you opened it. Reload to see their version.", "stale");
-    res.json(await staffTrackDetail(pool, pattern));
   });
 
   /** Daily picks and pins plus track weeks in [from, to]; default a week back to 8 weeks ahead. */

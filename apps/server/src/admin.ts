@@ -1,9 +1,8 @@
 // Admin page data (PLAN §1, §2, §5): users, invite codes, the problem bank, the daily schedule
 // with pins, and which track runs which week. Routes and guards are in routes/admin.ts.
 import type pg from "pg";
-import {
-  LANGS, editorTemplate, type AdminUser, type InputSpec, type InviteCode, type InviteState, type Lang, type Pool, type ProblemKind,
-  type Role, type ScheduleDay, type StaffProblem, type StaffTrack, type StaffTrackDetail, type TrackWeek,
+import type {
+  AdminUser, InviteCode, InviteState, Pool, ProblemKind, Role, ScheduleDay, StaffProblem, StaffTrack, TrackWeek,
 } from "@dailydsa/shared";
 import { isWeekend } from "./ist.js";
 
@@ -215,45 +214,4 @@ export async function scheduleWeek(db: Db, weekStart: string, patternSlug: strin
 export async function unscheduleWeek(db: Db, weekStart: string): Promise<boolean> {
   const r = await db.query("DELETE FROM track_weeks WHERE week_start = $1", [weekStart]);
   return r.rowCount === 1;
-}
-
-// ───────────── lessons (admin + setter) ─────────────
-
-/** The lesson editor: the lesson plus each ladder problem's editor templates (for the template code). */
-export async function staffTrackDetail(db: Db, patternSlug: string): Promise<StaffTrackDetail | undefined> {
-  const t = await db.query<TrackRow & { lesson_md: string }>(`SELECT x.*, t.lesson_md FROM (${TRACK_SELECT}) x JOIN tracks t ON t.id = x.id WHERE x.pattern_slug = $1`, [patternSlug]);
-  const track = t.rows[0];
-  if (!track) return undefined;
-  const p = await db.query<{ position: number; slug: string; title: string; input_spec: InputSpec | null }>(
-    `SELECT tp.position, p.slug, p.title, p.input_spec FROM track_problems tp JOIN problems p ON p.id = tp.problem_id
-      WHERE tp.track_id = $1 ORDER BY tp.position`,
-    [track.id],
-  );
-  return {
-    ...toTrack(track),
-    lessonMd: track.lesson_md,
-    problems: p.rows.map((x) => ({
-      position: x.position, slug: x.slug, title: x.title,
-      templates: Object.fromEntries(LANGS.map((l) => [l, editorTemplate(l, x.input_spec ?? undefined)])) as Record<Lang, string>,
-    })),
-  };
-}
-
-/**
- * Saves a track's title and/or lesson. With `expectedUpdatedAt`, only if nobody saved since
- * (two setters editing the same lesson must not silently overwrite each other).
- */
-export async function updateTrack(
-  db: Db,
-  patternSlug: string,
-  o: { title?: string; lessonMd?: string; expectedUpdatedAt?: Date },
-): Promise<"ok" | "missing" | "stale"> {
-  const r = await db.query(
-    `UPDATE tracks SET title = coalesce($2, title), lesson_md = coalesce($3, lesson_md), updated_at = clock_timestamp()
-      WHERE pattern_slug = $1 AND ($4::timestamptz IS NULL OR date_trunc('milliseconds', updated_at) = $4::timestamptz)`,
-    [patternSlug, o.title ?? null, o.lessonMd ?? null, o.expectedUpdatedAt ?? null],
-  );
-  if (r.rowCount === 1) return "ok";
-  const exists = await db.query("SELECT 1 FROM tracks WHERE pattern_slug = $1", [patternSlug]);
-  return exists.rowCount === 0 ? "missing" : "stale";
 }

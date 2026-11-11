@@ -279,25 +279,8 @@ export interface StaffTrack {
   title: string;
   ladder: number;
   hasLesson: boolean;
-  /** Last change to the title or lesson (ISO); send it back as `expectedUpdatedAt` when saving. */
+  /** Last import that changed the title or lesson (ISO). Lessons live in git: problems/_tracks/<pattern>.md. */
   updatedAt: string;
-}
-
-/** GET /api/admin/tracks/:pattern (admin, setter): the lesson editor. */
-export interface StaffTrackDetail extends StaffTrack {
-  lessonMd: string;
-  /** The ladder problems with their editor templates, for the lesson's template code. */
-  problems: { position: number; slug: string; title: string; templates: Record<Lang, string> }[];
-}
-
-/**
- * PATCH /api/admin/tracks/:pattern (admin, setter). With `expectedUpdatedAt`, the save is refused
- * (409 `stale`) if someone else saved in between.
- */
-export interface TrackPatch {
-  title?: string;
-  lessonMd?: string;
-  expectedUpdatedAt?: string;
 }
 
 export interface TrackWeek {

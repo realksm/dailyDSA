@@ -48,7 +48,8 @@ export async function importProblem(db: pg.Pool, p: ProblemFolder): Promise<{ id
 
     await client.query("DELETE FROM track_problems WHERE problem_id = $1", [id]);
     if (m.kind === "track") {
-      // The track row is created on first use; its lesson is written later from the admin page.
+      // The track row is created on first use (title = pattern name). Its title and lesson come from
+      // problems/_tracks/<pattern>.md via `dsa lesson import`; this never overwrites them.
       const t = await client.query<{ id: number }>(
         `INSERT INTO tracks (pattern_slug, title) SELECT slug, name FROM patterns WHERE slug = $1
          ON CONFLICT (pattern_slug) DO UPDATE SET pattern_slug = EXCLUDED.pattern_slug RETURNING id`,

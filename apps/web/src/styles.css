@@ -498,8 +498,3 @@ select { padding-right: 28px; }
 .hint-k { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
 .hint .md { font-size: 14px; }
 
-/* admin lesson editor */
-.lesson-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; height: calc(100vh - var(--topbar) - 280px); min-height: 480px; }
-.lesson-edit textarea { width: 100%; height: 100%; resize: none; font: 400 13.5px/1.6 var(--mono); padding: 14px 16px; }
-.lesson-preview { overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); padding: 20px 24px; }
-.lesson-preview > h1 { font-size: 24px; margin-bottom: 16px; }

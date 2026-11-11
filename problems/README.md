@@ -56,3 +56,20 @@ Generated tests are **not** committed; they go to `.data/tests/<slug>/<hash>/` a
 5. With a checker: it accepts all three references and rejects `wrong.cpp`.
 
 Limits depend on hardware: re-run `pnpm dsa validate --all` on the production server before launch and whenever the server changes.
+
+## Track lessons
+
+Each track's lesson is a Markdown file, `_tracks/<pattern>.md` (in git, like the problems):
+
+```sh
+pnpm dsa lesson new two-pointers        # writes _tracks/two-pointers.md with the outline
+pnpm dsa template budget-pairs cpp      # editor template of a ladder problem, for the template code (also java, py)
+pnpm dsa lesson check two-pointers      # or --all
+pnpm dsa lesson import two-pointers     # writes the title + lesson to the tracks table (`dsa import --all` does every lesson too)
+```
+
+- The first line is the track's title: `# Two pointers`.
+- Sections, in this order: `## How to spot it`, `## Core idea` (with a worked example), `## Template code`, `## Common mistakes`. More sections are fine. The site adds the practice ladder itself.
+- `## Template code` holds C++, Java and Python blocks (```` ```cpp ````, ```` ```java ````, ```` ```python ````) one after the other, each in the editor template of one of the track's ladder problems, so the lesson matches the editor. Fill in `solve()`; the rest must stay as generated.
+- Any C++/Java/Python blocks that follow each other (only blank lines between them) are shown as one block with a tab per language, anywhere in the lesson. Other code blocks render as plain code.
+- Importing changes nothing (not even the "last imported" time) if the file didn't change. Setters and admins can open `/tracks/<pattern>` before the track's week to read the imported lesson as solvers will see it.
