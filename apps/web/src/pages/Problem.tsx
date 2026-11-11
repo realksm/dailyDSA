@@ -10,6 +10,8 @@ import { SolutionsPanel } from "../components/Solutions";
 import { ResultView } from "../components/Result";
 import { CopyButton, LoadError, Notice, Skeleton, StatusBadge, useLoad, useTitle, VerdictBadge } from "../components/ui";
 import { Link } from "../router";
+import { useConfirm } from "../components/Confirm";
+import { Select } from "../components/Select";
 
 /** Matches the server's one Run/Submit per 5 s. */
 const COOLDOWN_MS = 5000;
@@ -68,6 +70,7 @@ export function ProblemPage({ slug }: { slug: string }) {
 
 function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; replace: (v: ProblemView) => void }) {
   const [leftTab, setLeftTab] = useState<"statement" | "solutions">("statement");
+  const ask = useConfirm();
   const [lang, setLangState] = useState<Lang>(() => {
     const l = store.get("dsa.lang");
     return (LANGS as readonly string[]).includes(l ?? "") ? (l as Lang) : "cpp";
@@ -109,8 +112,14 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
     setCode((c) => ({ ...c, [lang]: v }));
     store.set(draftKey(p.slug, lang), v === p.templates[lang] ? null : v);
   };
-  const resetCode = () => {
-    if (!confirm(`Replace your ${LANG_LABEL[lang]} code with the starting template?`)) return;
+  const resetCode = async () => {
+    const ok = await ask({
+      title: "Reset to the template?",
+      body: `Your ${LANG_LABEL[lang]} code is replaced with the starting template. This can't be undone.`,
+      confirmLabel: "Reset code",
+      danger: true,
+    });
+    if (!ok) return;
     setCode((c) => ({ ...c, [lang]: p.templates[lang] }));
     store.set(draftKey(p.slug, lang), null);
   };
@@ -256,11 +265,8 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
           onKeyDown={nudgeLeft}
         />
         <div className="editor-bar">
-          <label className="sr-only" htmlFor="lang">Language</label>
-          <select id="lang" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
-            {LANGS.map((l) => <option key={l} value={l}>{LANG_LABEL[l]}</option>)}
-          </select>
-          <button className="btn btn-ghost btn-sm" onClick={resetCode} disabled={code[lang] === p.templates[lang]}>Reset to template</button>
+          <Select id="lang" aria-label="Language" value={lang} onChange={(v) => setLang(v as Lang)} options={LANGS.map((l) => ({ value: l, label: LANG_LABEL[l] }))} />
+          <button className="btn btn-ghost btn-sm" onClick={() => void resetCode()} disabled={code[lang] === p.templates[lang]}>Reset to template</button>
         </div>
 
         <div className="editor-host">
@@ -441,8 +447,17 @@ function Hints({ p, track, onChange }: { p: ProblemView; track: NonNullable<Prob
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const next = track.hintsUsed + 1;
+  const ask = useConfirm();
   const take = async () => {
-    if (track.hintsUsed === 0 && p.status !== "solved" && !confirm("Take a hint?\n\nHints open one at a time, and your history shows that you used them.")) return;
+    if (track.hintsUsed === 0 && p.status !== "solved") {
+      const ok = await ask({
+        title: "Take a hint?",
+        body: "Hints open one at a time, and your history shows that you used them.",
+        confirmLabel: "Show hint 1",
+        cancelLabel: "Not yet",
+      });
+      if (!ok) return;
+    }
     setBusy(true);
     setError(null);
     try {

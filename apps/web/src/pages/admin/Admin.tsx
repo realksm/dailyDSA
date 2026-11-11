@@ -6,6 +6,8 @@ import { api, errorMessage } from "../../api";
 import { useMe } from "../../auth";
 import { addDays, fmtDay, fmtStamp } from "../../format";
 import { CopyButton, LoadError, Notice, SkeletonRows, useLoad, useTitle } from "../../components/ui";
+import { useConfirm } from "../../components/Confirm";
+import { Select } from "../../components/Select";
 import { Link, useRouter } from "../../router";
 import { TracksTab } from "./Lessons";
 
@@ -91,20 +93,16 @@ function ScheduleTab({ isAdmin }: { isAdmin: boolean }) {
               <div className="cal-week-head">
                 <b>Week of {fmtDay(monday)}</b>
                 {isAdmin && weekFuture ? (
-                  <select
+                  <Select
                     aria-label={`Track for the week of ${monday}`}
                     value={week?.track.pattern.slug ?? ""}
                     disabled={a.busy !== null}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      void a.act(`w-${monday}`, () => (v ? api.admin.scheduleWeek(monday, v) : api.admin.unscheduleWeek(monday)));
-                    }}
-                  >
-                    <option value="">No track</option>
-                    {tracks.data!.map((t) => (
-                      <option key={t.id} value={t.pattern.slug}>{t.title} ({t.ladder}/5 ladder)</option>
-                    ))}
-                  </select>
+                    onChange={(v) => void a.act(`w-${monday}`, () => (v ? api.admin.scheduleWeek(monday, v) : api.admin.unscheduleWeek(monday)))}
+                    options={[
+                      { value: "", label: "No track" },
+                      ...tracks.data!.map((t) => ({ value: t.pattern.slug, label: `${t.title} (${t.ladder}/5 ladder)` })),
+                    ]}
+                  />
                 ) : (
                   <span className={week ? undefined : "muted"}>{week ? `Track: ${week.track.title}` : "No track"}</span>
                 )}
@@ -147,25 +145,22 @@ function DayCell({ day, today, d, pinnable, a }: {
       )}
       {future && (
         <div className="row" style={{ gap: 6, marginTop: "auto" }}>
-          <select
+          <Select
             className="cal-pin"
             aria-label={`Pin a problem on ${day}`}
             value={d?.pinnedBy ? d.problem.slug : ""}
             disabled={a.busy !== null}
-            onChange={(e) => {
-              const v = e.target.value;
-              void a.act(day, () => (v ? api.admin.pin(day, v) : api.admin.unpin(day)));
-            }}
-          >
-            <option value="">{d?.pinnedBy ? "Unpin (automatic)" : "Automatic"}</option>
-            {pools.map((pool) => (
-              <optgroup key={pool} label={`${pool[0]!.toUpperCase()}${pool.slice(1)} pool`}>
-                {pinnable.filter((p) => p.pool === pool).map((p) => (
-                  <option key={p.slug} value={p.slug}>{p.title}{p.pattern ? ` · ${p.pattern.name}` : ""}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+            onChange={(v) => void a.act(day, () => (v ? api.admin.pin(day, v) : api.admin.unpin(day)))}
+            options={[
+              { value: "", label: d?.pinnedBy ? "Unpin (automatic)" : "Automatic" },
+              ...pools.map((pool) => ({
+                label: `${pool[0]!.toUpperCase()}${pool.slice(1)} pool`,
+                options: pinnable
+                  .filter((p) => p.pool === pool)
+                  .map((p) => ({ value: p.slug, label: `${p.title}${p.pattern ? ` · ${p.pattern.name}` : ""}` })),
+              })),
+            ]}
+          />
           {a.busy === day && <span className="spinner" aria-label="Saving" />}
         </div>
       )}
@@ -222,6 +217,7 @@ function UsersTab() {
   const users = useLoad(() => api.admin.users(), []);
   const [shown, setShown] = useState<{ user: AdminUser; password: string } | null>(null);
   const a = useAction(users.reload);
+  const ask = useConfirm();
 
   if (users.error) return <LoadError error={users.error} retry={users.reload} />;
   if (!users.data) return <SkeletonRows n={6} />;
@@ -257,14 +253,13 @@ function UsersTab() {
                     </span>
                   </td>
                   <td>
-                    <select
+                    <Select
                       aria-label={`Role of ${u.name}`}
                       value={u.role}
                       disabled={self || a.busy !== null}
-                      onChange={(e) => void a.act(`r-${u.id}`, () => api.admin.updateUser(u.id, { role: e.target.value as Role }))}
-                    >
-                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                      onChange={(v) => void a.act(`r-${u.id}`, () => api.admin.updateUser(u.id, { role: v as Role }))}
+                      options={ROLES.map((r) => ({ value: r, label: r }))}
+                    />
                   </td>
                   <td className="r num">{u.solved}</td>
                   <td className="small muted">{u.lastSubmissionAt ? fmtStamp(u.lastSubmissionAt) : "—"}</td>
@@ -276,16 +271,30 @@ function UsersTab() {
                         <button
                           className="btn btn-sm btn-ghost"
                           disabled={a.busy !== null}
-                          onClick={() => {
-                            if (!confirm(`Reset ${u.name}'s password? They'll be logged out everywhere.`)) return;
+                          onClick={async () => {
+                            const ok = await ask({
+                              title: `Reset ${u.name}'s password?`,
+                              body: "They're logged out everywhere, and you get a new password to pass on.",
+                              confirmLabel: "Reset password",
+                              danger: true,
+                            });
+                            if (!ok) return;
                             void a.act(`p-${u.id}`, async () => setShown({ user: u, password: (await api.admin.resetPassword(u.id)).password }));
                           }}
                         >Reset password</button>
                         <button
                           className={`btn btn-sm btn-ghost${u.disabled ? "" : " btn-danger"}`}
                           disabled={a.busy !== null}
-                          onClick={() => {
-                            if (!u.disabled && !confirm(`Disable ${u.name}? They're logged out and can't log in until you enable them again.`)) return;
+                          onClick={async () => {
+                            if (!u.disabled) {
+                              const ok = await ask({
+                                title: `Disable ${u.name}?`,
+                                body: "They're logged out and can't log in until you enable them again.",
+                                confirmLabel: "Disable",
+                                danger: true,
+                              });
+                              if (!ok) return;
+                            }
                             void a.act(`d-${u.id}`, () => api.admin.updateUser(u.id, { disabled: !u.disabled }));
                           }}
                         >{u.disabled ? "Enable" : "Disable"}</button>
@@ -310,6 +319,7 @@ const STATE_LABEL: Record<InviteCode["state"], string> = { active: "Active", exp
 function InvitesTab() {
   const inv = useLoad(() => api.admin.invites(), []);
   const a = useAction(inv.reload);
+  const ask = useConfirm();
   const [uses, setUses] = useState(1);
   const [role, setRole] = useState<Role>("solver");
   const [days, setDays] = useState("");
@@ -338,9 +348,7 @@ function InvitesTab() {
           </label>
           <label className="field">
             <span>Role</span>
-            <select value={role} onChange={(e) => setRole(e.target.value as Role)}>
-              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <Select aria-label="Role" value={role} onChange={(v) => setRole(v as Role)} options={ROLES.map((r) => ({ value: r, label: r }))} />
           </label>
           <label className="field">
             <span>Expires after (days)</span>
@@ -398,7 +406,10 @@ function InvitesTab() {
                       </button>
                       {c.uses === 0 && (
                         <button className="btn btn-sm btn-ghost btn-danger" disabled={a.busy !== null}
-                          onClick={() => confirm(`Delete ${c.code}?`) && void a.act(`x-${c.code}`, () => api.admin.deleteInvite(c.code))}>Delete</button>
+                          onClick={async () => {
+                            const ok = await ask({ title: `Delete ${c.code}?`, body: "Nobody has used this code yet. Deleting it can't be undone.", confirmLabel: "Delete", danger: true });
+                            if (ok) void a.act(`x-${c.code}`, () => api.admin.deleteInvite(c.code));
+                          }}>Delete</button>
                       )}
                     </span>
                   </td>

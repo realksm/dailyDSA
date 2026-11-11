@@ -7,6 +7,7 @@ import { api, errorMessage } from "../api";
 import { fmtKb, fmtMs, fmtStamp } from "../format";
 import { CodeEditor } from "./LazyEditor";
 import { CopyButton, LoadError, Notice, SkeletonRows } from "./ui";
+import { useConfirm } from "./Confirm";
 
 const PAGE = 20;
 
@@ -18,10 +19,14 @@ export function SolutionsPanel({ p, lang, onUnlocked }: { p: ProblemView; lang: 
 function Locked({ p, onUnlocked }: { p: ProblemView; onUnlocked: (v: ProblemView) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ask = useConfirm();
   const unlock = async () => {
-    const ok = confirm(
-      "Open the solutions before solving it?\n\nYou can still solve it afterwards, but your history will mark it as solved after viewing solutions.",
-    );
+    const ok = await ask({
+      title: "Open the solutions now?",
+      body: "You can still solve it afterwards, but your history will mark it as solved after viewing solutions.",
+      confirmLabel: "Open solutions",
+      cancelLabel: "Keep trying",
+    });
     if (!ok) return;
     setBusy(true);
     setError(null);

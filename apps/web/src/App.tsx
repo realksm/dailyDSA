@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { isStaff, useAuth, useMe } from "./auth";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BrandMark, Spinner } from "./components/ui";
@@ -91,6 +91,7 @@ function Routes(): ReactNode {
 function TopBar() {
   const me = useMe();
   const { logout } = useAuth();
+  const [leaving, setLeaving] = useState(false);
   return (
     <header className="topbar">
       <Link to="/" className="brand" aria-label="dailyDSA home">
@@ -107,7 +108,19 @@ function TopBar() {
       <div className="spacer" />
       <div className="who">
         <Link to="/account" title={me.email}>{me.name}</Link>
-        <button className="btn btn-ghost btn-sm" onClick={() => void logout()}>Log out</button>
+        <button
+          className="logout"
+          disabled={leaving}
+          onClick={() => {
+            setLeaving(true);
+            void logout().finally(() => setLeaving(false));
+          }}
+        >
+          {leaving ? "Logging out…" : "Log out"}
+          <svg viewBox="0 0 16 16" aria-hidden>
+            <path d="M6 2.75H3.75a1 1 0 0 0-1 1v8.5a1 1 0 0 0 1 1H6M10 5l3 3-3 3M13 8H6.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
       </div>
     </header>
   );

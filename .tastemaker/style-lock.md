@@ -44,6 +44,13 @@ Outlines: cards and buttons 2px `--ink`. Hard shadows: panels 4px 4px, large but
 - Read-only code (lessons, solutions, submissions) is as tall as the code, 13px, with no inner vertical scrollbar.
 - Week views are grids with one column per day (Today: Daily + Ladder rows; admin schedule: one card per week).
 
+## Overlays and controls (2026-11-11)
+
+- `--edge` is the outline of floating things: `--ink` in light, `--line-strong` in dark.
+- Never `window.confirm()` / `alert()`: use `useConfirm()` from `components/Confirm.tsx` (one native `<dialog>`: 2px edge, 6px hard shadow, display-type title, Cancel + one action). `danger: true` gives a filled `.btn-bad` (surface text on `--bad`) and starts focus on Cancel.
+- Never a native `<select>`: use `components/Select.tsx` (Radix Select). Trigger looks like an input with a chevron; the menu is surface with a 2px edge, 3px hard shadow, `primary-soft` highlight, a `primary-text` check on the chosen item, uppercase group labels.
+- Top-bar Log out is a pill like the nav items; hover gives primary-soft fill, edge outline, a 1px lift with a 2px shadow, and the arrow moves 2px.
+
 ## Motion
 
 App-shell track only: buttons lift 1px on hover (shadow grows to 4px) and press flat on click; track cards lift 2px on hover (6px shadow); 120ms ease-out transform/shadow/color/border transitions (drag handles show a 2px primary line on hover/focus/drag), a 160ms fade-in on results, spinners and a skeleton shimmer. All of it collapses under prefers-reduced-motion. No scroll animation.

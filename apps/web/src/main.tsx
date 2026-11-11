@@ -10,13 +10,16 @@ import "@fontsource/bricolage-grotesque/800.css";
 import "./styles.css";
 import { App } from "./App";
 import { AuthProvider } from "./auth";
+import { ConfirmProvider } from "./components/Confirm";
 import { RouterProvider } from "./router";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <RouterProvider>
       <AuthProvider>
-        <App />
+        <ConfirmProvider>
+          <App />
+        </ConfirmProvider>
       </AuthProvider>
     </RouterProvider>
   </StrictMode>,

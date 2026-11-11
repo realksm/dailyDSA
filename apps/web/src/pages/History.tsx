@@ -4,6 +4,7 @@ import { LANG_LABEL, type HistoryEntry, type SubmissionKind, type SubmissionSumm
 import { api, errorMessage } from "../api";
 import { fmtDay, fmtKb, fmtMs, fmtStamp } from "../format";
 import { LoadError, Notice, SkeletonRows, StatusDot, useLoad, useTitle, VerdictBadge } from "../components/ui";
+import { Select } from "../components/Select";
 import { Link, useRouter } from "../router";
 
 export function HistoryPage() {
@@ -160,14 +161,19 @@ function Submissions({ problem }: { problem: string | undefined }) {
   return (
     <div className="stack">
       <div className="row">
-        <label className="row small" style={{ gap: 8 }}>
-          Show
-          <select value={kind} onChange={(e) => setKind(e.target.value as SubmissionKind | "")}>
-            <option value="">Runs and submits</option>
-            <option value="submit">Submits only</option>
-            <option value="run">Runs only</option>
-          </select>
-        </label>
+        <div className="row small" style={{ gap: 8 }}>
+          <span aria-hidden>Show</span>
+          <Select
+            aria-label="Show"
+            value={kind}
+            onChange={(v) => setKind(v as SubmissionKind | "")}
+            options={[
+              { value: "", label: "Runs and submits" },
+              { value: "submit", label: "Submits only" },
+              { value: "run", label: "Runs only" },
+            ]}
+          />
+        </div>
         {problem && (
           <span className="badge">
             {rows?.[0]?.problem.title ?? problem}

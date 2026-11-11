@@ -28,6 +28,7 @@
   --info-soft: #e2e8f8;
   --focus: #b8371b;
   --hard: 4px 4px 0 var(--ink);
+  --edge: var(--ink); /* outline of floating things (menus, dialogs, the logout pill); line-strong in dark */
   --shadow: var(--hard);
 
   --font: "IBM Plex Sans", system-ui, sans-serif;
@@ -64,6 +65,7 @@
     --info-soft: #1b2133;
     --focus: #ff9a80;
     --hard: 4px 4px 0 #000;
+    --edge: var(--line-strong);
     color-scheme: dark;
   }
 }
@@ -91,6 +93,7 @@
   --info-soft: #1b2133;
   --focus: #ff9a80;
   --hard: 4px 4px 0 #000;
+  --edge: var(--line-strong);
   color-scheme: dark;
 }
 
@@ -354,7 +357,7 @@ a.wg-cell:hover { border-color: var(--line-strong); color: var(--text); }
   display: flex; align-items: center; gap: 8px; padding: 8px 12px;
   border-bottom: 1px solid var(--line); background: var(--surface);
 }
-.editor-bar select { min-height: 30px; padding-top: 4px; padding-bottom: 4px; font-size: 13px; }
+.editor-bar .sel { min-height: 30px; padding-top: 4px; padding-bottom: 4px; font-size: 13px; min-width: 104px; }
 .editor-host { min-height: 0; position: relative; background: var(--surface); }
 .console { position: relative; border-top: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
 .console-head { display: flex; align-items: center; gap: 4px; padding: 0 12px; }
@@ -463,7 +466,7 @@ body[data-dragging] .split-x::after, body[data-dragging] .split-y::after { backg
 .cal { display: flex; flex-direction: column; gap: 12px; }
 .cal-week-head { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 13px; }
 .cal-week-head b { font-weight: 600; font-size: 14px; }
-.cal-week-head select { min-height: 28px; padding-top: 3px; padding-bottom: 3px; font-size: 13px; }
+.cal-week-head .sel { min-height: 28px; padding-top: 3px; padding-bottom: 3px; font-size: 13px; }
 .cal-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .cal-day { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 12px; min-height: 104px; min-width: 0; border-left: 1px solid var(--line); font-size: 13px; }
 .cal-day:first-child { border-left: 0; }
@@ -477,7 +480,7 @@ body[data-dragging] .split-x::after, body[data-dragging] .split-y::after { backg
 .cal-prob a:hover { text-decoration: underline; }
 .cal-prob .muted { font-size: 12px; line-height: 1.3; }
 .cal-week { overflow: hidden; }
-select.cal-pin { width: 100%; min-width: 0; min-height: 28px; padding: 3px 24px 3px 6px; font-size: 12px; }
+.sel.cal-pin { width: 100%; min-width: 0; min-height: 28px; padding: 3px 6px 3px 8px; font-size: 12px; gap: 4px; }
 .secret {
   font: 500 16px var(--mono); padding: 10px 12px; background: var(--sunk); border-radius: var(--r-sm);
   user-select: all; letter-spacing: 0.02em;
@@ -637,12 +640,89 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .solve .card, .sol, .test, .code-tabs { box-shadow: none; }
 .solve-left h1 { font-size: 34px; }
 
+/* Log out: a pill like the nav items; on hover it gets the Streak outline, lifts, and the arrow points out. */
+.logout {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 14px;
+  font: 600 14px/1 var(--font); color: var(--muted);
+  background: transparent; border: 2px solid transparent; border-radius: 999px; cursor: pointer;
+  transition: color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out, transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+.logout svg { width: 16px; height: 16px; transition: transform 120ms ease-out; }
+.logout:focus-visible { color: var(--text); border-color: var(--edge); }
+@media (hover: hover) {
+  .logout:not(:disabled):hover {
+    color: var(--primary-text); background: var(--primary-soft); border-color: var(--edge);
+    transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--ink);
+  }
+  .logout:not(:disabled):hover svg { transform: translateX(2px); }
+}
+.logout:not(:disabled):active { transform: translate(1px, 1px); box-shadow: none; }
+.logout:disabled { cursor: progress; opacity: 0.7; }
+
+/* Dropdowns (components/Select.tsx): a button that looks like an input, and a themed menu. */
+.sel {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 34px; padding: 6px 8px 6px 10px; max-width: 100%;
+  font: 400 14px/1.4 var(--font); color: var(--text); text-align: left;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-sm); cursor: pointer;
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+}
+.sel:hover { border-color: var(--muted); }
+.sel:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--focus); }
+.sel[data-state="open"] { border-color: var(--edge); background: var(--bg); }
+.sel:disabled { opacity: 0.55; cursor: not-allowed; }
+.sel-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-chev { display: grid; place-items: center; flex: none; color: var(--muted); transition: transform 120ms ease-out; }
+.sel[data-state="open"] .sel-chev { transform: rotate(180deg); color: var(--text); }
+
+.sel-pop {
+  z-index: 50; min-width: var(--radix-select-trigger-width); max-width: min(420px, calc(100vw - 16px));
+  max-height: min(340px, var(--radix-select-content-available-height));
+  background: var(--surface); color: var(--text);
+  border: 2px solid var(--edge); border-radius: var(--r-sm); box-shadow: 3px 3px 0 var(--ink);
+  overflow: hidden; transform-origin: var(--radix-select-content-transform-origin);
+  animation: pop-in 120ms ease-out;
+}
+@keyframes pop-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+.sel-list { padding: 4px; }
+.sel-item {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  padding: 7px 30px 7px 10px; border-radius: 6px;
+  font: 400 14px/1.35 var(--font); cursor: pointer; user-select: none; outline: none;
+}
+.sel-item[data-highlighted] { background: var(--primary-soft); color: var(--text); }
+.sel-item[data-state="checked"] { font-weight: 600; }
+.sel-item[data-disabled] { color: var(--muted); cursor: default; }
+.sel-check { position: absolute; right: 8px; display: grid; place-items: center; color: var(--primary-text); }
+.sel-check svg { width: 14px; height: 14px; }
+.sel-group { padding: 8px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.sel-sep { height: 1px; margin: 4px 6px; background: var(--line); }
+.sel-scroll { display: grid; place-items: center; height: 22px; color: var(--muted); cursor: default; background: var(--surface); }
+
+/* Confirm dialog (components/Confirm.tsx), replacing window.confirm(). */
+.confirm {
+  width: min(440px, calc(100vw - 32px)); padding: 0; margin: auto;
+  background: var(--surface); color: var(--text);
+  border: 2px solid var(--edge); border-radius: var(--r); box-shadow: 6px 6px 0 var(--ink);
+}
+.confirm[open] { animation: dialog-in 160ms ease-out; }
+.confirm::backdrop { background: color-mix(in srgb, #221a2c 45%, transparent); animation: fade 160ms ease-out; }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } }
+.confirm-inner { padding: 24px; display: flex; flex-direction: column; gap: 8px; }
+.confirm h2 { font-size: 24px; line-height: 1.15; }
+.confirm-body { color: var(--muted); font-size: 15px; }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+.btn-bad, .btn-bad:hover { background: var(--bad); color: var(--surface); border-color: var(--ink); }
+
 /* Dark: black ink disappears on the dark surface, so outlines fall back to the line tokens. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .topbar { border-bottom-color: var(--line); }
   :root:not([data-theme="light"]) .card { border-color: var(--line-strong); }
   :root:not([data-theme="light"]) .wg-cell[data-today] { border-color: var(--primary); }
+  :root:not([data-theme="light"]) .confirm::backdrop { background: rgb(0 0 0 / 0.62); }
 }
+:root[data-theme="dark"] .confirm::backdrop { background: rgb(0 0 0 / 0.62); }
 :root[data-theme="dark"] .topbar { border-bottom-color: var(--line); }
 :root[data-theme="dark"] .card { border-color: var(--line-strong); }
 :root[data-theme="dark"] .wg-cell[data-today] { border-color: var(--primary); }
