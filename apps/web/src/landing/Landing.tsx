@@ -18,6 +18,8 @@ import { useAuth } from "../auth";
 import { BrandMark, useTitle } from "../components/ui";
 import { Link, useRouter } from "../router";
 import { SOLAR, type SolarName } from "./solar";
+// Each track's ladder titles, first "How to spot it" clue and weekend count, read from problems/_tracks/ at build time.
+import { PLANNED, TRACKS } from "virtual:landing-tracks";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -94,13 +96,6 @@ function inviteCode(raw: string | null): string | null {
   return /^[A-Z0-9-]{4,40}$/.test(code) ? code : null;
 }
 
-const TRACKS = [
-  { name: "Two pointers", ladder: ["Budget Pairs", "Nearest Readings", "Cable Cars", "Shared Free Time", "Even Stacks"] },
-  { name: "Sliding window", ladder: ["Quiet Stretch", "Fuel Run", "Badge Scans", "Spice Road", "Steady Readings"] },
-  { name: "Prefix sums", ladder: ["Fair Split", "Stage Lights", "Even Shares", "Orchard Plots", "Tiring Weeks"] },
-  { name: "Binary search on the answer", ladder: ["Tanker Capacity", "Tent Spacing", "Widget Factory", "Kth Combo", "Median Stretch"] },
-];
-const PLANNED = ["Monotonic stack", "BFS / DFS", "Simple 1D DP", "Heaps / top-k"];
 
 const WEEK: { day: string; lead?: ReactNode; ladder?: number; items: ReactNode[] }[] = [
   { day: "Mon", lead: <><Icon name="lesson" />The lesson goes up</>, ladder: 1, items: ["Weekday daily"] },
@@ -570,14 +565,15 @@ export default function Landing() {
           </div>
           <div className="lp-tracks" data-reveal-group>
             {TRACKS.map((t) => (
-              <article key={t.name} className="lp-track">
+              <article key={t.slug} className="lp-track">
                 <h3>{t.name}</h3>
-                <ol>
+                <p className="lp-track-clue"><span className="lp-eyebrow">Spot it</span>{t.clue}</p>
+                <ol aria-label={`${t.name} ladder, easiest first`}>
                   {t.ladder.map((p, i) => (
                     <li key={p}><span className="mono" aria-hidden="true">{i + 1}</span>{p}</li>
                   ))}
                 </ol>
-                <p className="lp-track-meta"><Icon name="lesson" />Lesson<span aria-hidden="true">·</span><Icon name="hint" />3 hints each<span aria-hidden="true">·</span>2 weekend problems</p>
+                <p className="lp-track-meta"><Icon name="lesson" />Lesson<span aria-hidden="true">·</span><Icon name="hint" />3 hints each{t.weekend > 0 && <><span aria-hidden="true">·</span>{t.weekend} weekend problem{t.weekend === 1 ? "" : "s"}</>}</p>
               </article>
             ))}
           </div>
