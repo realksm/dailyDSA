@@ -13,7 +13,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { POOLS, PROBLEM_KINDS, RESERVED_NAMES, javaHasMainClass, type Lang, type TimeLimits } from "@dailydsa/shared";
+import { LANGS, POOLS, PROBLEM_KINDS, RESERVED_NAMES, javaHasMainClass, templateMismatch, type InputSpec, type Lang, type TimeLimits } from "@dailydsa/shared";
 
 export const ROOT = path.resolve(process.env.DSA_ROOT ?? process.cwd());
 export const PROBLEMS_DIR = path.join(ROOT, "problems");
@@ -130,8 +130,13 @@ export async function loadProblem(slug: string): Promise<ProblemFolder> {
   const hash = createHash("sha256");
   for (const name of SOURCE_FILES) if (await exists(f(name))) hash.update(`${name}\0${await read(f(name))}\0`);
 
-  const ref = await read(f("ref.java"));
-  if (!javaHasMainClass(ref)) throw new ProblemError(`${slug}/ref.java: the class must be named Main`);
+  const refs = { cpp: await read(f("ref.cpp")), java: await read(f("ref.java")), py: await read(f("ref.py")) };
+  if (!javaHasMainClass(refs.java)) throw new ProblemError(`${slug}/ref.java: the class must be named Main`);
+  // The refs are the official solutions on the Solutions tab, so they follow the editor template.
+  for (const lang of LANGS) {
+    const why = templateMismatch(lang, parsed.data.input as InputSpec | undefined, refs[lang]);
+    if (why) throw new ProblemError(`${slug}/ref.${lang} must follow the editor template (pnpm dsa template ${slug} ${lang}): ${why}`);
+  }
 
   return {
     slug,
@@ -139,7 +144,7 @@ export async function loadProblem(slug: string): Promise<ProblemFolder> {
     meta: parsed.data,
     statement: await read(f("statement.md")),
     gen: await read(f("gen.py")),
-    refs: { cpp: await read(f("ref.cpp")), java: ref, py: await read(f("ref.py")) },
+    refs,
     naive: await read(f("naive.cpp")),
     ...(hasChecker && { checker: await read(f("checker.py")), wrong: await read(f("wrong.cpp")) }),
     ...((await exists(f("validation.json"))) && { validation: JSON.parse(await read(f("validation.json"))) as ValidationRecord }),

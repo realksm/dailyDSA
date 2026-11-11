@@ -1,4 +1,5 @@
 // Reference solution (Java 21). The class must be named Main.
+// Replace this file with `pnpm dsa template <slug> java` once problem.yaml is written, then fill in solve().
 import java.io.*;
 import java.util.*;
 

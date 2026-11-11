@@ -1,13 +1,16 @@
 // dailyDSA problem tool.
 //   pnpm dsa list                     problems and their validation state
 //   pnpm dsa new <slug>               copy problems/_template to problems/<slug>
+//   pnpm dsa template <slug> <lang>   print the editor template (start ref.<lang> from it)
 //   pnpm dsa validate <slug>|--all    run the full validation (needs go-judge)
 //   pnpm dsa import <slug>|--all      upsert validated problems into the database
 //   pnpm dsa admin create|reset-password …, pnpm dsa invite create …   (see accounts.ts)
-import { cp, stat } from "node:fs/promises";
+import { cp, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { createPool, withJudgeLock } from "@dailydsa/db";
 import { GoJudge } from "@dailydsa/judge";
+import { LANGS, editorTemplate, type InputSpec, type Lang } from "@dailydsa/shared";
+import { parse as parseYaml } from "yaml";
 import { accountsCommand } from "./accounts.js";
 import { importProblem } from "./importer.js";
 import { PROBLEMS_DIR, ProblemError, listProblems, loadProblem } from "./problem.js";
@@ -45,6 +48,17 @@ async function main(): Promise<number> {
       if (await stat(dest).then(() => true, () => false)) throw new ProblemError(`problems/${slug} already exists`);
       await cp(path.join(PROBLEMS_DIR, "_template"), dest, { recursive: true });
       console.log(`created problems/${slug} — fill in every file, then: pnpm dsa validate ${slug}`);
+      return 0;
+    }
+    case "template": {
+      // Reads problem.yaml directly: loadProblem would refuse a ref that doesn't fit the template yet.
+      const [slug, lang] = args;
+      if (!slug || !(LANGS as readonly string[]).includes(lang ?? "")) throw new ProblemError("usage: pnpm dsa template <slug> cpp|java|py");
+      const yaml = await readFile(path.join(PROBLEMS_DIR, slug, "problem.yaml"), "utf8").catch(() => {
+        throw new ProblemError(`no problems/${slug}/problem.yaml`);
+      });
+      const input = (parseYaml(yaml) as { input?: InputSpec } | null)?.input;
+      process.stdout.write(editorTemplate(lang as Lang, input));
       return 0;
     }
     case "validate": {

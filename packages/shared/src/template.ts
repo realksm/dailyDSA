@@ -36,6 +36,26 @@ export function editorTemplate(lang: Lang, spec?: InputSpec, body?: string): str
   return { cpp, java, py }[lang](spec, body);
 }
 
+/**
+ * Does `code` keep the editor template's shape? Reference solutions are shown on the Solutions
+ * tab next to the solver's own code, so they must look like the editor: the line that opens the
+ * solver's part (the `solve` signature, or `main` for the generic template) is there unchanged,
+ * and everything after that part (main, input reading, the fast reader) is exactly the template's.
+ * Extra includes, imports and helpers above it are fine. Returns the problem, or null if it fits.
+ */
+export function templateMismatch(lang: Lang, spec: InputSpec | undefined, code: string): string | null {
+  const MARK = "\u0000body\u0000";
+  const t = editorTemplate(lang, spec, MARK);
+  const at = t.indexOf(MARK);
+  const head = t.slice(0, t.lastIndexOf("\n", at));
+  const opener = head.slice(head.lastIndexOf("\n") + 1);
+  const tail = t.slice(at + MARK.length).trimEnd();
+  const src = code.replace(/\r\n/g, "\n").trimEnd();
+  if (!src.split("\n").includes(opener)) return `the line \`${opener.trim()}\` from the template is missing or changed`;
+  if (!src.endsWith(tail)) return "everything after the solver's part (main, input reading) must stay exactly as the template has it";
+  return null;
+}
+
 // ── helpers ──
 
 const isArray = (r: ReturnType) => r === "int[]" || r === "long[]";

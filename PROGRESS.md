@@ -38,8 +38,9 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck                      # tsc -b (packages + server) && tsc -p apps/web
-pnpm test                           # 94 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 96 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
+pnpm dsa template <slug> cpp > problems/<slug>/ref.cpp   # start a ref from the editor template
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
 pnpm server                         # API on 127.0.0.1:3000 (runs migrations first) + judge worker; GET /api/health
@@ -125,6 +126,7 @@ spike/               throwaway go-judge proof
 - **Staff get no shortcut** to solutions: setters/admins open problems early but follow the same unlock rules (they have the refs in git; the admin also solves dailies, so no spoilers).
 - **`ProblemView.pattern.trackOpen`**: the pattern's track has a week starting ≤ today. Daily problems then link "Practise more in the X track →" to `/tracks/:pattern` (the page arrives in step 5), else "A track for this pattern is coming".
 - **Web Solutions tab:** left pane has Statement / Solutions tabs (sticky); locked view explains the rule and shows the button (with a confirm) when allowed; unlocked = language filter (defaults to the editor's language), reference code pinned on top, accepted code as collapsible cards (author, time, memory, Copy). Monaco (read-only) mounts only for open cards. After a first AC the result notice offers "See how others solved it".
+- **Reference solutions follow the editor template** (user's rule): they're the official code on the Solutions tab, so they look like the editor. `templateMismatch()` in shared: the `solve` line (or `main` for the generic template) must be there unchanged and everything after the solver's part must equal the template; helpers/includes above `solve` are allowed. `loadProblem` enforces it, so every `dsa` command refuses a ref that drifts. `pnpm dsa template <slug> <lang>` prints the template to start from. All 3 problems' refs were rewritten this way, re-validated and imported.
 - **Monaco keybindings are global:** `editor.addCommand` bindings are shared by every editor on the page (last registered wins), so read-only viewers register none — otherwise Ctrl+Enter in the real editor broke once a solution card opened. Read-only viewers also pass the mouse wheel to the page at their ends and hide the line highlight.
 
 ## Step 3 log: core app
@@ -159,6 +161,7 @@ Suggested order (each piece testable on its own):
 ## Session log
 
 - **2026-11-11 (10)** — Step 4: Show solutions button (`POST …/unlock-solutions`) and the solutions list (`GET …/solutions`: reference code + latest accepted code per author and language, language filter, paging); `pattern.trackOpen` for the track link. Web: Statement / Solutions tabs, locked view + confirm, collapsible read-only code cards. Fixed Ctrl+Enter breaking once a read-only editor mounted (Monaco keybindings are page-global). 94 tests pass; checked in headless Chromium on PORT=3004 (lock → unlock → list → filter → Ctrl+Enter still runs; light + dark). Next: step 5 (tracks).
+- **2026-11-11 (11)** — Reference solutions now follow the editor template (enforced by `loadProblem`, new `dsa template` command, README + `_template` updated); refs of exact-gap, rainfall-ledger and budget-pairs rewritten as template + `solve()` body, re-validated (limits unchanged, 500 ms floor) and imported. 96 tests pass.
 - **2026-11-11 (9)** — Step 3.8: `apps/web` (Vite + React 19 + Monaco): auth pages, today, archive, problem page with editor/Run/Submit/results, history + submissions, submission page, account, admin (schedule + pins + track weeks, problems, users, invites). The server serves the built app (`WEB_DIR`, 3 new tests). 89 tests pass; walked through every page in headless Chromium against a fresh server (PORT=3003). Step 3 is complete. Then: a blank problem page traced to a stale server on :3000 (no `lastCode`); the page now guards it and routes sit in an `ErrorBoundary`. Next: step 4 (Solutions tab).
 
 - **2026-11-11 (8)** — Step 3.7: `GET /api/history`, `GET /api/submissions` (own, paged), `/api/admin/*` (users: role/disable/reset password; invite codes CRUD; problems; tracks; schedule view; day pins for staff; track weeks for admins; future-only edits). Bodyless DELETE allowed past the JSON guard. 86 tests pass; live boot checked on PORT=3002. Next: 3.8 web app (Vite + React + Monaco).

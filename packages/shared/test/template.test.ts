@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editorTemplate, type InputSpec } from "../src/index.js";
+import { LANGS, editorTemplate, templateMismatch, type InputSpec } from "../src/index.js";
 
 const spec: InputSpec = {
   vars: [
@@ -9,6 +9,25 @@ const spec: InputSpec = {
   ],
   returns: "long",
 };
+
+describe("templateMismatch (references must follow the template)", () => {
+  it("accepts the template with any body, plus helpers above solve", () => {
+    for (const lang of LANGS) {
+      expect(templateMismatch(lang, spec, editorTemplate(lang, spec))).toBeNull();
+      expect(templateMismatch(lang, undefined, editorTemplate(lang, undefined, "x"))).toBeNull();
+    }
+    const cpp = editorTemplate("cpp", spec, "return helper(n);")
+      .replace("using namespace std;\n", "using namespace std;\n\nlong long helper(int n) { return n; }\n");
+    expect(templateMismatch("cpp", spec, cpp.replace(/\n/g, "\r\n") + "\r\n\r\n")).toBeNull();
+  });
+
+  it("rejects a changed solve line or a changed main", () => {
+    const t = editorTemplate("cpp", spec, "return 0;");
+    expect(templateMismatch("cpp", spec, t.replace("long long solve(", "long long solve2("))).toMatch(/solve/);
+    expect(templateMismatch("cpp", spec, t.replace("cin.tie(nullptr);", ""))).toMatch(/after the solver's part/);
+    expect(templateMismatch("py", spec, "import sys\nprint(sum(map(int, sys.stdin.read().split())))\n")).not.toBeNull();
+  });
+});
 
 describe("editorTemplate", () => {
   it("writes typed solve() signatures", () => {
