@@ -1,7 +1,7 @@
 // Weekly pattern tracks (PLAN §2): the Tracks library, the lesson page with its ladder, progress
 // per track, and progressive hints on track problems. Admin lesson editing is in admin.ts.
 import type pg from "pg";
-import type { LadderStep, Role, SolveStatus, TrackSummary, TrackView } from "@dailydsa/shared";
+import { lessonSpotIt, type LadderStep, type Role, type SolveStatus, type TrackSummary, type TrackView } from "@dailydsa/shared";
 import { seesAllProblems } from "./problems.js";
 
 type Db = pg.Pool | pg.PoolClient;
@@ -43,17 +43,17 @@ const status = (x: { solved_at: Date | null; first_attempt_at: Date | null; subm
  */
 async function loadTracks(
   db: Db,
-  o: { user: { id: number; role: Role }; today: string; pattern?: string; withLesson?: boolean },
+  o: { user: { id: number; role: Role }; today: string; pattern?: string },
 ): Promise<(TrackSummary & { lessonMd: string; lessonUpdatedAt: string; sortOrder: number })[]> {
   const staff = seesAllProblems(o.user.role);
   const t = await db.query<TrackRow>(
     `SELECT t.id, t.title, pt.slug AS pattern_slug, pt.name AS pattern_name, pt.sort_order,
-            t.lesson_md <> '' AS has_lesson, CASE WHEN $4 THEN t.lesson_md END AS lesson_md, t.updated_at,
+            t.lesson_md <> '' AS has_lesson, t.lesson_md, t.updated_at,
             coalesce((SELECT array_agg(w.week_start::text ORDER BY w.week_start) FROM track_weeks w WHERE w.track_id = t.id), '{}') AS weeks
        FROM tracks t JOIN patterns pt ON pt.slug = t.pattern_slug
       WHERE ($1::text IS NULL OR t.pattern_slug = $1)
         AND ($3 OR EXISTS (SELECT 1 FROM track_weeks w WHERE w.track_id = t.id AND w.week_start <= $2::date))`,
-    [o.pattern ?? null, o.today, staff, !!o.withLesson],
+    [o.pattern ?? null, o.today, staff],
   );
   if (t.rowCount === 0) return [];
 
@@ -93,6 +93,7 @@ async function loadTracks(
       runningWeek: running,
       released: x.weeks.some((w) => w <= o.today),
       hasLesson: x.has_lesson,
+      spotIt: lessonSpotIt(x.lesson_md ?? ""),
       ladder,
       solved: ladder.filter((y) => y.status === "solved").length,
       lessonMd: x.lesson_md ?? "",
@@ -117,7 +118,7 @@ export async function trackView(
   db: Db,
   o: { user: { id: number; role: Role }; today: string; pattern: string },
 ): Promise<TrackView | undefined> {
-  const [x] = await loadTracks(db, { ...o, withLesson: true });
+  const [x] = await loadTracks(db, o);
   if (!x) return undefined;
   const { sortOrder: _s, ...rest } = x;
   return { ...rest, today: o.today };

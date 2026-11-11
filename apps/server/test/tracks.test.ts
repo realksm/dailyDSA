@@ -110,7 +110,7 @@ describe.skipIf(!dbUp)("tracks", () => {
       const [x] = (await lib()).tracks;
       expect(x).toEqual({
         pattern: { slug: "sliding-window", name: "Sliding window" }, title: "sliding-window",
-        weeks: [MON, addDays(MON, 7)], runningWeek: MON, released: true, hasLesson: false, solved: 0,
+        weeks: [MON, addDays(MON, 7)], runningWeek: MON, released: true, hasLesson: false, spotIt: [], solved: 0,
         ladder: [
           { position: 1, open: true, opensOn: null, problem: { slug: t.problems[0]!.slug, title: "Step 1" }, status: "new", hints: 0, hintsUsed: 0 },
           { position: 2, open: true, opensOn: null, problem: { slug: t.problems[1]!.slug, title: "Step 2" }, status: "new", hints: 2, hintsUsed: 0 },
@@ -126,10 +126,13 @@ describe.skipIf(!dbUp)("tracks", () => {
       expect(y.ladder.map((s) => s.status)).toEqual(["solved", "attempted", "new"]);
 
       // The lesson page carries the lesson; after the week everything stays open.
-      await db.query("UPDATE tracks SET lesson_md = '## How to spot it' WHERE id = $1", [t.id]);
+      const lesson = "## How to spot it\n\n- **Longest stretch such that …** → a window.\n";
+      await db.query("UPDATE tracks SET lesson_md = $2 WHERE id = $1", [t.id, lesson]);
       clock.t = at(addDays(MON, 30));
       const v = (await agent.get("/api/tracks/sliding-window")).body as TrackView;
-      expect(v).toMatchObject({ lessonMd: "## How to spot it", hasLesson: true, runningWeek: null, today: addDays(MON, 30), solved: 1 });
+      expect(v).toMatchObject({ lessonMd: lesson, hasLesson: true, runningWeek: null, today: addDays(MON, 30), solved: 1 });
+      // The library card shows the lesson's "how to spot it" leads.
+      expect((await lib()).tracks[0]!.spotIt).toEqual(["Longest stretch such that …"]);
       expect(v.ladder.every((s) => s.open && s.problem)).toBe(true);
 
       // A rerun week is the running week while it lasts.

@@ -1,11 +1,22 @@
-// Home: today's daily problem, the countdown to the next one, the streak and this week at a glance.
+// Home: today's daily problem, the countdown to the next one, the streak, and this week (daily
+// problems and this week's track ladder) at a glance.
 import { useEffect, useState } from "react";
-import type { DailyEntry, DailyToday, TrackLibrary } from "@dailydsa/shared";
+import type { DailyEntry, DailyToday, LadderStep, TrackSummary } from "@dailydsa/shared";
 import { api, ApiErr } from "../api";
-import { addDays, dailyStreak, daysAgo, fmtCountdown, fmtDay, fmtDayLong, fmtStamp } from "../format";
+import { addDays, dailyStreak, daysAgo, fmtCountdown, fmtDay, fmtDayLong, fmtStamp, istDay } from "../format";
 import { LoadError, Skeleton, StatusBadge, StatusDot, useLoad, useTitle } from "../components/ui";
 import { Link } from "../router";
-import { LadderDots } from "./Tracks";
+
+const dowOf = (day: string) => (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7; // 0 = Monday
+
+/** The ladder problem to do next: today's, else the first open one not solved yet. */
+function ladderNext(t: TrackSummary, today: string): { step: LadderStep; label: string } | null {
+  const dow = dowOf(today);
+  const todays = dow < 5 ? t.ladder.find((s) => s.position === dow + 1 && s.open && s.problem) : undefined;
+  if (todays && todays.status !== "solved") return { step: todays, label: `Ladder ${todays.position}: ${todays.problem!.title}` };
+  const next = t.ladder.find((s) => s.open && s.problem && s.status !== "solved");
+  return next ? { step: next, label: `Catch up: ladder ${next.position}` } : null;
+}
 
 export function Today() {
   useTitle("Today");
@@ -29,11 +40,16 @@ export function Today() {
 
   const t = today.data;
   const days = archive.data?.days ?? [];
+  const running = tracks.data?.tracks.find((x) => x.runningWeek) ?? null;
+  const next = running && tracks.data ? ladderNext(running, tracks.data.today) : null;
+  // One primary action on the page: the daily until it's solved, then the ladder.
+  const ladderFirst = t?.status === "solved" && !!next;
+
   return (
     <main className="page">
       <div className="today-hero">
         <section className="card today-main" aria-labelledby="today-title">
-          {t ? <TodayCard t={t} onRollover={() => { today.reload(); archive.reload(); }} /> : (
+          {t ? <TodayCard t={t} primary={!ladderFirst} onRollover={() => { today.reload(); archive.reload(); }} /> : (
             <div className="stack">
               <Skeleton h={14} w={180} />
               <Skeleton h={38} w="70%" />
@@ -42,13 +58,11 @@ export function Today() {
           )}
         </section>
         <aside className="card today-side" aria-label="Your progress">
-          {t && archive.data ? <Stats days={days} today={t.day} /> : <><Skeleton h={48} /><Skeleton h={48} /></>}
+          {t && archive.data ? <Stats days={days} today={t.day} /> : <><Skeleton h={48} /><Skeleton h={96} /></>}
         </aside>
       </div>
 
-      {tracks.data && <WeekTrack lib={tracks.data} />}
-
-      {t && archive.data && <Week days={days} today={t.day} />}
+      {t && archive.data && tracks.data && <Week days={days} today={t.day} track={running} next={next} ladderFirst={ladderFirst} />}
 
       {archive.data && days.length > 1 && (
         <section style={{ marginTop: 32 }}>
@@ -69,7 +83,7 @@ export function Today() {
   );
 }
 
-function TodayCard({ t, onRollover }: { t: DailyToday; onRollover: () => void }) {
+function TodayCard({ t, primary, onRollover }: { t: DailyToday; primary: boolean; onRollover: () => void }) {
   const left = useCountdown(t.nextRolloverAt, onRollover);
   const cta = t.status === "solved" ? "Open again" : t.status === "attempted" ? "Continue" : "Solve it";
   return (
@@ -90,41 +104,10 @@ function TodayCard({ t, onRollover }: { t: DailyToday; onRollover: () => void })
       )}
       {t.status === "solved" && t.solvedAt && <p className="muted small">Solved {fmtStamp(t.solvedAt)}.</p>}
       <div className="actions">
-        <Link to={`/p/${t.problem.slug}`} className="btn btn-primary btn-lg">{cta}</Link>
+        <Link to={`/p/${t.problem.slug}`} className={`btn btn-lg${primary ? " btn-primary" : ""}`}>{cta}</Link>
         <span className="muted small num">Next problem in {left}</span>
       </div>
     </>
-  );
-}
-
-/** This week's track: the lesson, and today's ladder problem (Monday = 1 … Friday = 5). */
-function WeekTrack({ lib }: { lib: TrackLibrary }) {
-  const t = lib.tracks.find((x) => x.runningWeek);
-  if (!t) return null;
-  const dow = (new Date(`${lib.today}T00:00:00Z`).getUTCDay() + 6) % 7; // 0 = Monday
-  const todays = dow < 5 ? t.ladder.find((s) => s.position === dow + 1 && s.problem) : undefined;
-  const next = t.ladder.find((s) => s.open && s.problem && s.status !== "solved");
-  return (
-    <section className="card week-track" aria-labelledby="wt-h">
-      <div className="grow stack-sm">
-        <div className="eyebrow"><span>This week's track</span></div>
-        <h2 id="wt-h">{t.title}</h2>
-        <div className="row" style={{ gap: 16 }}>
-          <LadderDots ladder={t.ladder} />
-          <span className="num small"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved</span></span>
-        </div>
-      </div>
-      <div className="row" style={{ gap: 8 }}>
-        <Link to={`/tracks/${t.pattern.slug}`} className="btn">{t.hasLesson ? "Read the lesson" : "Open the track"}</Link>
-        {todays?.problem ? (
-          <Link to={`/p/${todays.problem.slug}`} className="btn btn-primary">
-            {todays.status === "solved" ? "Today's ladder problem ✓" : `Ladder ${todays.position}: ${todays.problem.title}`}
-          </Link>
-        ) : next?.problem ? (
-          <Link to={`/p/${next.problem.slug}`} className="btn btn-primary">Catch up: ladder {next.position}</Link>
-        ) : null}
-      </div>
-    </section>
   );
 }
 
@@ -145,52 +128,157 @@ function useCountdown(iso: string, onDone: () => void) {
   return fmtCountdown(target - now);
 }
 
+/** The streak, and the last 30 days as squares (oldest first), each linking to its problem. */
 function Stats({ days, today }: { days: DailyEntry[]; today: string }) {
   const streak = dailyStreak(days, today);
-  const last30 = days.filter((d) => d.day > addDays(today, -30));
-  const solved30 = last30.filter((d) => d.status === "solved").length;
+  const byDay = new Map(days.map((d) => [d.day, d]));
+  const cells = Array.from({ length: 30 }, (_, i) => addDays(today, i - 29));
+  const shown = cells.filter((d) => byDay.has(d));
+  const solved = shown.filter((d) => byDay.get(d)!.status === "solved").length;
   return (
     <>
       <div className="stat">
         <div className="k">Streak</div>
         <div className="v">{streak}<small>{streak === 1 ? "day" : "days"}</small></div>
       </div>
-      <div className="stat">
-        <div className="k">Last 30 days</div>
-        <div className="v">{solved30}<small>of {last30.length} solved</small></div>
+      <div className="stack-sm">
+        <div className="row between">
+          <span className="stat"><span className="k">Last 30 days</span></span>
+          <span className="small num"><b>{solved}</b><span className="muted"> of {shown.length} solved</span></span>
+        </div>
+        <div className="days30">
+          {cells.map((day) => {
+            const d = byDay.get(day);
+            if (!d) return <span key={day} className="d30" data-s="none" title={`${fmtDay(day)} · no problem`} />;
+            const s = d.status === "solved" ? (d.solvedAt && istDay(d.solvedAt) > day ? "late" : "solved") : day < today ? (d.status === "attempted" ? "attempted" : "missed") : d.status;
+            const what = { solved: "solved", late: "solved later", attempted: "attempted", missed: "missed", new: "open" }[s];
+            return (
+              <Link
+                key={day}
+                to={`/p/${d.problem.slug}`}
+                className="d30"
+                data-s={s}
+                data-today={day === today || undefined}
+                title={`${fmtDay(day)} · ${d.problem.title} · ${what}`}
+                aria-label={`${fmtDay(day)}: ${d.problem.title}, ${what}`}
+              />
+            );
+          })}
+        </div>
       </div>
-      <p className="muted small">The streak counts days solved by midnight IST. Missed days stay open in the archive.</p>
+      <p className="muted small">Solve by midnight IST to keep the streak.</p>
     </>
   );
 }
 
-/** Monday to Sunday of the current IST week. */
-function Week({ days, today }: { days: DailyEntry[]; today: string }) {
-  const dow = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7; // 0 = Monday
-  const monday = addDays(today, -dow);
+/**
+ * Monday to Sunday of the current IST week: the daily problem of each day and, while a track
+ * runs, its ladder (problem n opens on day n; Saturday and Sunday are for catching up).
+ */
+function Week({ days, today, track, next, ladderFirst }: {
+  days: DailyEntry[]; today: string; track: TrackSummary | null; next: ReturnType<typeof ladderNext>; ladderFirst: boolean;
+}) {
+  const monday = addDays(today, -dowOf(today));
+  const tomorrow = addDays(today, 1);
   const byDay = new Map(days.map((d) => [d.day, d]));
+  const week = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  const left = track ? track.ladder.length - track.solved : 0;
+
   return (
-    <section style={{ marginTop: 32 }} aria-labelledby="week-h">
-      <h2 id="week-h" style={{ marginBottom: 12 }}>This week</h2>
-      <div className="week-strip">
-        {Array.from({ length: 7 }, (_, i) => {
-          const day = addDays(monday, i);
-          const d = byDay.get(day);
-          if (!d) {
+    <section className="card week" aria-labelledby="week-h">
+      <div className="week-head">
+        <div className="stack-sm" style={{ gap: 4 }}>
+          <h2 id="week-h">This week</h2>
+          {track && (
+            <div className="eyebrow">
+              <span>Track: <Link to={`/tracks/${track.pattern.slug}`}>{track.title}</Link></span>
+              <span aria-hidden>·</span>
+              <span className="num"><b style={{ color: "var(--text)", fontWeight: 500 }}>{track.solved}</b>/{track.ladder.length} solved</span>
+            </div>
+          )}
+        </div>
+        {track && (
+          <div className="row" style={{ gap: 8 }}>
+            <Link to={`/tracks/${track.pattern.slug}`} className="btn">{track.hasLesson ? "Read the lesson" : "Open the track"}</Link>
+            {next?.step.problem && (
+              <Link to={`/p/${next.step.problem.slug}`} className={`btn${ladderFirst ? " btn-primary" : ""}`}>{next.label}</Link>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="week-grid" role="table" aria-label="This week">
+        <div role="row" className="wg-row">
+          <span role="columnheader" className="wg-label" />
+          {week.map((day, i) => (
+            <span role="columnheader" key={day} className="wg-day" data-today={day === today || undefined} data-weekend={i >= 5 || undefined}>
+              {fmtDay(day).replace(",", "")}{day === today && <b> · today</b>}
+            </span>
+          ))}
+        </div>
+
+        <div role="row" className="wg-row">
+          <span role="rowheader" className="wg-label">Daily</span>
+          {week.map((day, i) => {
+            const d = byDay.get(day);
+            const weekend = i >= 5;
+            if (d) {
+              return (
+                <Link role="cell" key={day} to={`/p/${d.problem.slug}`} className="wg-cell" data-today={day === today || undefined}
+                  aria-label={`${fmtDay(day)}: ${d.problem.title}, ${d.status === "new" ? "not attempted" : d.status}`}>
+                  <span className="wg-top">{weekend ? "Weekend" : "Weekday"}<StatusDot status={d.status} /></span>
+                  <span className="wg-t">{d.problem.title}</span>
+                </Link>
+              );
+            }
             return (
-              <div className="day" key={day}>
-                <span className="d">{fmtDay(day).split(",")[0]}</span>
-                <span className="t">{day > today ? "Opens at midnight" : "—"}</span>
-              </div>
+              <span role="cell" key={day} className="wg-cell" data-empty>
+                <span className="wg-top">{weekend ? "Weekend" : "Weekday"}</span>
+                <span className="wg-note">{day < today ? "No problem" : day === tomorrow ? "Opens at midnight" : ""}</span>
+              </span>
             );
-          }
-          return (
-            <Link to={`/p/${d.problem.slug}`} key={day} aria-label={`${fmtDay(day)}: ${d.problem.title}, ${d.status}`}>
-              <span className="d">{fmtDay(day).split(",")[0]}{day === today && " · today"} <StatusDot status={d.status} /></span>
-              <span className="t">{d.problem.title}</span>
-            </Link>
-          );
-        })}
+          })}
+        </div>
+
+        {track && (
+          <div role="row" className="wg-row">
+            <span role="rowheader" className="wg-label">Ladder</span>
+            {week.slice(0, 5).map((day, i) => {
+              const s = track.ladder.find((x) => x.position === i + 1);
+              if (s?.open && s.problem) {
+                return (
+                  <Link role="cell" key={day} to={`/p/${s.problem.slug}`} className="wg-cell" data-today={day === today || undefined}
+                    aria-label={`Ladder ${s.position}: ${s.problem.title}, ${s.status === "new" ? "not attempted" : s.status}`}>
+                    <span className="wg-top">Ladder {s.position}<StatusDot status={s.status} /></span>
+                    <span className="wg-t">{s.problem.title}</span>
+                  </Link>
+                );
+              }
+              return (
+                <span role="cell" key={day} className="wg-cell" data-empty>
+                  <span className="wg-top">Ladder {i + 1}</span>
+                  <span className="wg-note">{!s ? "Not written yet" : day === tomorrow ? "Opens at midnight" : "Locked"}</span>
+                </span>
+              );
+            })}
+            {left === 0 ? (
+              <span role="cell" className="wg-cell wg-span" data-done>
+                <span className="wg-top">Catch-up days</span>
+                <span className="wg-t">All {track.ladder.length} solved</span>
+              </span>
+            ) : next?.step.problem && dowOf(today) >= 5 ? (
+              <Link role="cell" to={`/p/${next.step.problem.slug}`} className="wg-cell wg-span">
+                <span className="wg-top">Catch-up days</span>
+                <span className="wg-t">{left} to go · next: ladder {next.step.position}</span>
+              </Link>
+            ) : (
+              <span role="cell" className="wg-cell wg-span" data-empty>
+                <span className="wg-top">Catch-up days</span>
+                <span className="wg-note">Finish what's left of the ladder</span>
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

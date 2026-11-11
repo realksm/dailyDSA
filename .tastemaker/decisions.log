@@ -1,0 +1,3 @@
+2026-11-11 kept     surface=all            axis=hierarchy  choice="UI pass: all 11 audit items + admin calendar"  reason="user: do all of them"
+2026-11-11 rejected surface=problem-page   axis=layout     choice="hints as a third left-pane tab"  reason="user: don't put hints in a new tab; went with a Hints chip that jumps to the section"
+2026-11-11 pending-review surface=today    axis=layout     choice="week as Daily/Ladder grid replacing the separate track card"  reason="built without variants; confirm in daily use"

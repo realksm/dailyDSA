@@ -82,102 +82,94 @@ function ScheduleTab({ isAdmin }: { isAdmin: boolean }) {
         {isAdmin ? "; choose which track runs in each future week." : "."}
       </p>
       {a.error && <Notice>{a.error}</Notice>}
-      <div className="card table-wrap">
-        <table className="table">
-          <thead>
-            <tr><th style={{ width: 130 }}>Day</th><th>Problem</th><th>Pool · pattern</th><th style={{ width: 300 }}>Pin</th></tr>
-          </thead>
-          <tbody>
-            {mondays.map((monday) => {
-              const week = weekOf.get(monday);
-              const weekFuture = monday > s.today;
-              return [
-                <tr key={`w-${monday}`} className="cal-week-head">
-                  <td colSpan={4}>
-                    <span className="row" style={{ gap: 12 }}>
-                      <b style={{ fontWeight: 600 }}>Week of {fmtDay(monday)}</b>
-                      {isAdmin && weekFuture ? (
-                        <select
-                          aria-label={`Track for the week of ${monday}`}
-                          value={week?.track.pattern.slug ?? ""}
-                          disabled={a.busy !== null}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            void a.act(`w-${monday}`, () => (v ? api.admin.scheduleWeek(monday, v) : api.admin.unscheduleWeek(monday)));
-                          }}
-                        >
-                          <option value="">No track</option>
-                          {tracks.data!.map((t) => (
-                            <option key={t.id} value={t.pattern.slug}>{t.title} ({t.ladder}/5 ladder)</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="muted">{week ? `Track: ${week.track.title}` : "No track"}</span>
-                      )}
-                    </span>
-                  </td>
-                </tr>,
-                ...Array.from({ length: 7 }, (_, i) => {
+      <div className="cal">
+        {mondays.map((monday) => {
+          const week = weekOf.get(monday);
+          const weekFuture = monday > s.today;
+          return (
+            <section key={monday} className="card cal-week" aria-label={`Week of ${fmtDay(monday)}`} data-past={addDays(monday, 6) < s.today || undefined}>
+              <div className="cal-week-head">
+                <b>Week of {fmtDay(monday)}</b>
+                {isAdmin && weekFuture ? (
+                  <select
+                    aria-label={`Track for the week of ${monday}`}
+                    value={week?.track.pattern.slug ?? ""}
+                    disabled={a.busy !== null}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      void a.act(`w-${monday}`, () => (v ? api.admin.scheduleWeek(monday, v) : api.admin.unscheduleWeek(monday)));
+                    }}
+                  >
+                    <option value="">No track</option>
+                    {tracks.data!.map((t) => (
+                      <option key={t.id} value={t.pattern.slug}>{t.title} ({t.ladder}/5 ladder)</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className={week ? undefined : "muted"}>{week ? `Track: ${week.track.title}` : "No track"}</span>
+                )}
+                {a.busy === `w-${monday}` && <span className="spinner" aria-label="Saving" />}
+              </div>
+              <div className="cal-days">
+                {Array.from({ length: 7 }, (_, i) => {
                   const day = addDays(monday, i);
-                  if (day < s.from || day > s.to) return null;
-                  return <DayRow key={day} day={day} today={s.today} d={byDay.get(day)} pinnable={pinnable} a={a} />;
-                }),
-              ];
-            })}
-          </tbody>
-        </table>
+                  if (day < s.from || day > s.to) return <div key={day} className="cal-day" data-out />;
+                  return <DayCell key={day} day={day} today={s.today} d={byDay.get(day)} pinnable={pinnable} a={a} />;
+                })}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function DayRow({ day, today, d, pinnable, a }: {
+function DayCell({ day, today, d, pinnable, a }: {
   day: string; today: string; d: ScheduleDay | undefined; pinnable: StaffProblem[]; a: ReturnType<typeof useAction>;
 }) {
   const future = day > today;
   const weekend = [0, 6].includes(new Date(`${day}T00:00:00Z`).getUTCDay());
   const pools = weekend ? ["weekend", "weekday"] : ["weekday", "weekend"];
   return (
-    <tr className={day === today ? "today-row" : day < today ? "past" : undefined}>
-      <td className="nowrap">{fmtDay(day)}{day === today && <b style={{ fontWeight: 500 }}> · today</b>}</td>
-      <td>
-        {d ? (
-          <span className="stack-sm" style={{ gap: 2 }}>
-            <Link to={`/p/${d.problem.slug}`}>{d.problem.title}</Link>
-            <span className="muted small">{d.pinnedBy ? `Pinned by ${d.pinnedBy.name}` : "Automatic pick"}</span>
-          </span>
-        ) : (
-          <span className="muted small">{future ? "Picked automatically at midnight" : "No problem"}</span>
-        )}
-      </td>
-      <td className="small muted">{d ? [d.problem.pool, d.problem.pattern?.name].filter(Boolean).join(" · ") : weekend ? "weekend" : "weekday"}</td>
-      <td>
-        {future && (
-          <span className="row" style={{ gap: 8 }}>
-            <select
-              aria-label={`Pin a problem on ${day}`}
-              value={d?.pinnedBy ? d.problem.slug : ""}
-              disabled={a.busy !== null}
-              onChange={(e) => {
-                const v = e.target.value;
-                void a.act(day, () => (v ? api.admin.pin(day, v) : api.admin.unpin(day)));
-              }}
-              style={{ maxWidth: 220 }}
-            >
-              <option value="">{d?.pinnedBy ? "Unpin (automatic)" : "Automatic"}</option>
-              {pools.map((pool) => (
-                <optgroup key={pool} label={`${pool[0]!.toUpperCase()}${pool.slice(1)} pool`}>
-                  {pinnable.filter((p) => p.pool === pool).map((p) => (
-                    <option key={p.slug} value={p.slug}>{p.title}{p.pattern ? ` · ${p.pattern.name}` : ""}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-            {a.busy === day && <span className="spinner" aria-label="Saving" />}
-          </span>
-        )}
-      </td>
-    </tr>
+    <div className="cal-day" data-today={day === today || undefined} data-past={day < today || undefined} data-weekend={weekend || undefined}>
+      <div className="cal-date">
+        <span>{fmtDay(day).replace(",", "")}</span>
+        {day === today ? <b>today</b> : <span>{weekend ? "weekend" : ""}</span>}
+      </div>
+      {d ? (
+        <div className="cal-prob">
+          <Link to={`/p/${d.problem.slug}`}>{d.problem.title}</Link>
+          <span className="muted">{[d.problem.pattern?.name, d.pinnedBy ? `pinned by ${d.pinnedBy.name}` : "auto"].filter(Boolean).join(" · ")}</span>
+        </div>
+      ) : future ? null : (
+        <div className="cal-prob"><span className="muted">No problem</span></div>
+      )}
+      {future && (
+        <div className="row" style={{ gap: 6, marginTop: "auto" }}>
+          <select
+            className="cal-pin"
+            aria-label={`Pin a problem on ${day}`}
+            value={d?.pinnedBy ? d.problem.slug : ""}
+            disabled={a.busy !== null}
+            onChange={(e) => {
+              const v = e.target.value;
+              void a.act(day, () => (v ? api.admin.pin(day, v) : api.admin.unpin(day)));
+            }}
+          >
+            <option value="">{d?.pinnedBy ? "Unpin (automatic)" : "Automatic"}</option>
+            {pools.map((pool) => (
+              <optgroup key={pool} label={`${pool[0]!.toUpperCase()}${pool.slice(1)} pool`}>
+                {pinnable.filter((p) => p.pool === pool).map((p) => (
+                  <option key={p.slug} value={p.slug}>{p.title}{p.pattern ? ` · ${p.pattern.name}` : ""}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          {a.busy === day && <span className="spinner" aria-label="Saving" />}
+        </div>
+      )}
+    </div>
   );
 }
 

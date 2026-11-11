@@ -6,6 +6,7 @@ import { fmtKb, fmtMs, verdictTone } from "../format";
 import { CopyButton, Spinner, VerdictBadge } from "./ui";
 
 export function ResultView({ sub, sampleCount }: { sub: SubmissionView; sampleCount?: number }) {
+  const [showAll, setShowAll] = useState(false);
   if (sub.status !== "done" || !sub.result || !sub.verdict) {
     return (
       <div className="row muted" style={{ padding: "8px 0" }}>
@@ -23,6 +24,7 @@ export function ResultView({ sub, sampleCount }: { sub: SubmissionView; sampleCo
   const tone = verdictTone(r.verdict);
   const passed = r.tests.filter((t) => t.verdict === "AC").length;
   const failed = r.tests.find((t) => t.verdict !== "AC");
+  const shown = sub.kind === "run" || showAll ? r.tests : r.tests.filter((t) => t.verdict !== "AC");
   const summary =
     r.verdict === "CE" ? "Your code didn't compile."
     : r.verdict === "IE" ? "Something went wrong on the judge, not in your code. Try again; if it keeps happening, tell the admin."
@@ -42,14 +44,29 @@ export function ResultView({ sub, sampleCount }: { sub: SubmissionView; sampleCo
         <pre className="io compile-log" style={{ maxHeight: 220, marginBottom: 12 }}>{r.compileLog}</pre>
       )}
 
-      {sub.kind === "submit" && r.tests.length > 8 && (
+      {sub.kind === "submit" && r.tests.length > 0 && (
         <div className="pips" aria-hidden>
-          {r.tests.map((t) => <span key={t.index} className="pip" data-tone={verdictTone(t.verdict)} title={`Test ${t.index + 1}: ${t.verdict}`} />)}
+          {r.tests.map((t) => (
+            <span
+              key={t.index}
+              className="pip"
+              data-tone={verdictTone(t.verdict)}
+              title={`Test ${t.index + 1} · ${VERDICT_LABEL[t.verdict]} · ${fmtMs(t.cpuMs)} · ${fmtKb(t.memoryKb)}`}
+            />
+          ))}
         </div>
       )}
 
+      {/* A Submit lists only the tests that need attention; the squares above already show the rest. */}
+      {sub.kind === "submit" && !showAll && r.tests.length > 0 && (
+        <p className="muted small" style={{ marginBottom: shown.length ? 8 : 0 }}>
+          {shown.length === 0 ? "Hover a square for its time and memory. " : ""}
+          <button className="link-btn" onClick={() => setShowAll(true)}>Show all {r.tests.length} tests</button>
+        </p>
+      )}
+
       <div className="tests">
-        {r.tests.map((t) => (
+        {shown.map((t) => (
           <TestRow
             key={t.index}
             t={t}

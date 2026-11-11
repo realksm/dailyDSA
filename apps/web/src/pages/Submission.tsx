@@ -36,14 +36,12 @@ export function SubmissionPage({ id }: { id: number }) {
           <section className="card card-pad">
             <ResultView sub={v} />
           </section>
-          <section className="card">
+          <section className="card" style={{ overflow: "hidden" }}>
             <div className="row between" style={{ padding: "10px 16px", borderBottom: "1px solid var(--line)" }}>
               <h2 style={{ fontSize: 15 }}>Code</h2>
               <CopyButton text={v.code} label="Copy code" />
             </div>
-            <div style={{ height: Math.min(640, Math.max(200, v.code.split("\n").length * 21 + 32)) }}>
-              <CodeEditor lang={v.lang} value={v.code} onChange={() => {}} readOnly />
-            </div>
+            <CodeEditor lang={v.lang} value={v.code} onChange={() => {}} readOnly autoHeight />
           </section>
         </div>
       )}

@@ -29,9 +29,18 @@ IBM Plex Sans 400/500/600 for UI and IBM Plex Mono 400/500 for code, numbers and
 
 Scale 4 / 8 / 12 / 16 / 24 / 32 / 48. Cards pad 24px, page gutter 24px, section gap 32px. Radius 6px for controls, 10px for panels. Top bar 52px.
 
+## Layout rules (2026-11-11 UI pass)
+
+- One primary button per screen state. Today: the daily until it's solved, then the ladder's next problem.
+- Progress is shown as numbered steps or day squares, never thin dashed pills (they turn to noise in dark mode).
+- Problem page: statement/editor split is draggable (28–62 %), the panel under the editor stays folded to its tab bar until opened or until Run/Submit; both sizes are remembered in localStorage. Shortcuts live inside the Run/Submit buttons.
+- A Submit result lists only failing tests; passing ones are the coloured squares (hover for time/memory), with "Show all N tests".
+- Read-only code (lessons, solutions, submissions) is as tall as the code, 13px, with no inner vertical scrollbar.
+- Week views are grids with one column per day (Today: Daily + Ladder rows; admin schedule: one card per week).
+
 ## Motion
 
-App-shell track only: 120ms ease-out color/border transitions, a 160ms fade-in on results, spinners and a skeleton shimmer. All of it collapses under prefers-reduced-motion. No scroll animation.
+App-shell track only: 120ms ease-out color/border transitions (drag handles show a 2px primary line on hover/focus/drag), a 160ms fade-in on results, spinners and a skeleton shimmer. All of it collapses under prefers-reduced-motion. No scroll animation.
 
 ## Assets
 

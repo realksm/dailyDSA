@@ -31,7 +31,6 @@ function CodeTabs({ blocks }: { blocks: { lang: Lang; code: string }[] }) {
     return Math.max(0, blocks.findIndex((b) => b.lang === want));
   });
   const b = blocks[Math.min(pick, blocks.length - 1)]!;
-  const lines = b.code.split("\n").length;
   return (
     <div className="code-tabs">
       <div className="code-tabs-head">
@@ -47,9 +46,7 @@ function CodeTabs({ blocks }: { blocks: { lang: Lang; code: string }[] }) {
         <span className="grow" />
         <CopyButton text={b.code} />
       </div>
-      <div style={{ height: Math.min(560, Math.max(80, lines * 21 + 24)) }}>
-        <CodeEditor key={pick} lang={b.lang} value={b.code} onChange={() => {}} readOnly />
-      </div>
+      <CodeEditor key={pick} lang={b.lang} value={b.code} onChange={() => {}} readOnly autoHeight />
     </div>
   );
 }

@@ -168,9 +168,7 @@ function CodeCard(o: { lang: Lang; code: string; title: ReactNode; stats?: (stri
         <CopyButton text={o.code} />
       </div>
       {open && (
-        <div style={{ height: Math.min(480, Math.max(120, lines * 21 + 24)) }}>
-          <CodeEditor lang={o.lang} value={o.code} onChange={() => {}} readOnly />
-        </div>
+        <CodeEditor lang={o.lang} value={o.code} onChange={() => {}} readOnly autoHeight />
       )}
     </div>
   );

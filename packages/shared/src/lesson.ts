@@ -10,6 +10,24 @@ const FENCE_LANG: Record<string, Lang> = { cpp: "cpp", "c++": "cpp", java: "java
 export type LessonPart = { md: string } | { code: { lang: Lang; code: string }[] };
 
 /**
+ * The bold lead of the first `n` bullets under "## How to spot it", as Markdown (may hold $maths$).
+ * The Tracks library shows them on each card. Bullets without a bold lead are skipped.
+ */
+export function lessonSpotIt(src: string, n = 2): string[] {
+  const lines = src.replace(/\r\n/g, "\n").split("\n");
+  const start = lines.findIndex((l) => /^##\s+How to spot it\s*$/i.test(l));
+  if (start < 0) return [];
+  const out: string[] = [];
+  for (let i = start + 1; i < lines.length && out.length < n; i++) {
+    const l = lines[i]!;
+    if (/^#{1,2}\s/.test(l)) break;
+    const m = /^\s*[-*]\s+\*\*(.+?)\*\*/.exec(l);
+    if (m) out.push(m[1]!.trim());
+  }
+  return out;
+}
+
+/**
  * Splits a lesson into Markdown and code groups: C++ / Java / Python code blocks with only blank
  * lines between them form one group, which the site shows as one block with a tab per language.
  * Any other code block stays in the Markdown. An unclosed fence runs to the end (like Markdown).

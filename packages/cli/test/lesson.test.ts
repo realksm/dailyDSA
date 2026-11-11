@@ -3,7 +3,7 @@
 import type pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPool } from "@dailydsa/db";
-import { editorTemplate, lessonParts, type InputSpec, type Lang } from "@dailydsa/shared";
+import { editorTemplate, lessonParts, lessonSpotIt, type InputSpec, type Lang } from "@dailydsa/shared";
 import { checkLesson, importLesson, lessonOutline, type LadderSpec } from "../src/lesson.js";
 
 const spec: InputSpec = { vars: [{ name: "n", type: "int" }, { name: "a", type: "long[]", length: "n" }], returns: "long" };
@@ -49,6 +49,15 @@ describe("lessonParts", () => {
       { code: [{ lang: "java", code: "D" }] },
       { md: "\n" },
     ].filter((p) => !("md" in p) || p.md.trim()));
+  });
+});
+
+describe("lessonSpotIt", () => {
+  it("takes the bold lead of the first bullets under How to spot it", () => {
+    const md = "## How to spot it\r\n\r\n- **Pairs with sum $\\le B$**, sorted → ends.\n- plain bullet\n- **Two sorted lists** → merge.\n- **Third**\n\n## Core idea\n\n- **Not this**\n";
+    expect(lessonSpotIt(md)).toEqual(["Pairs with sum $\\le B$", "Two sorted lists"]);
+    expect(lessonSpotIt(md, 5)).toEqual(["Pairs with sum $\\le B$", "Two sorted lists", "Third"]);
+    expect(lessonSpotIt("## Core idea\n\n- **x**")).toEqual([]);
   });
 });
 

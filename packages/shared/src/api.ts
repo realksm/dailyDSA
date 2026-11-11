@@ -327,6 +327,8 @@ export interface TrackSummary {
   /** One of its weeks has started. Solvers only ever see released tracks. */
   released: boolean;
   hasLesson: boolean;
+  /** The bold leads of the lesson's first "How to spot it" bullets (Markdown, may hold $maths$). */
+  spotIt: string[];
   ladder: LadderStep[];
   /** Ladder problems the user solved ("4/5 solved" with ladder.length). */
   solved: number;

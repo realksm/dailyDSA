@@ -5,6 +5,7 @@ import { api } from "../api";
 import { isStaff, useMe } from "../auth";
 import { addDays, fmtDay } from "../format";
 import { Lesson } from "../components/Lesson";
+import { Markdown } from "../components/Markdown";
 import { LoadError, Skeleton, SkeletonRows, StatusDot, useLoad, useTitle } from "../components/ui";
 import { Link } from "../router";
 
@@ -40,13 +41,16 @@ export function TracksPage() {
         <div className="track-grid">
           {lib.data.tracks.map((t) => (
             <Link key={t.pattern.slug} to={`/tracks/${t.pattern.slug}`} className="card track-card" data-running={t.runningWeek ? "" : undefined}>
-              <div className="eyebrow">
-                <span>{trackWhen(t, lib.data!.today)}</span>
-                {staff && !t.released && <span className="badge">Not released</span>}
-              </div>
+              {/* Staff also see unreleased tracks; "Scheduled for …" / "Not scheduled" already says so. */}
+              <div className="eyebrow"><span>{trackWhen(t, lib.data!.today)}</span></div>
               <h2>{t.title}</h2>
-              <LadderDots ladder={t.ladder} />
-              <div className="row between small">
+              {t.spotIt.length > 0 && (
+                <div className="track-spot">
+                  <Markdown>{t.spotIt.map((s) => `- ${s}`).join("\n")}</Markdown>
+                </div>
+              )}
+              <MiniLadder ladder={t.ladder} />
+              <div className="row between small track-foot">
                 <span className="num"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved</span></span>
                 {!t.hasLesson && <span className="muted">Lesson coming</span>}
               </div>
@@ -58,12 +62,22 @@ export function TracksPage() {
   );
 }
 
-/** Five small cells: solved / attempted / new / locked. */
-export function LadderDots({ ladder }: { ladder: LadderStep[] }) {
+/** The ladder on a library card: numbered steps (solved / attempted / open / locked) with titles. */
+function MiniLadder({ ladder }: { ladder: LadderStep[] }) {
   return (
-    <div className="ladder-dots" aria-label={`${ladder.filter((s) => s.status === "solved").length} of ${ladder.length} solved`}>
-      {ladder.map((s) => <span key={s.position} data-s={s.open ? s.status : "locked"} title={`Ladder ${s.position}`} />)}
-    </div>
+    <ol className="mini-ladder">
+      {ladder.map((s) => {
+        const state = s.open ? s.status : "locked";
+        const what = { solved: "solved", attempted: "attempted", new: "open", locked: "locked" }[state];
+        return (
+          <li key={s.position} data-s={state}>
+            <span className="ml-n num" aria-hidden>{s.position}</span>
+            <span className="ml-t">{s.open && s.problem ? s.problem.title : s.problem ? <span className="muted">{s.problem.title}</span> : <span className="muted">Locked</span>}</span>
+            <span className="sr-only">, {what}</span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
