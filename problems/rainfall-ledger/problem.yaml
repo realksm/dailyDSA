@@ -1,0 +1,14 @@
+title: Rainfall Ledger
+kind: daily
+pool: weekday
+pattern: prefix-sums      # hidden until solved
+memory_mb: 256
+samples: 1
+tests: 12
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: q, type: int }
+    - { name: rain, type: "long[]", length: n }
+    - { name: queries, type: "int[][]", rows: q, cols: 2 }
+  returns: "long[]"

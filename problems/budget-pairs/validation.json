@@ -1,0 +1,28 @@
+{
+  "formatVersion": 1,
+  "validatedAt": "2026-11-11T03:22:58.301Z",
+  "machine": "AMD Ryzen 7 9700X 8-Core Processor x4 via http://127.0.0.1:5050",
+  "sourceHash": "eb821c4dc7e4269d6a208ab113859700dfe6bf0548480c1366b1129d23ae5830",
+  "testsHash": "0840430195b755f3",
+  "testCount": 14,
+  "limitsMs": {
+    "cpp": 500,
+    "java": 500,
+    "py": 500
+  },
+  "refSlowestMs": {
+    "cpp": 14,
+    "java": 38,
+    "py": 52
+  },
+  "naive": {
+    "tleTests": [
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "slowestFinishedMs": 8
+  }
+}

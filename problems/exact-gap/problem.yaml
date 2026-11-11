@@ -1,0 +1,13 @@
+title: Exact Gap
+kind: daily
+pool: weekend
+pattern: two-pointers     # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: k, type: long }
+    - { name: a, type: "long[]", length: n }
+  returns: void            # prints "i j" or -1 itself

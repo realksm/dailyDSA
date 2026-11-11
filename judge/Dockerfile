@@ -11,4 +11,5 @@ COPY --from=gojudge /opt/go-judge /opt/
 COPY mount.yaml /opt/mount.yaml
 WORKDIR /opt
 EXPOSE 5050
-ENTRYPOINT ["./go-judge"]
+# One job at a time: stable CPU timings that match calibration (PLAN §6).
+ENTRYPOINT ["./go-judge", "-parallelism", "1"]

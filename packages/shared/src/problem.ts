@@ -30,7 +30,7 @@ export type InputVar =
   | { name: string; type: "int" | "long" | "string" }
   | { name: string; type: "int[]" | "long[]"; length: string } // length = name of an earlier int var
   | { name: string; type: "string[]"; length: string }
-  | { name: string; type: "int[][]"; rows: string; cols: string };
+  | { name: string; type: "int[][]"; rows: string; cols: string | number };
 
 export type ReturnType = "int" | "long" | "string" | "bool" | "int[]" | "long[]" | "void";
 

@@ -1,0 +1,25 @@
+title: Budget Pairs
+kind: track
+pattern: two-pointers
+position: 1
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: budget, type: long }
+    - { name: price, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    Sort the prices first. Then look at the cheapest and the most expensive gadget together:
+    if they fit the budget, what does that tell you about the cheapest gadget paired with
+    every gadget in between?
+  - >-
+    Keep one index `l` at the cheapest gadget not yet handled and one index `r` at the most
+    expensive. Keep a running count of valid pairs.
+  - >-
+    If `price[l] + price[r] <= budget`, then `price[l]` works with every index in `(l, r]`:
+    add `r - l` and move `l` right. Otherwise `price[r]` is too expensive to pair with anything
+    left, so move `r` left. Stop when they meet. Use a 64-bit count.

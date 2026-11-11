@@ -1,0 +1,18 @@
+# Copy of problems/_template — see problems/README.md for the full format.
+title: Replace Me
+kind: daily               # daily | track
+pool: weekday             # daily only: weekday (easier, any pattern) | weekend (harder, needs pattern)
+pattern: two-pointers     # required for weekend + track; optional for weekday (shown after solving)
+# position: 1             # track only: 1..5 = Monday..Friday
+memory_mb: 256
+samples: 1                # the first N tests are shown as samples
+tests: 12                 # gen.py is called with 1..tests
+input:                    # drives the editor template (solver only writes solve())
+  vars:
+    - { name: n, type: int }
+    - { name: a, type: "long[]", length: n }
+  returns: long           # int | long | string | bool | int[] | long[] | void (solve prints itself)
+# hints:                  # track only, up to 3, revealed one at a time
+#   - How the pattern applies here
+#   - What to keep track of
+#   - The key idea
