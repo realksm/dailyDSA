@@ -81,6 +81,9 @@ importers:
       '@dailydsa/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@fontsource/bricolage-grotesque':
+        specifier: 5.3.0
+        version: 5.3.0
       '@fontsource/ibm-plex-mono':
         specifier: 5.3.0
         version: 5.3.0
@@ -337,6 +340,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource/bricolage-grotesque@5.3.0':
+    resolution: {integrity: sha512-MdOVb/5in11IfN/IQJOExMuu6AroCIQbirl0yX7NUvKk+h0HYIKfGaVAXRS/gCPil4aFxWhjZnOw28tUwv7tFw==}
 
   '@fontsource/ibm-plex-mono@5.3.0':
     resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
@@ -1909,6 +1915,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@fontsource/bricolage-grotesque@5.3.0': {}
 
   '@fontsource/ibm-plex-mono@5.3.0': {}
 

@@ -10,16 +10,42 @@ loader.config({ monaco });
 
 const MONACO_LANG: Record<Lang, string> = { cpp: "cpp", java: "java", py: "python" };
 
-function useDark() {
-  const q = typeof window !== "undefined" ? window.matchMedia("(prefers-color-scheme: dark)") : null;
-  const [dark, setDark] = useState(() => !!q?.matches);
+/**
+ * One Monaco theme built from the page's CSS tokens, so the editor sits on the same surface and
+ * uses the same mono font as the rest of the page. Rebuilt when the OS colour scheme changes.
+ */
+function useEditorTheme() {
+  const build = () => {
+    const css = getComputedStyle(document.documentElement);
+    const v = (name: string) => css.getPropertyValue(name).trim();
+    const dark = css.colorScheme.includes("dark");
+    monaco.editor.defineTheme("dsa", {
+      base: dark ? "vs-dark" : "vs",
+      inherit: true,
+      rules: [],
+      colors: {
+        "editor.background": v("--surface"),
+        "editor.foreground": v("--text"),
+        "editorLineNumber.foreground": v("--line-strong"),
+        "editorLineNumber.activeForeground": v("--text"),
+        "editor.lineHighlightBackground": v("--sunk"),
+        "editor.lineHighlightBorder": "#00000000",
+        "editorCursor.foreground": v("--primary-text"),
+        "editorGutter.background": v("--surface"),
+        "editorWidget.background": v("--surface"),
+        "editorIndentGuide.background1": v("--line"),
+      },
+    });
+    return v("--mono") || "'IBM Plex Mono', ui-monospace, monospace";
+  };
+  const [font, setFont] = useState(build);
   useEffect(() => {
-    if (!q) return;
-    const on = () => setDark(q.matches);
+    const q = window.matchMedia("(prefers-color-scheme: dark)");
+    const on = () => { setFont(build()); monaco.editor.setTheme("dsa"); };
     q.addEventListener("change", on);
     return () => q.removeEventListener("change", on);
-  }, [q]);
-  return dark;
+  }, []);
+  return font;
 }
 
 interface Props {
@@ -43,7 +69,7 @@ const VIEW = { fontSize: 13, lineHeight: 20, pad: 10 };
 const EDIT = { fontSize: 14, lineHeight: 21, pad: 12 };
 
 export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, height = "100%", autoHeight }: Props) {
-  const dark = useDark();
+  const font = useEditorTheme();
   const m = readOnly ? VIEW : EDIT;
   const [fitH, setFitH] = useState(() => value.split("\n").length * m.lineHeight + 2 * m.pad);
   // Keybindings are registered once; keep the latest callbacks in refs.
@@ -72,14 +98,14 @@ export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, h
       height={autoHeight ? fitH : height}
       language={MONACO_LANG[lang]}
       value={value}
-      theme={dark ? "vs-dark" : "vs"}
+      theme="dsa"
       onChange={(v) => onChange(v ?? "")}
       onMount={mount}
       loading={<span className="muted small" style={{ padding: 16 }}>Loading editor…</span>}
       options={{
         readOnly,
         domReadOnly: readOnly,
-        fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+        fontFamily: font,
         fontSize: m.fontSize,
         lineHeight: m.lineHeight,
         minimap: { enabled: false },
