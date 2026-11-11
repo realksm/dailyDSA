@@ -18,6 +18,7 @@ import { useAuth } from "../auth";
 import { BrandMark, useTitle } from "../components/ui";
 import { Link, useRouter } from "../router";
 import { SOLAR, type SolarName } from "./solar";
+import { Countdown } from "./countdown";
 // Each track's ladder titles, first "How to spot it" clue and weekend count, read from problems/_tracks/ at build time.
 import { PLANNED, TRACKS } from "virtual:landing-tracks";
 
@@ -45,50 +46,6 @@ function Split({ text, className }: { text: string; className?: string }) {
   );
 }
 
-const DAY_MS = 86_400_000;
-const IST_OFFSET_MS = 19_800_000; // UTC+5:30, no daylight saving
-
-function untilIstMidnight(now = Date.now()) {
-  const left = DAY_MS - ((now + IST_OFFSET_MS) % DAY_MS);
-  const s = Math.floor(left / 1000);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
-}
-
-/** Time to the next problem. Ticks only while visible on screen and the tab is in front. */
-function Countdown() {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [text, setText] = useState<string | null>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let timer = 0;
-    let onScreen = true;
-    const start = () => {
-      window.clearInterval(timer);
-      if (!onScreen || document.hidden) return;
-      setText(untilIstMidnight());
-      timer = window.setInterval(() => setText(untilIstMidnight()), 1000);
-    };
-    const io = new IntersectionObserver(([e]) => {
-      onScreen = !!e?.isIntersecting;
-      start();
-    });
-    io.observe(el);
-    document.addEventListener("visibilitychange", start);
-    start();
-    return () => {
-      window.clearInterval(timer);
-      io.disconnect();
-      document.removeEventListener("visibilitychange", start);
-    };
-  }, []);
-  return (
-    <span ref={ref}>
-      {text ? <>Next problem in <b className="mono">{text}</b></> : "A new problem every midnight"} · IST
-    </span>
-  );
-}
 
 /** Invite codes look like DSA-XXXX-XXXX; anything else in ?code= is ignored. */
 function inviteCode(raw: string | null): string | null {

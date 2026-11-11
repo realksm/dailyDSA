@@ -1,4 +1,4 @@
-// Copies the few Solar icons the landing page uses out of @iconify-json/solar (a dev dependency)
+// Copies the few Solar icons the landing and auth pages use out of @iconify-json/solar (a dev dependency)
 // into src/landing/solar.ts, so the page needs no runtime icon request and no 8,700-icon JSON in the bundle.
 // Run from apps/web after changing the list: node scripts/solar-icons.mjs
 import { readFileSync, writeFileSync } from "node:fs";
@@ -27,6 +27,9 @@ const NAMES = {
   arrow: "arrow-right-linear",
   menu: "hamburger-menu-linear",
   close: "close-square-linear",
+  show: "eye-linear",
+  check: "check-circle-linear",
+  caps: "keyboard-linear",
 };
 
 const lines = Object.entries(NAMES).map(([key, name]) => {
