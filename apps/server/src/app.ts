@@ -7,6 +7,7 @@ import type { Config } from "./config.js";
 import { errorHandler, HttpError, notFoundHandler } from "./errors.js";
 import { createMailer, type Mailer } from "./mailer.js";
 import { authRoutes } from "./routes/auth.js";
+import { dailyRoutes } from "./routes/daily.js";
 import { healthRoutes } from "./routes/health.js";
 import { pgSessionStore, sessionMiddleware } from "./session.js";
 
@@ -20,6 +21,8 @@ export interface AppDeps {
   /** Extra routers mounted under /api before the 404 handler (used by tests). */
   routes?: Router[];
   logError?: (err: unknown) => void;
+  /** Clock for the IST date; tests move it. */
+  now?: () => Date;
 }
 
 /**
@@ -47,6 +50,7 @@ export function createApp(deps: AppDeps): express.Express {
   api.use(loadUser(pool));
   api.use(healthRoutes(pool));
   api.use(authRoutes({ pool, config, mailer: deps.mailer ?? createMailer(config), logError }));
+  api.use(dailyRoutes({ pool, now: deps.now ?? (() => new Date()) }));
   for (const r of deps.routes ?? []) api.use(r);
   api.use(notFoundHandler);
 

@@ -2,11 +2,13 @@
 import { createPool, migrate } from "@dailydsa/db";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
+import { startDailyRollover } from "./daily.js";
 
 const config = loadConfig();
 await migrate(config.databaseUrl);
 const pool = createPool(config.databaseUrl);
 const app = createApp({ config, pool });
+const stopRollover = startDailyRollover(pool, { info: console.log, error: console.error });
 
 const server = app.listen(config.port, config.host, () => {
   console.log(`dailyDSA server on http://${config.host}:${config.port}`);
@@ -16,6 +18,7 @@ let stopping = false;
 function shutdown(signal: string) {
   if (stopping) return;
   stopping = true;
+  stopRollover();
   console.log(`${signal}: shutting down`);
   server.close(() => void pool.end().finally(() => process.exit(0)));
   setTimeout(() => process.exit(1), 10_000).unref(); // don't hang on keep-alive connections
