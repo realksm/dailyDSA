@@ -1,0 +1,23 @@
+title: Spice Road
+kind: track
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: kinds, type: int }
+    - { name: spice, type: "int[]", length: n }
+  returns: int
+hints:
+  - >-
+    A walk is a window of consecutive stalls. If a window sells every spice, so does any bigger
+    window around it, so for each right end you want the shortest window that still has
+    everything: push the left end as far right as it can go.
+  - >-
+    Keep a count per spice type inside the window (an array of size `kinds + 1`), and how many
+    types currently have a count of at least 1.
+  - >-
+    Add `spice[r]`; if its count went from 0 to 1, one more type is covered. While all `kinds`
+    types are covered, record `r - l + 1`, then remove `spice[l]` (if its count drops to 0, one
+    type fewer is covered) and move `l` right.

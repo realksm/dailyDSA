@@ -1,0 +1,14 @@
+title: Varied Segments
+kind: daily
+pool: weekend
+pattern: sliding-window   # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: lo, type: int }
+    - { name: hi, type: int }
+    - { name: genre, type: "int[]", length: n }
+  returns: long

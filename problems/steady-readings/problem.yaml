@@ -1,0 +1,24 @@
+title: Steady Readings
+kind: track
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: d, type: long }
+    - { name: temp, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    If a stretch is steady, every shorter stretch inside it is steady too. So for each right
+    end `r` there is a leftmost start `l` that still works, `l` only moves right as `r` grows,
+    and every start from `l` to `r` gives a steady stretch.
+  - >-
+    The window needs its highest and lowest reading at every step, even after readings leave
+    on the left. Keep two deques of indices: one whose readings decrease from front to back (its
+    front is the maximum) and one whose readings increase (its front is the minimum).
+  - >-
+    For each `r`, pop from the back of each deque every index that `r` beats (they can never be
+    the max/min again), then push `r`. While `max - min > d`, move `l` right and drop deque
+    fronts whose index is below `l`. Then add `r - l + 1` to the answer, in 64 bits.

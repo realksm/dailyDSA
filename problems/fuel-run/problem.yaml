@@ -1,0 +1,23 @@
+title: Fuel Run
+kind: track
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: tank, type: long }
+    - { name: fuel, type: "long[]", length: n }
+  returns: int
+hints:
+  - >-
+    A run is a window of consecutive legs `[l, r]`. Every leg uses some fuel, so making the
+    window longer only raises its total and making it shorter only lowers it.
+  - >-
+    Keep the left end `l`, the fuel total of the window `[l, r]`, and the longest valid length
+    seen so far.
+  - >-
+    Move `r` forward one leg at a time and add `fuel[r]`. While the total is over the tank,
+    subtract `fuel[l]` and move `l` right. Now `[l, r]` is the longest valid run ending at `r`
+    (it may be empty), so record `r - l + 1`. Each leg enters and leaves the window once, so this
+    is O(n). The total needs 64 bits.

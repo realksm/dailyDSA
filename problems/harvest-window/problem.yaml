@@ -1,0 +1,14 @@
+title: Harvest Window
+kind: daily
+pool: weekend
+pattern: sliding-window   # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: lo, type: int }
+    - { name: hi, type: int }
+    - { name: profit, type: "long[]", length: n }
+  returns: long

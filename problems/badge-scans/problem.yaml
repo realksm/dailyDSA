@@ -1,0 +1,23 @@
+title: Badge Scans
+kind: track
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: k, type: int }
+    - { name: badge, type: "int[]", length: n }
+  returns: int
+hints:
+  - >-
+    A stretch is a window of consecutive scans. If a window is clean, every window inside it is
+    clean too, so for each right end you want the leftmost start that still works, and that start
+    never has to move back to the left.
+  - >-
+    Keep a count of how many times each badge appears in the current window (a hash map), plus
+    the left end `l`.
+  - >-
+    Add `badge[r]` to the counts. If that badge now appears `k + 1` times, move `l` right,
+    decreasing the count of each scan that leaves, until it's back to `k`. Only the badge you just
+    added can be over the limit, so that's the only count to watch. Then record `r - l + 1`.

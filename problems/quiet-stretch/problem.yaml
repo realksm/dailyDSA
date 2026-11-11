@@ -1,0 +1,22 @@
+title: Quiet Stretch
+kind: track
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: k, type: int }
+    - { name: noise, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    Every candidate session is a block of exactly `k` consecutive minutes. Two neighbouring
+    blocks share `k - 1` of their minutes: what changes when the block slides one minute to the
+    right?
+  - >-
+    Keep the total of the current block and the smallest total seen so far.
+  - >-
+    Start with the total of the first `k` readings. Then for each `i` from `k` to `n - 1`, add
+    `noise[i]` (the minute entering) and subtract `noise[i - k]` (the minute leaving), and update
+    the minimum. The totals can exceed 2^31, so use 64-bit integers.
