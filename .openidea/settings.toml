@@ -1,0 +1,5 @@
+[spelling]
+projectWords = ["caddy", "dailydsa", "dsa", "gojudge", "pinnable", "probs"]
+
+[projectStructure]
+excluded = ["problems"]
