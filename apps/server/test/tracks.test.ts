@@ -223,7 +223,7 @@ describe.skipIf(!dbUp)("tracks", () => {
         id: t.id, title: "two-pointers", pattern: { slug: "two-pointers", name: "Two pointers" }, ladder: 2, hasLesson: false, updatedAt: expect.any(String),
       }]);
 
-      // `dsa lesson import` writes the lesson; staff can read it before the track's week.
+      // `dsa track import` writes the lesson; staff can read it before the track's week.
       await db.query("UPDATE tracks SET title = 'Two pointers', lesson_md = '## How to spot it' WHERE id = $1", [t.id]);
       expect(((await setter.agent.get("/api/admin/tracks")).body as StaffTrack[])[0]).toMatchObject({ title: "Two pointers", hasLesson: true });
       expect((await setter.agent.get("/api/tracks/two-pointers")).body).toMatchObject({ lessonMd: "## How to spot it", released: false });

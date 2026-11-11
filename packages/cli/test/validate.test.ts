@@ -20,11 +20,13 @@ describe("problem.yaml schema", () => {
   };
 
   it("accepts a minimal weekday problem", () => expect(errors(base)).toEqual([]));
-  it("weekend needs a pattern", () => expect(errors({ ...base, pool: "weekend" })).toContain("weekend and track problems need `pattern`"));
-  it("track needs a position and no pool", () => {
-    const e = errors({ ...base, kind: "track", pattern: "two-pointers" });
+  it("weekend needs a pattern", () => expect(errors({ ...base, pool: "weekend" })).toContain("weekend problems need `pattern`"));
+  it("track problems have no pool, pattern or position (the ladder file has them)", () => {
+    expect(errors({ title: "Test", kind: "track", tests: 5 })).toEqual([]);
+    const e = errors({ ...base, kind: "track", pattern: "two-pointers", position: 2 }).join("\n");
     expect(e).toContain("track problems have no pool");
-    expect(e).toContain("track problems need `position` (1..5)");
+    expect(e).toContain("get their pattern from the ladder in problems/_tracks/<pattern>.yaml");
+    expect(e).toContain("`position` is gone");
   });
   it("needs hidden tests", () => expect(errors({ ...base, samples: 5 })).toContain("`samples` must be fewer than `tests` (some tests must be hidden)"));
   it("input vars may only refer to earlier vars", () => {

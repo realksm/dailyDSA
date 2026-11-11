@@ -1,7 +1,5 @@
 title: Nearest Readings
 kind: track
-pattern: two-pointers
-position: 2
 memory_mb: 256
 samples: 2
 tests: 14

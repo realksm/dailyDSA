@@ -1,21 +1,21 @@
 // dailyDSA problem tool.
-//   pnpm dsa list                     problems and their validation state
-//   pnpm dsa new <slug>               copy problems/_template to problems/<slug>
+//   pnpm dsa list                     problems and tracks, and their state
+//   pnpm dsa new <slug>               copy problems/_template to problems/<slug> (a daily problem)
 //   pnpm dsa template <slug> <lang>   print the editor template (start ref.<lang> from it)
 //   pnpm dsa validate <slug>|--all    run the full validation (needs go-judge)
-//   pnpm dsa import <slug>|--all      upsert validated problems into the database (--all: lessons too)
-//   pnpm dsa lesson new|check|import <pattern>|--all   track lessons in problems/_tracks/ (see lesson.ts)
+//   pnpm dsa import <slug>|--all      upsert validated problems into the database (--all: every track's ladder + lesson too)
+//   pnpm dsa track new|add|check|import …   tracks: ladder file + lesson in problems/_tracks/ (see track.ts)
 //   pnpm dsa admin create|reset-password …, pnpm dsa invite create …   (see accounts.ts)
-import { cp, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { createPool, withJudgeLock } from "@dailydsa/db";
 import { GoJudge } from "@dailydsa/judge";
-import { LANGS, STARTING_PATTERNS, editorTemplate, type InputSpec, type Lang } from "@dailydsa/shared";
+import { LANGS, editorTemplate, type InputSpec, type Lang } from "@dailydsa/shared";
 import { parse as parseYaml } from "yaml";
 import { accountsCommand } from "./accounts.js";
 import { importProblem } from "./importer.js";
-import { TRACKS_DIR, importLesson, lessonFile, lessonOutline, listLessons, loadLesson } from "./lesson.js";
 import { PROBLEMS_DIR, ProblemError, listProblems, loadProblem } from "./problem.js";
+import { allTracks, checkTrack, createProblemFolder, importTrack, importTrackParts, scaffoldTrack, trackSummary, validationState } from "./track.js";
 import { ValidationError, validate } from "./validate.js";
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -28,20 +28,12 @@ async function targets(): Promise<string[]> {
   return slugs;
 }
 
-/** Checks and imports lessons; returns how many failed. */
-async function importLessons(db: ReturnType<typeof createPool>, patterns: string[]): Promise<number> {
-  let failed = 0;
-  for (const pattern of patterns) {
-    try {
-      const r = await importLesson(db, await loadLesson(pattern));
-      console.log(c.green(`✔ lesson ${pattern} ${r}`));
-    } catch (e) {
-      if (!(e instanceof ProblemError)) throw e;
-      failed++;
-      console.log(c.red(`✘ ${e.message}`));
-    }
-  }
-  return failed;
+const logLine = (ok: boolean, line: string) => console.log(ok ? c.green(`✔ ${line}`) : c.red(`✘ ${line}`));
+
+/** `--weekend a b` → the slugs after the flag; everything else before it. */
+function splitWeekend(rest: string[]): { ladder: string[]; weekend: string[] } {
+  const at = rest.indexOf("--weekend");
+  return at < 0 ? { ladder: rest, weekend: [] } : { ladder: rest.slice(0, at), weekend: rest.slice(at + 1) };
 }
 
 async function main(): Promise<number> {
@@ -50,19 +42,17 @@ async function main(): Promise<number> {
       for (const slug of await listProblems()) {
         try {
           const p = await loadProblem(slug);
-          const state = !p.validation ? c.red("not validated") : p.validation.sourceHash !== p.sourceHash ? c.red("stale — re-validate") : c.green(`valid ${JSON.stringify(p.validation.limitsMs)}`);
-          const where = p.meta.kind === "track" ? `track ${p.meta.pattern} #${p.meta.position}` : `${p.meta.pool}${p.meta.pattern ? ` (${p.meta.pattern})` : ""}`;
-          console.log(`${slug.padEnd(28)} ${where.padEnd(30)} ${state}`);
+          const v = validationState(p);
+          const where = p.track ? `track ${p.track.pattern} #${p.track.position}` : `${p.meta.pool}${p.pattern ? ` (${p.pattern})` : ""}`;
+          console.log(`${slug.padEnd(28)} ${where.padEnd(30)} ${v.ok ? c.green(v.text) : c.red(v.text)}`);
         } catch (e) {
           console.log(`${slug.padEnd(28)} ${c.red((e as Error).message.split("\n")[0]!)}`);
         }
       }
-      for (const pattern of await listLessons()) {
-        const state = await loadLesson(pattern).then(
-          () => c.green("ok"),
-          (e: Error) => c.red(e.message.split("\n")[1]?.trim() ?? e.message),
-        );
-        console.log(`${`_tracks/${pattern}.md`.padEnd(28)} ${"lesson".padEnd(30)} ${state}`);
+      for (const pattern of await allTracks()) {
+        const r = await checkTrack(pattern);
+        const text = `${trackSummary(r)}${r.errors.length ? " — pnpm dsa track check " + pattern : ""}`;
+        console.log(`${`_tracks/${pattern}`.padEnd(28)} ${"track".padEnd(30)} ${r.errors.length ? c.red(text) : r.warnings.length ? text : c.green(text)}`);
       }
       return 0;
     }
@@ -71,8 +61,9 @@ async function main(): Promise<number> {
       if (!slug || !/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new ProblemError("usage: pnpm dsa new <slug>  (lowercase letters, digits, dashes)");
       const dest = path.join(PROBLEMS_DIR, slug);
       if (await stat(dest).then(() => true, () => false)) throw new ProblemError(`problems/${slug} already exists`);
-      await cp(path.join(PROBLEMS_DIR, "_template"), dest, { recursive: true });
-      console.log(`created problems/${slug} — fill in every file, then: pnpm dsa validate ${slug}`);
+      await createProblemFolder(slug);
+      console.log(`created problems/${slug} (a daily problem; track problems come from pnpm dsa track new|add) — fill in every file, then: pnpm dsa validate ${slug}
+(the refs are the editor template of the example input; after changing \`input:\` regenerate them with pnpm dsa template ${slug} cpp|java|py)`);
       return 0;
     }
     case "template": {
@@ -132,46 +123,51 @@ async function main(): Promise<number> {
             console.log(c.red(`✘ ${e.message}`));
           }
         }
-        if (args.includes("--all")) failed += await importLessons(db, await listLessons());
+        // Each track problem's import already synced its ladder; this also catches removed
+        // problems and imports every lesson.
+        if (args.includes("--all")) for (const pattern of await allTracks()) failed += await importTrackParts(db, pattern, logLine);
       } finally {
         await db.end();
       }
       return failed ? 1 : 0;
     }
-    case "lesson": {
+    case "track": {
       const [sub, ...rest] = args;
-      const patterns = rest.includes("--all") ? await listLessons() : rest.filter((a) => !a.startsWith("--"));
-      if (sub === "new") {
-        const pattern = rest[0];
-        if (!pattern || !/^[a-z0-9][a-z0-9-]*$/.test(pattern)) throw new ProblemError("usage: pnpm dsa lesson new <pattern>");
-        const file = lessonFile(pattern);
-        if (await stat(file).then(() => true, () => false)) throw new ProblemError(`problems/_tracks/${pattern}.md already exists`);
-        await mkdir(TRACKS_DIR, { recursive: true });
-        await writeFile(file, lessonOutline(STARTING_PATTERNS.find((p) => p.slug === pattern)?.name ?? pattern));
-        console.log(`created problems/_tracks/${pattern}.md — write it, then: pnpm dsa lesson check ${pattern}`);
+      const usage = "usage: pnpm dsa track new|add <pattern> <slug>... [--weekend <slug>...] | track check|import <pattern>... | --all";
+      if (sub === "new" || sub === "add") {
+        const [pattern, ...slugs] = rest;
+        if (!pattern) throw new ProblemError(usage);
+        const { ladder, weekend } = splitWeekend(slugs);
+        for (const line of await scaffoldTrack(sub, pattern, ladder, weekend)) console.log(c.green(`✔ ${line}`));
+        console.log(c.dim(`next: write each problem (pnpm dsa template <slug> cpp|java|py for the refs), then pnpm dsa validate <slug>,
+      the lesson in problems/_tracks/${pattern}.md, then pnpm dsa track check ${pattern} and pnpm dsa track import ${pattern}`));
         return 0;
       }
-      if ((sub !== "check" && sub !== "import") || !patterns.length) {
-        throw new ProblemError("usage: pnpm dsa lesson new <pattern> | lesson check|import <pattern>... | --all");
-      }
+      const patterns = rest.includes("--all") ? await allTracks() : rest.filter((a) => !a.startsWith("--"));
+      if ((sub !== "check" && sub !== "import") || !patterns.length) throw new ProblemError(usage);
       if (sub === "import") {
         const db = createPool();
+        let failed = 0;
         try {
-          return (await importLessons(db, patterns)) ? 1 : 0;
+          for (const pattern of patterns) {
+            console.log(c.bold(`▶ ${pattern}`));
+            failed += await importTrack(db, pattern, logLine);
+          }
         } finally {
           await db.end();
         }
+        return failed ? 1 : 0;
       }
       let failed = 0;
       for (const pattern of patterns) {
-        try {
-          const l = await loadLesson(pattern);
-          console.log(c.green(`✔ ${pattern}: "${l.title}" is fine`));
-        } catch (e) {
-          if (!(e instanceof ProblemError)) throw e;
-          failed++;
-          console.log(c.red(`✘ ${e.message}`));
-        }
+        const r = await checkTrack(pattern);
+        console.log(c.bold(`▶ ${pattern}`) + `  ${trackSummary(r)}`);
+        for (const row of r.rows) console.log(`  ${row.label.padEnd(8)} ${row.slug.padEnd(26)} ${row.ok ? c.green(row.text) : c.red(row.text)}`);
+        console.log(`  ${"lesson".padEnd(8)} ${`_tracks/${pattern}.md`.padEnd(26)} ${r.lesson.ok ? c.green(r.lesson.text) : c.red("see below")}`);
+        for (const w of r.warnings) console.log(`  ⚠ ${w}`);
+        for (const e of r.errors) console.log(c.red(`  ✘ ${e.replace(/\n/g, "\n    ")}`));
+        if (r.errors.length) failed++;
+        else console.log(c.green(r.warnings.length ? "  ✔ no errors (the warnings must be fixed before the track runs)" : "  ✔ ready"));
       }
       return failed ? 1 : 0;
     }
@@ -179,7 +175,7 @@ async function main(): Promise<number> {
     case "invite":
       return accountsCommand(cmd, args, (s) => console.log(c.green(s)));
     default:
-      console.log("usage: pnpm dsa list | new <slug> | template <slug> <lang> | validate <slug>|--all | import <slug>|--all | lesson new|check|import <pattern>|--all | admin create|reset-password | invite create");
+      console.log("usage: pnpm dsa list | new <slug> | template <slug> <lang> | validate <slug>|--all | import <slug>|--all | track new|add|check|import … | admin create|reset-password | invite create");
       return cmd ? 1 : 0;
   }
 }

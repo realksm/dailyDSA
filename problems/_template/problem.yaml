@@ -1,9 +1,9 @@
 # Copy of problems/_template — see problems/README.md for the full format.
+# Track problems: create them with `pnpm dsa track new|add` (kind: track, no pool/pattern; the ladder file sets both).
 title: Replace Me
 kind: daily               # daily | track
-pool: weekday             # daily only: weekday (easier, any pattern) | weekend (harder, needs pattern)
-pattern: two-pointers     # required for weekend + track; optional for weekday (shown after solving)
-# position: 1             # track only: 1..5 = Monday..Friday
+pool: weekday             # weekday (easier, any pattern) | weekend (harder, needs pattern)
+pattern: two-pointers     # required for weekend; optional for weekday (shown after solving)
 memory_mb: 256
 samples: 1                # the first N tests are shown as samples
 tests: 12                 # gen.py is called with 1..tests
@@ -14,7 +14,3 @@ input:                    # drives the editor template (solver only writes solve
   returns: long           # int | long | string | bool | int[] | long[] | void (solve prints itself)
   # join: lines           # array returns: lines (one per line, default) | spaces (one line)
   # multi: true           # first token T, then T cases
-# hints:                  # track only, up to 3, revealed one at a time
-#   - How the pattern applies here
-#   - What to keep track of
-#   - The key idea

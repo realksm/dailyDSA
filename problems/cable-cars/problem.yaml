@@ -1,7 +1,5 @@
 title: Cable Cars
 kind: track
-pattern: two-pointers
-position: 3
 memory_mb: 256
 samples: 2
 tests: 14

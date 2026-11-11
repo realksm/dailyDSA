@@ -1,7 +1,5 @@
 title: Shared Free Time
 kind: track
-pattern: two-pointers
-position: 4
 memory_mb: 256
 samples: 2
 tests: 14

@@ -16,7 +16,7 @@ export function TracksTab() {
   return (
     <div className="stack">
       <p className="muted small">
-        Lessons live in git as <code>problems/_tracks/&lt;pattern&gt;.md</code>: <code>pnpm dsa lesson new|check|import &lt;pattern&gt;</code>.
+        Tracks live in git: the ladder in <code>problems/_tracks/&lt;pattern&gt;.yaml</code>, the lesson in <code>problems/_tracks/&lt;pattern&gt;.md</code>: <code>pnpm dsa track new|add|check|import &lt;pattern&gt;</code>.
         Open a track to see its lesson as solvers will (you can open it before its week). Schedule weeks on the Schedule tab.
       </p>
       <div className="card table-wrap">

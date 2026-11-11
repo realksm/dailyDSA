@@ -6,16 +6,13 @@
 //   ## Template code          ← C++, Java and Python blocks, each in the editor template of a
 //   ## Common mistakes           ladder problem of this track (`pnpm dsa template <slug> <lang>`)
 //
-// `dsa lesson check` checks a lesson; `dsa lesson import` (and `dsa import --all`) writes it to the
+// `dsa track check` checks a lesson; `dsa track import` (and `dsa import --all`) writes it to the
 // tracks table. The site draws the practice ladder (section 5) itself.
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import type pg from "pg";
 import { LANG_LABEL, LANGS, LESSON_SECTIONS, lessonParts, templateMismatch, type InputSpec, type Lang } from "@dailydsa/shared";
-import { PROBLEMS_DIR, ProblemError, listProblems, loadProblem } from "./problem.js";
-
-export const TRACKS_DIR = path.join(PROBLEMS_DIR, "_tracks");
-const PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+import { ProblemError, SLUG as PATTERN, TRACKS_DIR, loadProblem, readLadder } from "./problem.js";
 
 export interface Lesson {
   pattern: string;
@@ -41,23 +38,21 @@ export async function listLessons(): Promise<string[]> {
     .sort();
 }
 
-/** The track's ladder problems in git (any that fail to load are skipped; `dsa list` shows those). */
+/** The track's ladder problems, in ladder order (any that fail to load are skipped; `dsa track check` shows those). */
 export async function ladderSpecs(pattern: string): Promise<LadderSpec[]> {
-  const out: (LadderSpec & { position: number })[] = [];
-  for (const slug of await listProblems()) {
+  const out: LadderSpec[] = [];
+  for (const slug of await readLadder(pattern).catch(() => [] as string[])) {
     const p = await loadProblem(slug).catch(() => undefined);
-    if (p?.meta.kind === "track" && p.meta.pattern === pattern) {
-      out.push({ slug, input: p.meta.input as InputSpec | undefined, position: p.meta.position ?? 0 });
-    }
+    if (p) out.push({ slug, input: p.meta.input as InputSpec | undefined });
   }
-  return out.sort((a, b) => a.position - b.position).map(({ slug, input }) => ({ slug, input }));
+  return out;
 }
 
 /** Reads and checks problems/_tracks/<pattern>.md against the ladder problems in git. */
 export async function loadLesson(pattern: string): Promise<Lesson> {
   if (!PATTERN.test(pattern)) throw new ProblemError(`bad pattern "${pattern}" (lowercase letters, digits, dashes)`);
   const file = lessonFile(pattern);
-  if (!(await stat(file).then(() => true, () => false))) throw new ProblemError(`no lesson file problems/_tracks/${pattern}.md (pnpm dsa lesson new ${pattern})`);
+  if (!(await stat(file).then(() => true, () => false))) throw new ProblemError(`no lesson file problems/_tracks/${pattern}.md (pnpm dsa track new ${pattern} <slug>...)`);
   return checkLesson(pattern, await readFile(file, "utf8"), await ladderSpecs(pattern));
 }
 
@@ -126,7 +121,7 @@ export function checkLesson(pattern: string, src: string, ladder: LadderSpec[]):
   return { pattern, title, body };
 }
 
-/** The file `dsa lesson new` writes: the title and the sections to fill in. */
+/** The file `dsa track new` writes: the title and the sections to fill in. */
 export function lessonOutline(title: string): string {
   return `# ${title}
 

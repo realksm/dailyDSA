@@ -1,5 +1,5 @@
-// Track lessons in git: how they split into Markdown and code groups, what `dsa lesson check`
-// demands, and what `dsa lesson import` writes (in a rolled-back transaction).
+// Track lessons in git: how they split into Markdown and code groups, what `dsa track check`
+// demands, and what `dsa track import` writes (in a rolled-back transaction).
 import type pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPool } from "@dailydsa/db";
@@ -79,7 +79,7 @@ describe("checkLesson", () => {
     expect(issues(drifted)).toContain("the C++17 code must follow the editor template of a ladder problem (start from `pnpm dsa template budget-pairs cpp`)");
   });
 
-  it("the outline from `dsa lesson new` has every section but still needs template code", () => {
+  it("the outline from `dsa track new` has every section but still needs template code", () => {
     const msg = issues(lessonOutline("Two pointers"));
     expect(msg).not.toContain("missing the section");
     expect(msg).toContain("`## Template code` needs");

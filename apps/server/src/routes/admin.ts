@@ -1,5 +1,5 @@
 // The admin page API under /api/admin. Admins: users, invite codes, track weeks.
-// Admins and setters: the problem bank, the schedule view, day pins (PLAN §1). Lessons come from git (dsa lesson import).
+// Admins and setters: the problem bank, the schedule view, day pins (PLAN §1). Lessons come from git (dsa track import).
 // Only the future can be changed: today's problem and started weeks are already out.
 import { Router } from "express";
 import type pg from "pg";
