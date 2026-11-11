@@ -59,7 +59,7 @@ describe("config", () => {
   });
   it("has dev defaults", () => {
     expect(config.port).toBe(3000);
-    expect(config.databaseUrl).toContain("55432");
+    expect(config.databaseUrl).toContain("15432");
   });
 });
 

@@ -63,7 +63,7 @@ Limits sit at the 500 ms floor on the dev box except Python on `shared-free-time
 ## How to run (dev, Windows + Docker Desktop)
 
 ```sh
-docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0.0.1:55432
+docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0.0.1:15432
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck                      # tsc -b (packages + server) && tsc -p apps/web
@@ -87,7 +87,7 @@ node spike/judge-spike.mjs          # full sandbox check incl. timing noise
 Dev mail: with no `SMTP_URL`, emails (password-reset links) are printed in the server's console.
 Production env: `SESSION_SECRET` (≥32 chars), `SMTP_URL` (e.g. `smtps://user:pass@smtp-relay.brevo.com:465`), `MAIL_FROM`, `APP_URL` (https) — the server refuses to start without them.
 
-Dev DB URL: `postgres://dailydsa:dailydsa@127.0.0.1:55432/dailydsa` (5432 is blocked on this Windows machine).
+Dev DB URL: `postgres://dailydsa:dailydsa@127.0.0.1:15432/dailydsa` (5432 is blocked on this Windows machine; 55432 was later swallowed by a dynamic port reservation, so stay below 49152).
 If Docker Desktop isn't running: start it, wait for `docker info`; the first build after a start may fail with an rpc EOF — retry.
 
 ## Repo layout
