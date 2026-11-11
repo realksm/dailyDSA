@@ -94,6 +94,10 @@ describe.skipIf(!dbUp)("Run/Submit queue API", () => {
       const bad = await agent.post(`/api/problems/${p.slug}/submit`).send({ lang: "rust", code: "" });
       expect(bad.status).toBe(400);
       expect(bad.body.error.details.map((d: { path: string }) => d.path).sort()).toEqual(["code", "lang"]);
+      // Java without a Main class: a clear 400 instead of a javac error, and it doesn't use up the 5 s.
+      const java = await agent.post(`/api/problems/${p.slug}/submit`).send({ lang: "java", code: "public class Solution {}" });
+      expect([java.status, java.body.error.code]).toEqual([400, "java_main_class"]);
+      expect(java.body.error.message).toMatch(/class named Main/);
 
       const run = await agent.post(`/api/problems/${p.slug}/run`).send({ lang: "py", code: PY_OK, customInput: "2\n1 1\n" });
       expect(run.status).toBe(202);

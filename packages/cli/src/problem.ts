@@ -13,7 +13,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { POOLS, PROBLEM_KINDS, RESERVED_NAMES, type Lang, type TimeLimits } from "@dailydsa/shared";
+import { POOLS, PROBLEM_KINDS, RESERVED_NAMES, javaHasMainClass, type Lang, type TimeLimits } from "@dailydsa/shared";
 
 export const ROOT = path.resolve(process.env.DSA_ROOT ?? process.cwd());
 export const PROBLEMS_DIR = path.join(ROOT, "problems");
@@ -131,7 +131,7 @@ export async function loadProblem(slug: string): Promise<ProblemFolder> {
   for (const name of SOURCE_FILES) if (await exists(f(name))) hash.update(`${name}\0${await read(f(name))}\0`);
 
   const ref = await read(f("ref.java"));
-  if (!/\bclass\s+Main\b/.test(ref)) throw new ProblemError(`${slug}/ref.java: the class must be named Main`);
+  if (!javaHasMainClass(ref)) throw new ProblemError(`${slug}/ref.java: the class must be named Main`);
 
   return {
     slug,

@@ -2,9 +2,9 @@
 import { Router, type Request } from "express";
 import type pg from "pg";
 import { z } from "zod";
-import { LANGS, type SubmissionKind, type SubmissionQueued } from "@dailydsa/shared";
+import { JAVA_MAIN_CLASS_MESSAGE, LANGS, javaHasMainClass, type SubmissionKind, type SubmissionQueued } from "@dailydsa/shared";
 import { me, requireUser } from "../auth.js";
-import { conflict, notFound, parse, tooManyRequests } from "../errors.js";
+import { badRequest, conflict, notFound, parse, tooManyRequests } from "../errors.js";
 import { istDate } from "../ist.js";
 import { openToSolvers, seesAllProblems } from "../problems.js";
 import { RateLimiter } from "../rate-limit.js";
@@ -32,6 +32,8 @@ export function submissionRoutes({ pool, now, onQueued }: { pool: pg.Pool; now: 
 
   async function queue(req: Request, kind: SubmissionKind, body: { lang: (typeof LANGS)[number]; code: string; customInput?: string }) {
     const slug = parse(Slug, req.params.slug);
+    // Before any DB work or the rate limit: a plain mistake shouldn't cost the solver 5 s.
+    if (body.lang === "java" && !javaHasMainClass(body.code)) throw badRequest(JAVA_MAIN_CLASS_MESSAGE, "java_main_class");
     const user = me(req);
     // Same release rules as the problem page: unreleased problems are a plain 404.
     const p = await pool.query<{ id: number }>(
