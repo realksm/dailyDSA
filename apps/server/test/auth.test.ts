@@ -119,6 +119,19 @@ describe.skipIf(!dbUp)("auth (needs db + migrations)", () => {
     expect(r.status).toBe(429);
   });
 
+  it("reads and saves the streak reminder setting (on by default)", async () => {
+    const { app } = setup();
+    const e = email();
+    await createUser(pool, { email: e, name: "S", password: PW, role: "solver" });
+    expect((await request(app).get("/api/me/settings")).status).toBe(401);
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: e, password: PW });
+    expect((await agent.get("/api/me/settings")).body).toEqual({ remindStreak: true });
+    expect((await agent.put("/api/me/settings").send({ remindStreak: false })).body).toEqual({ remindStreak: false });
+    expect((await agent.get("/api/me/settings")).body).toEqual({ remindStreak: false });
+    expect((await agent.put("/api/me/settings").send({ remindStreak: "no" })).status).toBe(400);
+  });
+
   it("changes the password and logs out other devices only", async () => {
     const { app } = setup();
     const e = email();

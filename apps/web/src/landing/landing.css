@@ -442,3 +442,13 @@ body:has(.lp) { min-width: 0; }
 @media (prefers-reduced-motion: reduce) {
   .lp *, .lp *::before, .lp *::after { transition: none !important; }
 }
+
+/* The hero problem card's chip turns over on Accepted: "pattern hidden" on the back, the pattern on the front.
+   Without motion the chip simply shows the pattern (the scene is the solved state). */
+.lp-chips { perspective: 500px; }
+.lp-flip { display: inline-grid; transform-style: preserve-3d; }
+.lp-flip > * { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.lp-flip-front { transform: rotateX(180deg); }
+
+/* Each track card carries its pattern diagram (components/PatternDiagram.tsx). */
+.lp-track-pd { padding: 16px 16px 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--bg); }

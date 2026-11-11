@@ -1,7 +1,7 @@
 // Thin client for the server's /api. Every non-2xx answer becomes an ApiErr carrying the
 // server's { error: { code, message, details } } body (packages/shared/src/api.ts).
 import type {
-  AdminUser, DailyArchive, DailyEntry, DailyToday, History, InviteCode, Lang, Me, PasswordResetByAdmin,
+  AdminUser, DailyArchive, DailyEntry, DailyToday, History, InviteCode, Lang, Me, MeSettings, PasswordResetByAdmin,
   ProblemView, Role, Schedule, Solutions, ScheduleDay, StaffProblem, StaffTrack, SubmissionKind, SubmissionList,
   SubmissionQueued, SubmissionView, TrackLibrary, TrackView, TrackWeek,
 } from "@dailydsa/shared";
@@ -70,6 +70,8 @@ export const api = {
   resetPassword: (token: string, password: string) => call<{ ok: true }>("POST", "/auth/reset-password", { token, password }),
   changePassword: (currentPassword: string, newPassword: string) =>
     call<{ ok: true }>("POST", "/me/password", { currentPassword, newPassword }),
+  settings: () => call<MeSettings>("GET", "/me/settings"),
+  saveSettings: (s: MeSettings) => call<MeSettings>("PUT", "/me/settings", s),
 
   // daily
   today: () => call<DailyToday>("GET", "/daily/today"),

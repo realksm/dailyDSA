@@ -189,7 +189,6 @@ kbd {
 
 .card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
-  box-shadow: var(--shadow);
 }
 .card-pad { padding: 24px; }
 .stack { display: flex; flex-direction: column; gap: 16px; }
@@ -317,7 +316,7 @@ select { padding-right: 28px; }
 
 /* ───────── auth pages ───────── */
 
-.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 48px 16px; }
+.auth-wrap { min-height: 100svh; display: grid; place-items: center; padding: 48px 16px; }
 
 /* Login, signup, forgot and reset password: the form on the left, the ink side panel (AuthAside) on the
    right on wide screens. Unlike the app, these pages work on phones: invite links get opened there. */
@@ -414,7 +413,7 @@ body:has(.auth) { min-width: 0; }
 .today-main { padding: 32px; display: flex; flex-direction: column; gap: 16px; }
 .today-main .eyebrow { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
 .today-main h1 { font-size: 32px; letter-spacing: -0.02em; }
-.today-main .actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+.today-main .actions { display: flex; gap: 16px; align-items: flex-end; justify-content: space-between; margin-top: 8px; }
 .today-side { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
 .stat .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .stat .v { font: 500 28px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
@@ -636,20 +635,10 @@ body[data-dragging] .split-x::after, body[data-dragging] .split-y::after { backg
 .eyebrow a:hover { color: var(--primary-text); }
 .crumb { margin-bottom: 8px; }
 
-.track-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-.track-card {
-  display: flex; flex-direction: column; gap: 12px; padding: 20px 24px;
-  text-decoration: none; color: var(--text); transition: border-color 120ms ease-out;
-}
-.track-card:hover { border-color: var(--line-strong); }
-.track-card h2 { font-size: 18px; margin-top: -4px; }
-.track-card[data-running] { border-color: var(--primary); }
-.track-card[data-running] .eyebrow span:first-child { color: var(--primary-text); font-weight: 500; }
 
 .track-spot .md { font-size: 13.5px; line-height: 1.45; color: var(--muted); }
 .track-spot .md ul { padding-left: 16px; }
 .track-spot .md li + li { margin-top: 2px; }
-.track-foot { margin-top: auto; padding-top: 4px; }
 
 .mini-ladder { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
 .mini-ladder li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; min-width: 0; }
@@ -716,8 +705,10 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .today-main h1 { font-size: 54px; line-height: 1; }
 .page-head h1, .track-main h1 { font-size: 40px; }
 .week-head h2 { font-size: 26px; }
-.track-card h2 { font-size: 23px; }
-.card { border: 2px solid var(--ink); }
+/* Elevation has one meaning: the hard shadow marks the one thing on a screen you act on (today's problem,
+   this week's track). Every other card is flat with a hairline outline. */
+.card { border: 1.5px solid var(--line-strong); }
+.card-hero { border: 2px solid var(--ink); box-shadow: var(--hard); }
 .btn { height: 38px; border: 2px solid var(--ink); font-weight: 600; box-shadow: 2px 2px 0 var(--ink); transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out; }
 .btn-lg { height: 46px; padding: 0 22px; font-size: 16px; box-shadow: 3px 3px 0 var(--ink); }
 .btn-sm { height: 30px; box-shadow: none; }
@@ -739,9 +730,6 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .d30[data-s="late"] { background: var(--accent-soft); border-color: var(--accent); }
 .d30[data-s="none"] { border-color: color-mix(in srgb, var(--text) 18%, transparent); }
 .d30[data-today] { box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 4px var(--ink); }
-.track-card { transition: transform 120ms ease-out, box-shadow 120ms ease-out; }
-@media (hover: hover) { .track-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); } }
-.track-card[data-running] { background: var(--primary-soft); }
 .ml-n, .ladder-n { border-width: 1.5px; }
 .tabs button { font-weight: 600; }
 .tabs button[aria-selected="true"] { border-bottom-width: 3px; }
@@ -838,3 +826,188 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 :root[data-theme="dark"] .card { border-color: var(--line-strong); }
 :root[data-theme="dark"] .wg-cell[data-today] { border-color: var(--primary); }
 
+
+/* ════════════════ 2026-11-12 UI pass: diagrams, reveal, pulse, timeline, theme, phones ════════════════ */
+
+.icon { width: 1.1em; height: 1.1em; flex: none; vertical-align: -0.2em; }
+
+/* Brand mark: three day squares stepping up (components/ui.tsx BrandMark, public/favicon.svg). */
+.brand .brand-mark { width: 28px; height: 28px; }
+
+/* ── pattern diagrams (components/PatternDiagram.tsx) ── */
+.pd { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pd > svg { display: block; width: 100%; height: auto; overflow: visible; }
+.pd-cell rect { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.5; transition: fill 200ms ease-out, stroke 200ms ease-out; }
+.pd-cell text { font: 500 13px var(--mono); fill: var(--text); text-anchor: middle; transition: fill 200ms ease-out; }
+.pd-cell[data-tone="dead"] rect { fill: var(--sunk); stroke: var(--line); }
+.pd-cell[data-tone="dead"] text { fill: var(--muted); }
+.pd-cell[data-tone="soft"] rect { fill: var(--primary-soft); stroke: var(--primary); }
+.pd-cell[data-tone="on"] rect { fill: var(--primary); stroke: var(--c-ink); }
+.pd-cell[data-tone="on"] text { fill: var(--on-primary); }
+.pd-cell[data-tone="found"] rect { fill: var(--accent); stroke: var(--c-ink); }
+.pd-cell[data-tone="found"] text { fill: var(--on-accent); font-weight: 700; }
+.pd-cell[data-tone="blank"] rect { fill: none; stroke: var(--line-strong); stroke-dasharray: 3 3; }
+.pd-ptr { transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.pd-ptr rect, .pd-ptr path { fill: var(--text); }
+.pd-ptr text { font: 700 10px var(--mono); fill: var(--bg); text-anchor: middle; }
+.pd-win { fill: none; stroke: var(--primary); stroke-width: 2; }
+.pd-win[data-over] { stroke: var(--bad); stroke-dasharray: 5 4; }
+.pd-label { font: 600 11px var(--mono); fill: var(--primary-text); }
+.pd-range { fill: var(--primary); }
+.pd-cap { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); min-height: 2.8em; }
+.pd-steps { display: flex; flex-direction: column; gap: 10px; }
+.pd-steps .pd-cap { font-size: 14px; color: var(--text); min-height: 2.8em; }
+.pd-ctrl { display: flex; align-items: center; gap: 6px; }
+.pd-ctrl .icon-btn svg { width: 14px; height: 14px; }
+.pd-ctrl .icon-btn:disabled { opacity: 0.35; cursor: default; background: none; }
+.pd-play { min-width: 76px; }
+.pd-count { margin-left: auto; font: 500 12px var(--mono); color: var(--muted); }
+
+/* ── the solve reveal (components/SolvedReveal.tsx) ── */
+.reveal {
+  display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 20px; align-items: center;
+  margin-bottom: 16px; padding: 14px; border: 2px solid var(--edge); border-radius: var(--r);
+  background: var(--surface); box-shadow: 3px 3px 0 var(--ink);
+  animation: reveal-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes reveal-in { from { opacity: 0; transform: translateY(6px); } }
+.reveal-card { display: grid; perspective: 700px; }
+.reveal-face {
+  grid-area: 1 / 1; display: flex; flex-direction: column; gap: 6px; min-height: 120px; padding: 12px 14px;
+  border-radius: 10px; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  transition: transform 700ms cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+.reveal-front {
+  align-items: center; justify-content: center; color: var(--muted); font-weight: 600;
+  background: var(--sunk); border: 1.5px dashed var(--line-strong);
+}
+.reveal-front .icon { width: 26px; height: 26px; }
+.reveal-back { background: var(--primary-soft); border: 1.5px solid var(--edge); transform: rotateY(180deg); }
+.reveal-card[data-flipped] .reveal-front { transform: rotateY(-180deg); }
+.reveal-card[data-flipped] .reveal-back { transform: rotateY(0deg); }
+.reveal-k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.reveal-name { font: 800 22px/1.05 var(--display); letter-spacing: -0.03em; color: var(--text); }
+.reveal-pd .pd-cap { display: none; }
+.reveal-rungs { display: flex; gap: 6px; margin-top: 6px; }
+.reveal-rungs i { width: 26px; height: 26px; border-radius: 6px; border: 1.5px solid var(--line-strong); background: var(--surface); }
+.reveal-rungs i[data-new] { background: var(--accent); animation: sq-pop 520ms 200ms cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+.reveal-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.reveal-text h3 { font: 800 30px/1 var(--display); letter-spacing: -0.04em; color: var(--ok); }
+.reveal-day { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.reveal-sq { width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px solid var(--c-ink); background: var(--accent); animation: sq-pop 520ms 450ms cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+@keyframes sq-pop { from { transform: scale(0.2); opacity: 0; } }
+.reveal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.badge-reveal { animation: badge-flip 600ms cubic-bezier(0.3, 1.3, 0.5, 1) both; }
+@keyframes badge-flip { from { transform: rotateX(90deg); } }
+
+/* ── Today: countdown, pulse, empty week cells ── */
+.today-clock { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.today-clock .k { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.today-clock .v { font: 500 36px/1 var(--mono); letter-spacing: -0.03em; color: var(--text); }
+.today-clock[data-urgent] .v { color: var(--warn); }
+.pulse { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pulse-sq { display: flex; flex-wrap: wrap; gap: 3px; max-width: 360px; }
+.pulse-sq i { width: 10px; height: 10px; border-radius: 3px; background: var(--sunk); border: 1px solid var(--line-strong); }
+.pulse-sq i[data-on] { background: var(--accent); border-color: var(--c-ink); }
+.pulse-bar { width: 180px; height: 10px; border-radius: 5px; background: var(--sunk); border: 1px solid var(--line-strong); overflow: hidden; }
+.pulse-bar i { display: block; height: 100%; background: var(--accent); }
+.pulse b { font-weight: 600; }
+.wg-icon { display: inline-flex; align-items: center; gap: 5px; }
+.wg-icon .icon { width: 15px; height: 15px; }
+
+/* ── Tracks: this week's feature card, then a timeline ── */
+.tracks-tl { display: flex; flex-direction: column; gap: 40px; }
+.track-feature {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 32px; align-items: center;
+  padding: 28px 32px; text-decoration: none; color: var(--text); background: var(--primary-soft);
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+.track-feature-text { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.track-feature h2 { font-size: 38px; line-height: 1; }
+.track-live { color: var(--primary-text); font-weight: 700; }
+.track-feature-pd { background: var(--surface); border: 1.5px solid var(--line-strong); border-radius: var(--r); padding: 18px 18px 10px; }
+.tl-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.tl-head h2 { font-size: 26px; }
+.tl { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.tl::before { content: ""; position: absolute; left: 169px; top: 8px; bottom: 8px; width: 2px; border-radius: 1px; background: var(--line); }
+.tl > li { position: relative; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 40px; align-items: start; }
+.tl > li::before {
+  content: ""; position: absolute; left: 164px; top: 26px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--bg); border: 2px solid var(--line-strong);
+}
+.tl-when { padding-top: 22px; text-align: right; font-weight: 600; color: var(--muted); }
+.track-row {
+  display: grid; grid-template-columns: 240px minmax(0, 1fr) 200px; gap: 24px; align-items: center;
+  padding: 18px 22px; text-decoration: none; color: var(--text);
+  transition: border-color 120ms ease-out, transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+.track-row h3 { font: 800 22px/1.1 var(--display); letter-spacing: -0.03em; }
+.track-row-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.track-row-count { margin-top: 2px; }
+.track-row .mini-ladder { border-top: 0; padding: 0 0 0 20px; border-left: 1.5px solid var(--line); }
+.track-row-pd .pd-cap { display: none; }
+.track-row-pd-empty { height: 64px; border-radius: 10px; background: var(--sunk); }
+@media (hover: hover) {
+  .track-feature:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+  .track-row:hover { border-color: var(--edge); transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+}
+
+/* "See it work" at the top of a lesson: the diagram as a step-through. */
+.see-it { max-width: 72ch; margin: 0 0 32px; padding: 20px 22px; border: 1.5px solid var(--line-strong); border-radius: var(--r); background: var(--surface); }
+.see-it-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.see-it-head h2 { font-size: 20px; }
+.see-it .pd > svg { max-width: 560px; }
+
+/* ── theme toggle in the top bar ── */
+.theme-btn { width: 34px; height: 34px; border-radius: 999px; }
+.theme-btn .icon { width: 18px; height: 18px; }
+
+/* ── page transitions (router.tsx, View Transitions API where supported) ── */
+.topbar { view-transition-name: topbar; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 160ms; animation-timing-function: ease-out; }
+
+/* ── phones: Today, the problem statement and the tracks work at any width (.fluid); the rest stays laptop-only ── */
+body:has(.fluid) { min-width: 0; }
+.phone-note { display: none; }
+@media (max-width: 760px) {
+  body:has(.fluid) .topbar { flex-wrap: wrap; height: auto; padding: 10px 16px 0; gap: 4px 12px; }
+  body:has(.fluid) .topbar .nav { order: 3; width: calc(100% + 32px); margin: 0 -16px; padding: 6px 12px 8px; overflow-x: auto; scrollbar-width: none; }
+  body:has(.fluid) .topbar .who > a { display: none; }
+  .page.fluid { padding: 20px 16px 48px; }
+  .fluid .today-hero { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .fluid .today-main { padding: 22px 20px; }
+  .fluid .today-main h1 { font-size: 40px; }
+  .fluid .today-main .actions { flex-wrap: wrap; align-items: center; }
+  .fluid .today-clock { align-items: flex-start; }
+  .fluid .today-clock .v { font-size: 30px; }
+  .fluid .week { padding: 18px 16px; }
+  .fluid .week-head { flex-direction: column; align-items: flex-start; }
+  .fluid .week-head .row { flex-wrap: wrap; }
+  .fluid .week-grid { overflow-x: auto; padding-bottom: 6px; }
+  .fluid .wg-row { min-width: 680px; }
+  .fluid .table td:nth-child(3) { display: none; }
+  .solve.fluid { display: block; height: auto; }
+  .solve.fluid .solve-left { overflow: visible; border-right: 0; }
+  .solve.fluid .solve-left-inner { padding: 20px 16px 48px; }
+  .solve.fluid .solve-right { display: none; }
+  .solve.fluid .sample { grid-template-columns: minmax(0, 1fr); }
+  .phone-note {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 10px 12px;
+    border-radius: var(--r-sm); background: var(--info-soft); color: var(--info); font-size: 14px;
+  }
+  .phone-note .icon { width: 20px; height: 20px; margin-top: 1px; }
+  .fluid .track-feature { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; }
+  .fluid .track-feature h2 { font-size: 32px; }
+  .fluid .tl::before, .fluid .tl > li::before { display: none; }
+  .fluid .tl-head { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .fluid .tl > li { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .fluid .tl-when { padding-top: 0; text-align: left; }
+  .fluid .track-row { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 16px; }
+  .fluid .track-row .mini-ladder { border-left: 0; padding-left: 0; }
+  .fluid .track-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .fluid .track-side { position: static; }
+  .fluid .page-head h1, .fluid .track-main h1 { font-size: 34px; }
+}
+
+.check-row { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; cursor: pointer; }
+.check-row input { width: 18px; height: 18px; accent-color: var(--primary); }

@@ -1,4 +1,5 @@
 // A tiny history-API router: the app has a dozen routes and no nested layouts, so this is all it needs.
+import { flushSync } from "react-dom";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type AnchorHTMLAttributes, type MouseEvent, type ReactNode } from "react";
 
 interface Loc {
@@ -23,8 +24,15 @@ export function RouterProvider({ children }: { children: ReactNode }) {
   const navigate = useCallback((to: string, opts?: { replace?: boolean }) => {
     const before = window.location.pathname;
     window.history[opts?.replace ? "replaceState" : "pushState"](null, "", to);
-    setLoc(current());
-    if (window.location.pathname !== before) window.scrollTo(0, 0);
+    const update = () => {
+      setLoc(current());
+      if (window.location.pathname !== before) window.scrollTo(0, 0);
+    };
+    // A short crossfade between pages where the browser supports View Transitions (the top bar stays put,
+    // see styles.css); a plain swap otherwise, and under reduced motion. Same-page updates (?tab=) never fade.
+    const fade = window.location.pathname !== before && "startViewTransition" in document && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (fade) document.startViewTransition(() => flushSync(update));
+    else update();
   }, []);
 
   const value = useMemo<Loc>(() => ({ path: loc.path, search: new URLSearchParams(loc.search), navigate }), [loc, navigate]);

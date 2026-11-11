@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import type { DailyEntry, DailyToday, LadderStep, TrackSummary } from "@dailydsa/shared";
 import { api, ApiErr } from "../api";
-import { addDays, dailyStreak, daysAgo, fmtCountdown, fmtDay, fmtDayLong, fmtStamp, istDay } from "../format";
+import { addDays, dailyStreak, daysAgo, fmtDay, fmtDayLong, fmtStamp, istDay } from "../format";
+import { Icon } from "../components/Icon";
 import { LoadError, Skeleton, StatusBadge, StatusDot, useLoad, useTitle } from "../components/ui";
 import { Link } from "../router";
 
@@ -27,7 +28,7 @@ export function Today() {
   if (today.error) {
     if (today.error instanceof ApiErr && today.error.code === "no_daily") {
       return (
-        <main className="page">
+        <main className="page fluid">
           <div className="card empty">
             <h3>No daily problem yet</h3>
             <p>The problem bank is still empty. Check back soon.</p>
@@ -35,7 +36,7 @@ export function Today() {
         </main>
       );
     }
-    return <main className="page"><LoadError error={today.error} retry={today.reload} /></main>;
+    return <main className="page fluid"><LoadError error={today.error} retry={today.reload} /></main>;
   }
 
   const t = today.data;
@@ -46,9 +47,9 @@ export function Today() {
   const ladderFirst = t?.status === "solved" && !!next;
 
   return (
-    <main className="page">
+    <main className="page fluid">
       <div className="today-hero">
-        <section className="card today-main" aria-labelledby="today-title">
+        <section className="card card-hero today-main" aria-labelledby="today-title">
           {t ? <TodayCard t={t} primary={!ladderFirst} onRollover={() => { today.reload(); archive.reload(); }} /> : (
             <div className="stack">
               <Skeleton h={14} w={180} />
@@ -86,6 +87,9 @@ export function Today() {
 function TodayCard({ t, primary, onRollover }: { t: DailyToday; primary: boolean; onRollover: () => void }) {
   const left = useCountdown(t.nextRolloverAt, onRollover);
   const cta = t.status === "solved" ? "Open again" : t.status === "attempted" ? "Continue" : "Solve it";
+  const solved = t.status === "solved";
+  // The last three hours of an unsolved day read as urgent.
+  const urgent = !solved && left < 3 * 3600_000;
   return (
     <>
       <div className="eyebrow">
@@ -103,15 +107,47 @@ function TodayCard({ t, primary, onRollover }: { t: DailyToday; primary: boolean
         <p className="muted small">Weekend problems use the pattern of this week's track. The tag stays hidden until you solve it.</p>
       )}
       {t.status === "solved" && t.solvedAt && <p className="muted small">Solved {fmtStamp(t.solvedAt)}.</p>}
+      <Pulse pulse={t.pulse} />
       <div className="actions">
         <Link to={`/p/${t.problem.slug}`} className={`btn btn-lg${primary ? " btn-primary" : ""}`}>{cta}</Link>
-        <span className="muted small num">Next problem in {left}</span>
+        <div className="today-clock" data-urgent={urgent || undefined} role="timer" aria-live="off">
+          <span className="k">{solved ? "Next problem in" : "Left to solve it"}</span>
+          <span className="v num">{clock(left)}</span>
+        </div>
       </div>
     </>
   );
 }
 
-/** Ticks every second; reloads the page data a moment after IST midnight. */
+/** hh:mm:ss */
+function clock(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
+}
+
+/**
+ * The group today, as one square per member (filled = solved), plus the count. Counts only, no names:
+ * the point is "others are at it too", not a leaderboard. Large groups get a bar instead of squares.
+ */
+function Pulse({ pulse }: { pulse: DailyToday["pulse"] }) {
+  if (pulse.members < 2) return null;
+  const label = `${pulse.solved} of ${pulse.members} solved it today`;
+  return (
+    <div className="pulse" role="img" aria-label={label}>
+      {pulse.members <= 60 ? (
+        <span className="pulse-sq" aria-hidden>
+          {Array.from({ length: pulse.members }, (_, i) => <i key={i} data-on={i < pulse.solved || undefined} />)}
+        </span>
+      ) : (
+        <span className="pulse-bar" aria-hidden><i style={{ width: `${(100 * pulse.solved) / pulse.members}%` }} /></span>
+      )}
+      <span className="small" aria-hidden><b className="num">{pulse.solved}</b><span className="muted"> of {pulse.members} solved it today</span></span>
+    </div>
+  );
+}
+
+/** Milliseconds to `iso`, ticking every second; reloads the page data a moment after IST midnight. */
 function useCountdown(iso: string, onDone: () => void) {
   const target = Date.parse(iso);
   const [now, setNow] = useState(Date.now());
@@ -125,7 +161,7 @@ function useCountdown(iso: string, onDone: () => void) {
     const id = setTimeout(onDone, Math.max(ms, 0));
     return () => clearTimeout(id);
   }, [target, onDone]);
-  return fmtCountdown(target - now);
+  return target - now;
 }
 
 /** The streak, and the last 30 days as squares (oldest first), each linking to its problem. */
@@ -234,7 +270,7 @@ function Week({ days, today, track, next, ladderFirst }: {
             return (
               <span role="cell" key={day} className="wg-cell" data-empty>
                 <span className="wg-top">{weekend ? "Weekend" : "Weekday"}</span>
-                <span className="wg-note">{day < today ? "No problem" : day === tomorrow ? "Opens at midnight" : ""}</span>
+                <EmptyNote kind={day < today ? "none" : day === tomorrow ? "midnight" : "later"} />
               </span>
             );
           })}
@@ -257,7 +293,7 @@ function Week({ days, today, track, next, ladderFirst }: {
               return (
                 <span role="cell" key={day} className="wg-cell" data-empty>
                   <span className="wg-top">Ladder {i + 1}</span>
-                  <span className="wg-note">{!s ? "Not written yet" : day === tomorrow ? "Opens at midnight" : "Locked"}</span>
+                  <EmptyNote kind={!s ? "unwritten" : day === tomorrow ? "midnight" : "locked"} />
                 </span>
               );
             })}
@@ -282,6 +318,15 @@ function Week({ days, today, track, next, ladderFirst }: {
       </div>
     </section>
   );
+}
+
+/** What an empty week cell says: an icon where a word would repeat across the row. */
+function EmptyNote({ kind }: { kind: "none" | "midnight" | "later" | "locked" | "unwritten" }) {
+  if (kind === "later") return null;
+  if (kind === "none") return <span className="wg-note">No problem</span>;
+  if (kind === "unwritten") return <span className="wg-note">Not written yet</span>;
+  if (kind === "midnight") return <span className="wg-note wg-icon"><Icon name="clock" />Midnight</span>;
+  return <span className="wg-note wg-icon" title="Locked"><Icon name="lock" /><span className="sr-only">Locked</span></span>;
 }
 
 export function DayRow({ d, today }: { d: DailyEntry; today: string }) {

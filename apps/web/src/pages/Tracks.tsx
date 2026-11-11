@@ -6,6 +6,7 @@ import { isStaff, useMe } from "../auth";
 import { addDays, fmtDay } from "../format";
 import { Lesson } from "../components/Lesson";
 import { Markdown } from "../components/Markdown";
+import { hasDiagram, PatternDiagram } from "../components/PatternDiagram";
 import { LoadError, Skeleton, SkeletonRows, StatusDot, useLoad, useTitle } from "../components/ui";
 import { Link } from "../router";
 
@@ -25,7 +26,7 @@ export function TracksPage() {
   const staff = isStaff(useMe());
 
   return (
-    <main className="page">
+    <main className="page fluid">
       <div className="page-head">
         <div>
           <h1>Tracks</h1>
@@ -38,27 +39,97 @@ export function TracksPage() {
           <p>The first track opens on the Monday of its week.</p>
         </div>
       ) : (
-        <div className="track-grid">
-          {lib.data.tracks.map((t) => (
-            <Link key={t.pattern.slug} to={`/tracks/${t.pattern.slug}`} className="card track-card" data-running={t.runningWeek ? "" : undefined}>
-              {/* Staff also see unreleased tracks; "Scheduled for …" / "Not scheduled" already says so. */}
-              <div className="eyebrow"><span>{trackWhen(t, lib.data!.today)}</span></div>
-              <h2>{t.title}</h2>
-              {t.spotIt.length > 0 && (
-                <div className="track-spot">
-                  <Markdown>{t.spotIt.map((s) => `- ${s}`).join("\n")}</Markdown>
-                </div>
-              )}
-              <MiniLadder ladder={t.ladder} />
-              <div className="row between small track-foot">
-                <span className="num"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved</span></span>
-                {!t.hasLesson && <span className="muted">Lesson coming</span>}
-              </div>
-            </Link>
-          ))}
-        </div>
+        <TrackTimeline tracks={lib.data.tracks} today={lib.data.today} staff={staff} />
       )}
     </main>
+  );
+}
+
+/** Next week a track runs (after today), or undefined. */
+const nextWeek = (t: TrackSummary, today: string) => t.weeks.find((w) => w > today);
+const lastPast = (t: TrackSummary, today: string) => t.weeks.filter((w) => w <= today).at(-1);
+
+/**
+ * Tracks are scheduled by week, so the library reads as a timeline: this week's track as the one
+ * feature card, then the open ones (newest first), then what's coming (soonest first). Staff also
+ * see tracks that aren't scheduled yet.
+ */
+function TrackTimeline({ tracks, today, staff }: { tracks: TrackSummary[]; today: string; staff: boolean }) {
+  const running = tracks.find((t) => t.runningWeek);
+  const rest = tracks.filter((t) => t !== running);
+  const open = rest.filter((t) => lastPast(t, today)).sort((a, b) => lastPast(b, today)!.localeCompare(lastPast(a, today)!));
+  const coming = rest.filter((t) => !lastPast(t, today) && nextWeek(t, today)).sort((a, b) => nextWeek(a, today)!.localeCompare(nextWeek(b, today)!));
+  const unscheduled = staff ? rest.filter((t) => t.weeks.length === 0) : [];
+  const groups = [
+    { key: "open", title: "Open", note: "Every problem is unlocked.", items: open },
+    { key: "coming", title: "Coming up", note: "Each opens on the Monday of its week.", items: coming },
+    { key: "none", title: "Not scheduled", note: "Only staff see these.", items: unscheduled },
+  ].filter((g) => g.items.length > 0);
+
+  return (
+    <div className="tracks-tl">
+      {running && <RunningTrack t={running} />}
+      {groups.map((g) => (
+        <section key={g.key} className="tl-group" aria-labelledby={`tl-${g.key}`}>
+          <div className="tl-head">
+            <h2 id={`tl-${g.key}`}>{g.title}</h2>
+            <span className="muted small">{g.note}</span>
+          </div>
+          <ol className="tl">
+            {g.items.map((t) => (
+              <li key={t.pattern.slug}>
+                <span className="tl-when small">{tlWhen(t, today)}</span>
+                <Link to={`/tracks/${t.pattern.slug}`} className="card track-row">
+                  {hasDiagram(t.pattern.slug) ? <PatternDiagram pattern={t.pattern.slug} className="track-row-pd" /> : <span className="track-row-pd track-row-pd-empty" aria-hidden />}
+                  <div className="track-row-text">
+                    <h3>{t.title}</h3>
+                    {t.spotIt[0] && <div className="track-spot"><Markdown>{t.spotIt[0]}</Markdown></div>}
+                    <span className="small num track-row-count"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved{!t.hasLesson ? " · lesson coming" : ""}</span></span>
+                  </div>
+                  <MiniLadder ladder={t.ladder} />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+/** The left column of a timeline row: when the track ran or runs. */
+function tlWhen(t: TrackSummary, today: string): string {
+  const past = lastPast(t, today);
+  const next = nextWeek(t, today);
+  if (past) return `Week of ${fmtDay(past)}`;
+  if (next) return `Week of ${fmtDay(next)}`;
+  return "No week yet";
+}
+
+/** This week's track: the one card on the page with the hard shadow. */
+function RunningTrack({ t }: { t: TrackSummary }) {
+  return (
+    <Link to={`/tracks/${t.pattern.slug}`} className="card card-hero track-feature">
+      <div className="track-feature-text">
+        <div className="eyebrow">
+          <span className="track-live">Running this week</span>
+          {t.runningWeek && <span>{fmtDay(t.runningWeek)} – {fmtDay(addDays(t.runningWeek, 4))}</span>}
+        </div>
+        <h2>{t.title}</h2>
+        {t.spotIt.length > 0 && (
+          <div className="track-spot">
+            <Markdown>{t.spotIt.map((s) => `- ${s}`).join("\n")}</Markdown>
+          </div>
+        )}
+        <MiniLadder ladder={t.ladder} />
+        <span className="small num"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved{!t.hasLesson ? " · lesson coming" : ""}</span></span>
+      </div>
+      {hasDiagram(t.pattern.slug) && (
+        <div className="track-feature-pd">
+          <PatternDiagram pattern={t.pattern.slug} />
+        </div>
+      )}
+    </Link>
   );
 }
 
@@ -84,10 +155,10 @@ function MiniLadder({ ladder }: { ladder: LadderStep[] }) {
 export function TrackPage({ pattern }: { pattern: string }) {
   const t = useLoad(() => api.track(pattern), [pattern]);
   useTitle(t.data?.title ?? "Track");
-  if (t.error) return <main className="page"><LoadError error={t.error} retry={t.reload} /></main>;
+  if (t.error) return <main className="page fluid"><LoadError error={t.error} retry={t.reload} /></main>;
   if (!t.data) {
     return (
-      <main className="page">
+      <main className="page fluid">
         <div className="stack"><Skeleton h={14} w={200} /><Skeleton h={34} w="50%" /><Skeleton h={320} /></div>
       </main>
     );
@@ -98,7 +169,7 @@ export function TrackPage({ pattern }: { pattern: string }) {
 function Track({ t }: { t: TrackView }) {
   const staff = isStaff(useMe());
   return (
-    <main className="page track-page">
+    <main className="page track-page fluid">
       <div className="track-layout">
         <article className="track-main">
           <div className="eyebrow">
@@ -107,6 +178,15 @@ function Track({ t }: { t: TrackView }) {
             <span>{trackWhen(t, t.today)}</span>
           </div>
           <h1>{t.title}</h1>
+          {hasDiagram(t.pattern.slug) && (
+            <section className="see-it" aria-label={`${t.title}, step by step`}>
+              <div className="see-it-head">
+                <h2>See it work</h2>
+                <span className="muted small">A tiny example, one step at a time.</span>
+              </div>
+              <PatternDiagram pattern={t.pattern.slug} mode="steps" />
+            </section>
+          )}
           {t.hasLesson ? (
             <Lesson md={t.lessonMd} />
           ) : (
@@ -138,19 +218,18 @@ function Track({ t }: { t: TrackView }) {
 }
 
 function Step({ s, staff }: { s: LadderStep; staff: boolean }) {
+  // Meta sits on its own line under the title, so long titles never push it into an awkward wrap.
   const meta = (
     <span className="ladder-meta">
       {s.hintsUsed > 0 && <span className="badge">{s.hintsUsed} hint{s.hintsUsed === 1 ? "" : "s"}</span>}
-      {!s.open && <span className="muted small">{s.opensOn ? `Opens ${fmtDay(s.opensOn)}` : "Locked"}</span>}
+      {!s.open && <span className="muted small nowrap">{s.opensOn ? `Opens ${fmtDay(s.opensOn)}` : "Locked"}</span>}
+      {staff && !s.open && s.problem && <span className="badge" title="Solvers can't open it yet; staff can">Staff preview</span>}
     </span>
   );
   const body = (
     <>
       <span className="ladder-n num">{s.position}</span>
-      <span className="ladder-t">
-        {s.problem ? s.problem.title : <span className="muted">Locked</span>}
-        {staff && !s.open && <span className="muted small"> · locked for solvers</span>}
-      </span>
+      <span className="ladder-t">{s.problem ? s.problem.title : <span className="muted">Locked</span>}</span>
       {s.open && <StatusDot status={s.status} />}
       {meta}
     </>

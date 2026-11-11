@@ -8,6 +8,8 @@ import { CodeEditor } from "../components/LazyEditor";
 import { Markdown } from "../components/Markdown";
 import { SolutionsPanel } from "../components/Solutions";
 import { ResultView } from "../components/Result";
+import { SolvedReveal } from "../components/SolvedReveal";
+import { Icon } from "../components/Icon";
 import { CopyButton, LoadError, Notice, Skeleton, StatusBadge, useLoad, useTitle, VerdictBadge } from "../components/ui";
 import { Link } from "../router";
 import { useConfirm } from "../components/Confirm";
@@ -238,7 +240,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   };
 
   return (
-    <div className="solve" ref={solveRef} style={{ gridTemplateColumns: `${leftPct}% 1fr` }}>
+    <div className="solve fluid" ref={solveRef} style={{ gridTemplateColumns: `${leftPct}% 1fr` }}>
       <section className="solve-left" aria-label="Problem">
         <div className="tabs left-tabs" role="tablist">
           <button role="tab" aria-selected={leftTab === "statement"} onClick={() => setLeftTab("statement")}>Statement</button>
@@ -247,7 +249,8 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
           </button>
         </div>
         <div className="solve-left-inner">
-          {leftTab === "statement" ? <Statement p={p} onChange={replace} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
+          <p className="phone-note"><Icon name="laptop" /><span>Read it here, solve it on a laptop: the editor needs a bigger screen.</span></p>
+          {leftTab === "statement" ? <Statement p={p} onChange={replace} justSolved={justSolved} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
         </div>
       </section>
 
@@ -334,16 +337,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
               </div>
             ) : sub ? (
               <>
-                {justSolved && (
-                  <div style={{ marginBottom: 12 }}>
-                    <Notice tone="ok">
-                      Solved{p.pattern && !p.track ? <>. This was a <b>{p.pattern.name}</b> problem</> : ""}. Nicely done.{" "}
-                      {leftTab !== "solutions" && (
-                        <button className="link-btn" onClick={() => setLeftTab("solutions")}>See how others solved it</button>
-                      )}
-                    </Notice>
-                  </div>
-                )}
+                {justSolved && <SolvedReveal p={p} {...(leftTab !== "solutions" ? { onSolutions: () => setLeftTab("solutions") } : {})} />}
                 <ResultView key={sub.id} sub={sub} sampleCount={p.samples.length} />
                 {sub.status === "done" && (
                   <p className="small" style={{ marginTop: 12 }}>
@@ -361,7 +355,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   );
 }
 
-function Statement({ p, onChange }: { p: ProblemView; onChange: (v: ProblemView) => void }) {
+function Statement({ p, onChange, justSolved }: { p: ProblemView; onChange: (v: ProblemView) => void; justSolved?: boolean }) {
   const lim = p.limits;
   const sameTime = LANGS.every((l) => lim.timeMs[l] === lim.timeMs[LANGS[0]]);
   const jumpToHints = () => {
@@ -386,7 +380,7 @@ function Statement({ p, onChange }: { p: ProblemView; onChange: (v: ProblemView)
       <div className="prob-meta">
         <StatusBadge status={p.status} />
         {p.track && <span className="badge">Ladder {p.track.position} of 5</span>}
-        {p.pattern ? <span className="badge badge-primary">{p.pattern.name}</span> : <span className="badge">Pattern hidden until solved</span>}
+        {p.pattern ? <span className={`badge badge-primary${justSolved && !p.track ? " badge-reveal" : ""}`}>{p.pattern.name}</span> : <span className="badge">Pattern hidden until solved</span>}
         {p.dailyDays.length > 0 && <span className="badge">Daily · {p.dailyDays.map(fmtDay).join(", ")}</span>}
         {p.track && p.track.hints > 0 && (
           <button className="badge badge-btn" onClick={jumpToHints} aria-label={`Hints: ${p.track.hintsUsed} of ${p.track.hints} used. Go to hints`}>

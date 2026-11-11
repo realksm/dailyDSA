@@ -121,11 +121,14 @@ export function CopyButton({ text, label = "Copy" }: { text: string; label?: str
   );
 }
 
+/**
+ * The mark: three day squares stepping up like a ladder, the top one lime (today's square, the streak).
+ * It reuses the product's two motifs, the day square and the five-step ladder. Same drawing as public/favicon.svg.
+ */
 export const BrandMark = () => (
-  <svg viewBox="0 0 32 32" aria-hidden>
-    <rect width="32" height="32" rx="7" fill="var(--primary)" />
-    <rect x="7" y="18" width="4" height="7" rx="1" fill="var(--on-primary)" />
-    <rect x="14" y="12" width="4" height="13" rx="1" fill="var(--on-primary)" />
-    <rect x="21" y="7" width="4" height="18" rx="1" fill="var(--on-primary)" opacity=".55" />
+  <svg viewBox="0 0 32 32" aria-hidden className="brand-mark">
+    <rect x="2.75" y="20.25" width="9" height="9" rx="2.25" fill="var(--primary)" stroke="var(--c-ink)" strokeWidth="1.5" />
+    <rect x="11.5" y="11.5" width="9" height="9" rx="2.25" fill="var(--primary)" stroke="var(--c-ink)" strokeWidth="1.5" />
+    <rect x="20.25" y="2.75" width="9" height="9" rx="2.25" fill="var(--accent)" stroke="var(--c-ink)" strokeWidth="1.5" />
   </svg>
 );

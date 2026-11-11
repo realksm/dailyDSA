@@ -36,10 +36,18 @@ export interface DailyEntry {
   review: { lastShownOn: string } | null;
 }
 
+/** GET / PUT /api/me/settings */
+export interface MeSettings {
+  /** The streak-saver email at 21:00 IST when today's daily is still open. */
+  remindStreak: boolean;
+}
+
 /** GET /api/daily/today */
 export interface DailyToday extends DailyEntry {
   /** ISO timestamp of the next IST midnight, for a countdown. */
   nextRolloverAt: string;
+  /** The group today: how many active members have solved today's problem, out of how many. */
+  pulse: { solved: number; members: number };
 }
 
 /** GET /api/daily?before=&limit= — newest first; pass `nextBefore` as `before` for the next page. */

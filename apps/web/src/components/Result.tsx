@@ -60,7 +60,7 @@ export function ResultView({ sub, sampleCount }: { sub: SubmissionView; sampleCo
       {/* A Submit lists only the tests that need attention; the squares above already show the rest. */}
       {sub.kind === "submit" && !showAll && r.tests.length > 0 && (
         <p className="muted small" style={{ marginBottom: shown.length ? 8 : 0 }}>
-          {shown.length === 0 ? "Hover a square for its time and memory. " : ""}
+          
           <button className="link-btn" onClick={() => setShowAll(true)}>Show all {r.tests.length} tests</button>
         </p>
       )}

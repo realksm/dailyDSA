@@ -16,6 +16,7 @@ import "lenis/dist/lenis.css";
 import "./landing.css";
 import { useAuth } from "../auth";
 import { BrandMark, useTitle } from "../components/ui";
+import { hasDiagram, PatternDiagram } from "../components/PatternDiagram";
 import { Link, useRouter } from "../router";
 import { SOLAR, type SolarName } from "./solar";
 import { Countdown } from "./countdown";
@@ -103,13 +104,16 @@ function HeroScene() {
   return (
     <figure className="lp-scene" data-scene>
       <figcaption className="sr-only">
-        An example day: an invented problem, Still Water, solved in C++ with all {tests} tests passing, and a 3-day streak.
+        An example day: an invented problem, Still Water, solved in C++ with all {tests} tests passing, which reveals its pattern (sliding window) and makes a 3-day streak.
       </figcaption>
       <div className="lp-scene-stack" aria-hidden="true">
         <div className="lp-layer lp-layer-problem" data-depth="0.6"><article className="lp-card lp-card-problem">
           <div className="lp-chips">
             <span className="lp-chip">Wed · weekday daily</span>
-            <span className="lp-chip lp-chip-muted"><Icon name="hidden" />pattern hidden</span>
+            <span className="lp-flip" data-flip>
+              <span className="lp-chip lp-chip-muted lp-flip-front"><Icon name="hidden" />pattern hidden</span>
+              <span className="lp-chip lp-flip-back"><Icon name="unlock" />sliding window</span>
+            </span>
           </div>
           <h3>Still Water</h3>
           <p>A buoy logs <i>n</i> wave heights. Find the longest run of readings that are all at most <i>h</i>.</p>
@@ -254,6 +258,8 @@ export default function Landing() {
         .from(scene.querySelectorAll(".lp-sq i"), { scale: 0, duration: 0.25, stagger: 0.04, ease: "back.out(2)" }, 1.2)
         .from(scene.querySelector("[data-verdict]"), { scale: 0.6, opacity: 0, duration: 0.4, ease: "back.out(2.4)" }, ">-0.05")
         .from(scene.querySelector("[data-reveal-line]"), { y: 8, opacity: 0, duration: 0.4 }, ">-0.1")
+        // The Accepted verdict turns the problem card's chip over: the pattern was hidden until now.
+        .fromTo(scene.querySelector("[data-flip]"), { rotateX: 180 }, { rotateX: 0, duration: 0.7, ease: "back.out(1.4)" }, "<")
         .from(scene.querySelector(".lp-week-strip"), { y: 24, opacity: 0, duration: 0.6 }, 0.5)
         .from(scene.querySelector(".lp-week-strip .today span"), { scale: 0.4, duration: 0.45, ease: "back.out(3)" }, ">0.9");
       // Today's square pops and the streak ticks over with it.
@@ -466,7 +472,6 @@ export default function Landing() {
         {/* 2 · A day */}
         <section id="day" className="lp-section" tabIndex={-1} aria-labelledby="day-title">
           <div className="lp-section-head">
-            <p className="lp-eyebrow">01 · The daily</p>
             <h2 id="day-title" data-split-reveal><Split text="Four steps, every day." /></h2>
             <p className="lp-section-lede">Weekdays bring a mixed, easier problem of any pattern. Spotting what it needs is the point.</p>
           </div>
@@ -489,7 +494,6 @@ export default function Landing() {
         {/* 3 · The week (pinned and scrubbed on wide screens) */}
         <section id="week" className="lp-section lp-section-sunk" tabIndex={-1} aria-labelledby="week-title">
           <div className="lp-section-head">
-            <p className="lp-eyebrow">02 · The week</p>
             <h2 id="week-title" data-split-reveal><Split text="Monday teaches. The weekend tests." /></h2>
             <p className="lp-section-lede">Weeks run Monday to Sunday, IST. One ladder problem opens each weekday, and nothing ever closes.</p>
           </div>
@@ -516,7 +520,6 @@ export default function Landing() {
         {/* 4 · Tracks */}
         <section id="tracks" className="lp-section" tabIndex={-1} aria-labelledby="tracks-title">
           <div className="lp-section-head">
-            <p className="lp-eyebrow">03 · Tracks</p>
             <h2 id="tracks-title" data-split-reveal><Split text="Learn the pattern, then climb it." /></h2>
             <p className="lp-section-lede">
               A lesson (how to spot it, the core idea, template code, common mistakes) and five problems from easy to hard, each with
@@ -527,6 +530,7 @@ export default function Landing() {
             {TRACKS.map((t) => (
               <article key={t.slug} className="lp-track">
                 <h3>{t.name}</h3>
+                {hasDiagram(t.slug) && <PatternDiagram pattern={t.slug} className="lp-track-pd" />}
                 <p className="lp-track-clue"><span className="lp-eyebrow">Spot it</span>{t.clue}</p>
                 <ol aria-label={`${t.name} ladder, easiest first`}>
                   {t.ladder.map((p, i) => (
@@ -547,7 +551,7 @@ export default function Landing() {
         <section id="judge" className="lp-section lp-section-ink" tabIndex={-1} aria-labelledby="judge-title">
           <div className="lp-judge-head">
             <div>
-              <p className="lp-eyebrow">04 · The judge</p>
+              <p className="lp-eyebrow">The judge</p>
               <h2 id="judge-title" data-split-reveal><Split text="Real verdicts, not vibes." /></h2>
             </div>
             <div>
@@ -574,7 +578,6 @@ export default function Landing() {
         {/* 6 · The habit: an example month, then the rules */}
         <section id="streak" className="lp-section" tabIndex={-1} aria-labelledby="streak-title">
           <div className="lp-section-head">
-            <p className="lp-eyebrow">05 · The habit</p>
             <h2 id="streak-title" data-split-reveal><Split text="Keep the squares coloured." /></h2>
           </div>
           <figure className="lp-month-fig">

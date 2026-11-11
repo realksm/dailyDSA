@@ -7,7 +7,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { createPool } from "@dailydsa/db";
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
-import { catchUpDaily, chooseDailyProblem, dailyEntries, ensureDailyPick } from "../src/daily.js";
+import { catchUpDaily, chooseDailyProblem, dailyEntries, dailyPulse, ensureDailyPick } from "../src/daily.js";
 import { addDays, isDay, isoWeekday, isWeekend, istDate, nextIstMidnight, weekStart } from "../src/ist.js";
 import { memoryMailer } from "../src/mailer.js";
 import { createUser } from "../src/users.js";
@@ -230,5 +230,18 @@ describe.skipIf(!dbUp)("daily pick (needs db + migrations)", () => {
       expect((await agent.get("/api/daily/today")).body.day).toBe(addDays(MON, 7));
       const recent = await agent.get("/api/daily?limit=5");
       expect(recent.body.days.map((d: { day: string }) => d.day)).toEqual([7, 6, 5, 4, 3].map((i) => addDays(MON, i)));
+    }));
+
+  it("counts the group's pulse: active members and how many solved", () =>
+    sandbox(async (db) => {
+      const p = await problem(db);
+      const before = await dailyPulse(db, p);
+      const stamp = Date.now();
+      const solver = await createUser(db, { email: `pa${stamp}@daily-test.local`, name: "A", password: "whatever123", role: "solver" });
+      await createUser(db, { email: `pb${stamp}@daily-test.local`, name: "B", password: "whatever123", role: "solver" });
+      const gone = await createUser(db, { email: `pc${stamp}@daily-test.local`, name: "C", password: "whatever123", role: "solver" });
+      await db.query("UPDATE users SET disabled = true WHERE id = $1", [gone.id]);
+      await db.query("INSERT INTO user_problems (user_id, problem_id, solved_at) VALUES ($1, $3, now()), ($2, $3, now())", [solver.id, gone.id, p]);
+      expect(await dailyPulse(db, p)).toEqual({ solved: before.solved + 1, members: before.members + 2 });
     }));
 });

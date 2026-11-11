@@ -159,6 +159,21 @@ export async function dailyEntries(
 }
 
 /**
+ * The group's pulse for a daily problem: active (not disabled) members, and how many of them have
+ * solved it (the same "solved" each of them sees on their own Today card). Counts only, no names.
+ */
+export async function dailyPulse(db: Db, problemId: number): Promise<{ solved: number; members: number }> {
+  const r = await db.query<{ solved: number; members: number }>(
+    `SELECT count(up.solved_at)::int AS solved, count(*)::int AS members
+       FROM users u
+       LEFT JOIN user_problems up ON up.user_id = u.id AND up.problem_id = $1
+      WHERE NOT u.disabled`,
+    [problemId],
+  );
+  return r.rows[0]!;
+}
+
+/**
  * Catches up (fills missed days, then today) now and again just after every IST midnight, so the
  * pick doesn't wait for the first visitor. Returns a stop function.
  */

@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { isStaff, useAuth, useMe, wasSignedOut } from "./auth";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BrandMark, Spinner } from "./components/ui";
+import { Icon } from "./components/Icon";
+import { readTheme, saveTheme, type ThemePref } from "./theme";
 import { Link, match, NavLink, useRouter } from "./router";
 import { Account } from "./pages/Account";
 import { Admin } from "./pages/admin/Admin";
@@ -120,6 +122,7 @@ function TopBar() {
       </nav>
       <div className="spacer" />
       <div className="who">
+        <ThemeButton />
         <Link to="/account" title={me.email}>{me.name}</Link>
         <button
           className="logout"
@@ -136,5 +139,25 @@ function TopBar() {
         </button>
       </div>
     </header>
+  );
+}
+
+const NEXT_THEME: Record<ThemePref, ThemePref> = { auto: "light", light: "dark", dark: "auto" };
+const THEME_LABEL: Record<ThemePref, string> = { auto: "Theme follows your system", light: "Light theme", dark: "Dark theme" };
+
+/** Cycles system → light → dark. The icon shows the current choice. */
+function ThemeButton() {
+  const [t, setT] = useState<ThemePref>(readTheme);
+  const next = NEXT_THEME[t];
+  return (
+    <button
+      type="button"
+      className="icon-btn theme-btn"
+      onClick={() => { saveTheme(next); setT(next); }}
+      aria-label={`${THEME_LABEL[t]}. Switch to ${next === "auto" ? "the system theme" : `the ${next} theme`}`}
+      title={THEME_LABEL[t]}
+    >
+      <Icon name={t === "auto" ? "auto" : t === "light" ? "sun" : "moon"} />
+    </button>
   );
 }

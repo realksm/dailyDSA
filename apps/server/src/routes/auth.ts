@@ -2,6 +2,7 @@
 import { Router, type Request } from "express";
 import type pg from "pg";
 import { z } from "zod";
+import type { MeSettings } from "@dailydsa/shared";
 import { destroySession, me, regenerateSession, requireUser } from "../auth.js";
 import type { Config } from "../config.js";
 import { HttpError, parse, tooManyRequests } from "../errors.js";
@@ -30,6 +31,7 @@ const SignupBody = z.object({
 const LoginBody = z.object({ email, password: z.string().min(1).max(MAX_PASSWORD_LENGTH) });
 const ChangePasswordBody = z.object({ currentPassword: z.string().min(1).max(MAX_PASSWORD_LENGTH), newPassword: password });
 const ForgotBody = z.object({ email });
+const SettingsBody = z.object({ remindStreak: z.boolean() });
 const ResetBody = z.object({ token: z.string().min(20).max(200), password });
 
 const MIN = 60_000;
@@ -106,6 +108,20 @@ export function authRoutes({ pool, config, mailer, logError }: AuthDeps): Router
     }
     await setPassword(pool, u.id, body.newPassword, req.sessionID); // logs out other devices
     res.json({ ok: true });
+  });
+
+  /** Per-member settings: just the streak-saver email for now (reminders.ts). */
+  r.get("/me/settings", requireUser, async (req, res) => {
+    const q = await pool.query<{ remind_streak: boolean }>("SELECT remind_streak FROM users WHERE id = $1", [me(req).id]);
+    const body: MeSettings = { remindStreak: q.rows[0]?.remind_streak ?? true };
+    res.json(body);
+  });
+
+  r.put("/me/settings", requireUser, async (req, res) => {
+    const b = parse(SettingsBody, req.body);
+    await pool.query("UPDATE users SET remind_streak = $2 WHERE id = $1", [me(req).id, b.remindStreak]);
+    const body: MeSettings = { remindStreak: b.remindStreak };
+    res.json(body);
   });
 
   // Always answers the same way, whether or not the email has an account (no enumeration).
