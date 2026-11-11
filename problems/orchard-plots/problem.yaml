@@ -1,0 +1,25 @@
+title: Orchard Plots
+kind: track
+memory_mb: 256
+samples: 1
+tests: 13
+input:
+  vars:
+    - { name: rows, type: int }
+    - { name: cols, type: int }
+    - { name: trees, type: "int[][]", rows: rows, cols: cols }
+    - { name: q, type: int }
+    - { name: plots, type: "int[][]", rows: q, cols: 4 }
+  returns: "long[]"
+hints:
+  - >-
+    Precompute, for every cell, the total of the rectangle from the top-left corner of the
+    orchard down to that cell. Any plot's total can then be put together from four of these
+    corner rectangles.
+  - >-
+    Keep a table `S` of size `(rows + 1) x (cols + 1)` with a border of zeros, where `S[i][j]` is
+    the total of rows `1..i` and columns `1..j`.
+  - >-
+    Fill it with `S[i][j] = trees[i-1][j-1] + S[i-1][j] + S[i][j-1] - S[i-1][j-1]` (the corner
+    overlap was added twice). A plot `(r1, c1, r2, c2)` is then
+    `S[r2][c2] - S[r1-1][c2] - S[r2][c1-1] + S[r1-1][c1-1]`. Use 64-bit totals.

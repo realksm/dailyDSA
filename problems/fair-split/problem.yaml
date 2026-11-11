@@ -1,0 +1,20 @@
+title: Fair Split
+kind: track
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: load, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    Every way to split is "the first `i` crates go on truck A, the rest on truck B", for `i`
+    from 1 to `n - 1`. Truck A's load is a prefix of the line; truck B's is everything else.
+  - >-
+    Keep the grand total of all crates, and a running total of the prefix as `i` grows.
+  - >-
+    For each `i`, add `load[i - 1]` to the prefix; truck B then carries `total - prefix`, so the
+    difference is `|2 * prefix - total|`. Take the minimum over all `i`. That's one pass instead
+    of re-adding both parts for every split. Use 64-bit integers.

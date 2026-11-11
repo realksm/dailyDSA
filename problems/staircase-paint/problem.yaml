@@ -1,0 +1,14 @@
+title: Staircase Paint
+kind: daily
+pool: weekend
+pattern: prefix-sums      # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: q, type: int }
+    - { name: ops, type: "int[][]", rows: q, cols: 3 }
+  returns: "long[]"
+  join: spaces

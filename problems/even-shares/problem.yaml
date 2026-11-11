@@ -1,0 +1,23 @@
+title: Even Shares
+kind: track
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: m, type: long }
+    - { name: change, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    With prefix sums `P` (`P[0] = 0`), the net result of days `l..r` is `P[r] - P[l - 1]`. That
+    is divisible by `m` exactly when `P[r]` and `P[l - 1]` leave the same remainder modulo `m`.
+  - >-
+    Keep a hash map from remainder to how many prefixes seen so far have it. Before the first
+    day, the empty prefix (remainder 0) has been seen once.
+  - >-
+    For each day, add it to the running prefix and take its remainder as `((P % m) + m) % m`, so
+    negative prefixes land in `0..m-1` too. Every earlier prefix with the same remainder starts a
+    valid stretch ending today: add its count to the answer, then count this prefix. The answer
+    needs 64 bits.

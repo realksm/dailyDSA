@@ -1,0 +1,23 @@
+title: Tiring Weeks
+kind: track
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: limit, type: int }
+    - { name: hours, type: "int[]", length: n }
+  returns: int
+hints:
+  - >-
+    Turn each day into `+1` (more than `limit` hours) or `-1` (not). A stretch is tiring exactly
+    when its total is positive, so with prefix sums `P` (`P[0] = 0`) you want the longest
+    `r - l` with `P[r] - P[l] > 0`, i.e. `P[l] < P[r]`.
+  - >-
+    Keep the first index at which each prefix value appeared. The values lie between `-n` and
+    `n`, so an array offset by `n` works as well as a map.
+  - >-
+    If `P[r] > 0`, the whole stretch from day 1 to day `r` is tiring. Otherwise you want the
+    earliest `l` with `P[l] < P[r]`. The prefix starts at 0 and moves in steps of 1, so the first
+    time it went below `P[r]` it was exactly `P[r] - 1`: look up the first index of `P[r] - 1`.

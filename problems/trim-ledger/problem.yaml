@@ -1,0 +1,13 @@
+title: Trim the Ledger
+kind: daily
+pool: weekend
+pattern: prefix-sums      # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: p, type: long }
+    - { name: amount, type: "long[]", length: n }
+  returns: int
