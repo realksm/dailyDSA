@@ -151,7 +151,7 @@ Suggested order (each piece testable on its own):
 
 ## Session log
 
-- **2026-11-11 (9)** — Step 3.8: `apps/web` (Vite + React 19 + Monaco): auth pages, today, archive, problem page with editor/Run/Submit/results, history + submissions, submission page, account, admin (schedule + pins + track weeks, problems, users, invites). The server serves the built app (`WEB_DIR`, 3 new tests). 89 tests pass; walked through every page in headless Chromium against a fresh server (PORT=3003). Step 3 is complete. Next: step 4 (Solutions tab).
+- **2026-11-11 (9)** — Step 3.8: `apps/web` (Vite + React 19 + Monaco): auth pages, today, archive, problem page with editor/Run/Submit/results, history + submissions, submission page, account, admin (schedule + pins + track weeks, problems, users, invites). The server serves the built app (`WEB_DIR`, 3 new tests). 89 tests pass; walked through every page in headless Chromium against a fresh server (PORT=3003). Step 3 is complete. Then: a blank problem page traced to a stale server on :3000 (no `lastCode`); the page now guards it and routes sit in an `ErrorBoundary`. Next: step 4 (Solutions tab).
 
 - **2026-11-11 (8)** — Step 3.7: `GET /api/history`, `GET /api/submissions` (own, paged), `/api/admin/*` (users: role/disable/reset password; invite codes CRUD; problems; tracks; schedule view; day pins for staff; track weeks for admins; future-only edits). Bodyless DELETE allowed past the JSON guard. 86 tests pass; live boot checked on PORT=3002. Next: 3.8 web app (Vite + React + Monaco).
 
