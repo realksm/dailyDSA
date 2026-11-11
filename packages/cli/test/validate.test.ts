@@ -31,7 +31,12 @@ describe("problem.yaml schema", () => {
     const e = errors({ ...base, input: { vars: [{ name: "a", type: "int[]", length: "n" }, { name: "n", type: "int" }], returns: "int" } });
     expect(e.join()).toMatch(/refers to `n`/);
   });
-  it("rejects unknown keys", () => expect(errors({ ...base, pol: "weekday" }).length).toBeGreaterThan(0));
+  it("input var names can't clash with the editor template", () => {
+    const e = errors({ ...base, input: { vars: [{ name: "out", type: "int" }, { name: "_n", type: "int" }], returns: "int" } }).join();
+    expect(e).toMatch(/`out` clashes/);
+    expect(e).toMatch(/`_n`: names starting with _/);
+  });
+  it("rejects unknown keys",() => expect(errors({ ...base, pol: "weekday" }).length).toBeGreaterThan(0));
 });
 
 // ── validation must say no (needs go-judge) ──

@@ -30,6 +30,20 @@ Generated tests are **not** committed; they go to `.data/tests/<slug>/<hash>/` a
 | `wrong.cpp` | with a checker | a plausible wrong solution the checker must reject on ≥1 test |
 | `validation.json` | written by the tool | calibrated limits, test hash, timings; never edit by hand |
 
+## Editor template conventions
+
+`input:` in `problem.yaml` generates the C++/Java/Python editor template (`editorTemplate` in `packages/shared`): it reads the vars in order, calls `solve()` and prints the result. Write the statement to match:
+
+- Input is whitespace-separated tokens; a `string` is one token (ASCII, no spaces).
+- Types: `int`, `long`, `string`, `int[]`/`long[]`/`string[]` (`length:` an earlier var), `int[][]` (`rows:` var, `cols:` var or number).
+- `bool` prints `YES` / `NO`. Arrays print one element per line, or space-separated with `join: spaces`.
+- `multi: true`: the first token is T, then T cases; each case's result is printed in order.
+- `returns: void`: solve() prints itself (C++ `cout`, Java `out`, Python `print`). Use it for "print any …" / "-1 if none" outputs.
+- Var names can't be keywords or template internals (`out`, `in`, `res`, `solve`, …) or start with `_`.
+- No `input:` = a generic template with a fast reader; the solver writes all of main.
+
+`packages/cli/test/templates.test.ts` judges each problem's logic through its template; add a problem there when its input shape is new.
+
 ## What validation proves (PLAN §7)
 
 1. `gen.py` is deterministic (tests 1 and N are regenerated and compared).

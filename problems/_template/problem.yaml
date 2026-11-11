@@ -12,6 +12,8 @@ input:                    # drives the editor template (solver only writes solve
     - { name: n, type: int }
     - { name: a, type: "long[]", length: n }
   returns: long           # int | long | string | bool | int[] | long[] | void (solve prints itself)
+  # join: lines           # array returns: lines (one per line, default) | spaces (one line)
+  # multi: true           # first token T, then T cases
 # hints:                  # track only, up to 3, revealed one at a time
 #   - How the pattern applies here
 #   - What to keep track of

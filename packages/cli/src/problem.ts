@@ -13,7 +13,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { POOLS, PROBLEM_KINDS, type Lang, type TimeLimits } from "@dailydsa/shared";
+import { POOLS, PROBLEM_KINDS, RESERVED_NAMES, type Lang, type TimeLimits } from "@dailydsa/shared";
 
 export const ROOT = path.resolve(process.env.DSA_ROOT ?? process.cwd());
 export const PROBLEMS_DIR = path.join(ROOT, "problems");
@@ -41,6 +41,7 @@ export const problemYaml = z
       .object({
         vars: z.array(inputVar).min(1),
         returns: z.enum(["int", "long", "string", "bool", "int[]", "long[]", "void"]),
+        join: z.enum(["lines", "spaces"]).optional(),
         multi: z.boolean().optional(),
       })
       .optional(),
@@ -62,6 +63,9 @@ export const problemYaml = z
         for (const dep of "length" in v ? [v.length] : "rows" in v ? [v.rows, v.cols].filter((d): d is string => typeof d === "string") : []) {
           if (!seen.has(dep)) issue(`input var \`${v.name}\` refers to \`${dep}\`, which must be an earlier int var`);
         }
+        if (RESERVED_NAMES.has(v.name)) issue(`input var \`${v.name}\` clashes with a keyword or a name the editor template uses`);
+        if (v.name.startsWith("_")) issue(`input var \`${v.name}\`: names starting with _ are reserved for the template`);
+        if (seen.has(v.name)) issue(`input var \`${v.name}\` is declared twice`);
         seen.add(v.name);
       }
     }

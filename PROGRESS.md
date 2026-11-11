@@ -15,7 +15,7 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 0 | go-judge spike | ✅ done — all checks pass (`spike/judge-spike.mjs`) |
 | 1 | Schema | ✅ done — `packages/db/migrations/001_init.sql`, patterns seeded in `002` |
 | 2 | Problem format + validate CLI (+2–3 problems) | ✅ done — `packages/cli`, `problems/README.md`, 3 problems validated + imported |
-| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ **next** |
+| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, **3.2 server skeleton next** |
 | 4 | Solutions tab + polish | ☐ |
 | 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ |
 | 6 | Content: a few problems + one track | 🟡 started — first track is **two pointers** (ladder 1/5: `budget-pairs`) |
@@ -38,7 +38,7 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck
-pnpm test                           # 19 tests; go-judge ones skip if the judge isn't up
+pnpm test                           # 35 tests; go-judge ones skip if the judge isn't up
 pnpm dsa list                       # problem states
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
@@ -78,12 +78,14 @@ spike/               throwaway go-judge proof
 - **Track rows** are created on first import of a track problem (title = pattern name); the lesson is filled in later (admin page).
 - **Output comparison:** per-line trailing whitespace and trailing blank lines ignored; CRLF normalised.
 - **Hidden tests:** only the first failing hidden test reveals its input/output.
+- **Template conventions:** bool prints `YES`/`NO`; array returns print one per line unless `join: spaces` (new optional `InputSpec` field); Python collects output and writes once; Java prints through a shared buffered `out`; `void` = solve() prints itself. Var names starting with `_` or in `RESERVED_NAMES` are rejected by the yaml schema (the template uses `_it`, `_x`, `_res`, …).
+- **Template `body` param:** the same generator will produce the lesson template code (PLAN §2), so lessons match the editor style.
 - **Line endings:** `.gitattributes` forces LF (test files are compared byte-wise inside Linux).
 
 ## Next up — step 3: core app
 
 Suggested order (each piece testable on its own):
-1. **Editor templates** from `InputSpec` (packages/shared): C++/Java/Python code that reads the vars, calls `solve()`, prints the return. Generic fast-reader template when `input` is absent. Verify by wrapping each problem's ref logic into a `solve()` and judging it.
+1. ✅ **Editor templates**: `editorTemplate(lang, spec?, body?)` in `packages/shared/src/template.ts`. Conventions are in `problems/README.md`. `packages/cli/test/templates.test.ts` judges every problem's logic through its template within the calibrated limits (all 9 pass, max CPU < 60% of the limit).
 2. **apps/server skeleton:** Express, `express-session` + `connect-pg-simple`, argon2 passwords, zod request validation, error handler.
 3. **Auth:** signup with invite code (uses/expiry/disabled, role from code), login, logout, `/api/me`. Bootstrap first admin via `pnpm dsa admin create` (or a seed script).
 4. **Daily:** IST date helper; `ensureDailyPick(day)` (weekday pool / weekend pool by week's track pattern / no-track weekend = patterns that already ran, fallback weekday pool); called lazily on request + on a timer at IST midnight. Archive endpoint.
@@ -102,3 +104,4 @@ Suggested order (each piece testable on its own):
 ## Session log
 
 - **2026-11-11** — Reviewed plan, recorded decisions (git-folder problems, 24/6 launch mix, platform-first milestone). Built + passed go-judge spike. Scaffolded pnpm/TS monorepo (shared, judge, db, cli). Schema + migrations. Validate/import CLI with 19 passing tests. First 3 problems validated and imported. Picked two pointers as the first track.
+- **2026-11-11 (2)** — Step 3.1: editor templates for C++/Java/Python + generic fallback; `join` field; reserved-name check; template-judging integration test over all 3 problems. 35 tests pass.

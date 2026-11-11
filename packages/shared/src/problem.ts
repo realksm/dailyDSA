@@ -38,6 +38,8 @@ export interface InputSpec {
   vars: InputVar[];
   /** What solve() returns; the template prints it. "void" = solve() prints itself. */
   returns: ReturnType;
+  /** How an array return is printed: one element per line (default) or space-separated on one line. */
+  join?: "lines" | "spaces";
   /** Multiple test cases in one input: first line T, then T copies of vars. */
   multi?: boolean;
 }
