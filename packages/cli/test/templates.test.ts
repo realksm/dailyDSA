@@ -3,10 +3,9 @@
 // against the stored tests. Needs go-judge and the generated tests (`pnpm dsa validate --all`).
 import { stat } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { GoJudge, judge } from "@dailydsa/judge";
+import { GoJudge, judge, readTests, testsDir } from "@dailydsa/judge";
 import { LANGS, editorTemplate, type InputSpec, type Lang } from "@dailydsa/shared";
 import { DATA_DIR, loadProblem } from "../src/problem.js";
-import { readTests, testsDir } from "../src/tests-store.js";
 
 const BODIES: Record<string, Record<Lang, string>> = {
   "budget-pairs": {

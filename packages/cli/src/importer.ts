@@ -3,7 +3,7 @@
 import type pg from "pg";
 import { LANGS } from "@dailydsa/shared";
 import { DATA_DIR, ProblemError, type ProblemFolder } from "./problem.js";
-import { readTests } from "./tests-store.js";
+import { readTests } from "@dailydsa/judge";
 
 export async function importProblem(db: pg.Pool, p: ProblemFolder): Promise<{ id: number; created: boolean }> {
   const v = p.validation;

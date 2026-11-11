@@ -26,6 +26,9 @@ importers:
       '@dailydsa/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@dailydsa/judge':
+        specifier: workspace:*
+        version: link:../../packages/judge
       '@dailydsa/shared':
         specifier: workspace:*
         version: link:../../packages/shared

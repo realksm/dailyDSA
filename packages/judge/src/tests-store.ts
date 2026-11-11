@@ -45,3 +45,19 @@ export async function readTests(dataDir: string, slug: string, hash: string, cou
   if (hashTests(tests) !== hash) throw new Error(`tests for ${slug} on disk don't match hash ${hash}; re-run validate`);
   return tests;
 }
+
+/**
+ * The first `count` tests only (the samples shown on the problem page). No hash check: the hash
+ * covers the whole set, and the hash-named folder is swapped in atomically, so it can't be partial.
+ */
+export async function readSamples(dataDir: string, slug: string, hash: string, count: number): Promise<StoredTest[]> {
+  const dir = testsDir(dataDir, slug, hash);
+  const out: StoredTest[] = [];
+  for (let i = 0; i < count; i++) {
+    out.push({
+      input: await readFile(path.join(dir, `${name(i)}.in`), "utf8"),
+      answer: await readFile(path.join(dir, `${name(i)}.ans`), "utf8"),
+    });
+  }
+  return out;
+}

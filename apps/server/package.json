@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@dailydsa/db": "workspace:*",
+    "@dailydsa/judge": "workspace:*",
     "@dailydsa/shared": "workspace:*",
     "argon2": "^0.45.2",
     "connect-pg-simple": "^10.0.0",

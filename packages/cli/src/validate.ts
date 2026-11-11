@@ -9,9 +9,8 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { LANGS, type Lang, type TimeLimits } from "@dailydsa/shared";
-import { GoJudge, normalizeOutput, runChecker, type Limits, type Program } from "@dailydsa/judge";
+import { GoJudge, normalizeOutput, runChecker, type Limits, type Program, writeTests, type StoredTest } from "@dailydsa/judge";
 import { DATA_DIR, type ProblemFolder, type ValidationRecord } from "./problem.js";
-import { writeTests, type StoredTest } from "./tests-store.js";
 
 export class ValidationError extends Error {}
 

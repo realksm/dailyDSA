@@ -15,7 +15,7 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 0 | go-judge spike | ✅ done — all checks pass (`spike/judge-spike.mjs`) |
 | 1 | Schema | ✅ done — `packages/db/migrations/001_init.sql`, patterns seeded in `002` |
 | 2 | Problem format + validate CLI (+2–3 problems) | ✅ done — `packages/cli`, `problems/README.md`, 3 problems validated + imported |
-| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, 3.2 server skeleton ✅, 3.3 auth + email reset ✅, 3.4 daily ✅, **3.5 problem view next** |
+| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, 3.2 server skeleton ✅, 3.3 auth + email reset ✅, 3.4 daily ✅, 3.5 problem view ✅, **3.6 Run/Submit next** |
 | 4 | Solutions tab + polish | ☐ |
 | 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ |
 | 6 | Content: a few problems + one track | 🟡 started — first track is **two pointers** (ladder 1/5: `budget-pairs`) |
@@ -38,7 +38,7 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck
-pnpm test                           # 66 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 70 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
@@ -60,11 +60,11 @@ If Docker Desktop isn't running: start it, wait for `docker info`; the first bui
 ```
 judge/               go-judge image (Dockerfile, mount.yaml); runs with -parallelism 1
 packages/shared      types shared by front+back: Lang, Verdict, JudgeResult, InputSpec, pools/roles/patterns
-packages/judge       go-judge client + judge() orchestrator (compile once → run per test → checker → cleanup)
+packages/judge       go-judge client + judge() orchestrator (compile once → run per test → checker → cleanup) + on-disk tests store (`tests-store.ts`, used by CLI and server)
 packages/db          pg pool + SQL migration runner (migrations/NNN_*.sql)
 packages/cli         `pnpm dsa` — list / new / validate / import / admin / invite
 problems/            one folder per problem (+ _template, README.md)
-apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`); `users.ts` is also used by the CLI. Queue worker comes in 3.6
+apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`); `users.ts` is also used by the CLI. Queue worker comes in 3.6
 spike/               throwaway go-judge proof
 .data/               (gitignored) generated tests: .data/tests/<slug>/<hash>/NN.in|NN.ans
 ```
@@ -97,6 +97,8 @@ spike/               throwaway go-judge proof
 - **Dates:** the db package makes pg return DATE columns as `YYYY-MM-DD` strings (pg's default Date at local midnight shifts the day off-IST). IST helpers in `apps/server/src/ist.ts` use a fixed +05:30 offset (India has no DST).
 - **Daily pick details:** "last shown" counts every `daily_schedule` row, future pins included, so a pinned problem isn't also picked just before its date. Weekend chain: week's track pattern → weekend problems of patterns whose track ran in an *earlier* week → weekday pool (also used if the week's track has no weekend problems). Insert is `ON CONFLICT (day) DO NOTHING` + read back, so racing requests are safe without a lock. **Missed days are backfilled** (`catchUpDaily`): every day from the first scheduled day through today gets a pick, oldest first, each by its own day's rules (that week's track etc.); runs at boot, at each rollover, and on `/today` when today is missing. Horizon 366 days.
 - **Daily API** (`requireUser`): `GET /api/daily/today` (lazy pick; adds `nextRolloverAt`; 404 `no_daily` if the bank is empty), `GET /api/daily?before=&limit=` (archive, newest first, ≤ today, keyset paging via `nextBefore`), `GET /api/daily/:day` (future days 404 so pins can't be peeked). Entries carry status new/attempted/solved, `solvedAt`, `pattern` only after solve/unlock, `review.lastShownOn` for repeats. Types `DailyEntry`/`DailyToday`/`DailyArchive` in shared. `startDailyRollover` picks on boot and ~2 s after each IST midnight. `createApp` takes an injectable `now` clock.
+- **Problem page** (`GET /api/problems/:slug`, `requireUser`, type `ProblemView`): statement, samples (first `sample_count` tests read from disk, cached per tests hash), templates for all 3 langs, limits, status, `solutionsUnlocked` / `canUnlockSolutions`, `anyValidAnswer` (has checker), `dailyDays`, and for track problems `{position, hints, hintsUsed}` (hint bodies come in step 5). **Who sees what:** solvers see a daily problem once it was the daily on a day ≤ today, and a track problem once Monday + position − 1 of any week its track ran has come (then forever); retired problems stay open. Everything else is 404 (same as an unknown slug) so pins/upcoming ladders can't be probed. Setters and admins see every problem. Pattern: track problems always, daily only after solve/unlock. The SQL condition is `openToSolvers()` in `problems.ts` — reuse it for Run/Submit.
+- **Tests store moved** from the CLI to `@dailydsa/judge` (the server can't import the CLI, which depends on it); adds `readSamples()`.
 - **Line endings:** `.gitattributes` forces LF (test files are compared byte-wise inside Linux).
 
 ## Next up — step 3: core app
@@ -106,8 +108,8 @@ Suggested order (each piece testable on its own):
 2. ✅ **apps/server skeleton:** `createApp(deps)` in `apps/server/src/app.ts` (tests inject a MemoryStore, a fake pool and extra routers). `loadConfig()` reads env via zod; production refuses the dev `SESSION_SECRET`. Sessions in Postgres (`dsa.sid`, httpOnly, SameSite=Lax, secure in prod, 30 days rolling, no cookie until login). `parse(schema, body)` + one error handler → `ApiError` body (`packages/shared/src/api.ts`). argon2id helpers incl. `dummyHash()` for constant-time unknown-email logins. `GET /api/health`.
 3. ✅ **Auth** (`apps/server/src/routes/auth.ts`): `POST /api/auth/signup|login|logout|forgot-password|reset-password`, `GET /api/me`, `POST /api/me/password`. Guards `requireUser` / `requireRole(...)` and `me(req)` in `src/auth.ts`. Mailer: SMTP (nodemailer) or console. CLI: `dsa admin create|reset-password`, `dsa invite create`.
 4. ✅ **Daily:** IST date helper; `ensureDailyPick(day)` (weekday pool / weekend pool by week's track pattern / no-track weekend = patterns that already ran, fallback weekday pool); called lazily on request + on a timer at IST midnight. Archive endpoint.
-5. **Problem view:** statement + samples (first `sample_count` tests from disk) + template + limits + my status; pattern tag only after solve/unlock.
-6. **Run/Submit:** insert into `submissions` (rate limit: one Run/Submit per user every ~5 s), worker loop claims rows (`FOR UPDATE SKIP LOCKED`, reset `running`→`queued` on boot), loads tests from disk, calls `judge()`, updates `user_problems`. Poll `GET /api/submissions/:id`.
+5. ✅ **Problem view:** statement + samples (first `sample_count` tests from disk) + template + limits + my status; pattern tag only after solve/unlock.
+6. **Run/Submit:** only for problems `openToSolvers` (or staff); insert into `submissions` (rate limit: one Run/Submit per user every ~5 s), worker loop claims rows (`FOR UPDATE SKIP LOCKED`, reset `running`→`queued` on boot), loads tests from disk, calls `judge()`, updates `user_problems`. Poll `GET /api/submissions/:id`.
 7. **History** page data; **admin**: invite codes CRUD, password reset, pin a problem to a date, schedule track weeks.
 8. **apps/web:** Vite + React + Monaco (laptop only): today, problem/editor, archive, history, admin, plus login / signup / forgot-password / `reset-password?token=` / change-password pages.
 
@@ -120,6 +122,8 @@ Suggested order (each piece testable on its own):
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (6)** — Step 3.5: problem page endpoint with release rules (daily day / track ladder day / staff), samples from disk, templates, limits, solve + solutions status, pattern reveal. Moved the tests store into `@dailydsa/judge`. 70 tests pass; checked live against `rainfall-ledger`. Open for the web step: the editor should restore the user's last code per language (comes with 3.6 submissions).
 
 - **2026-11-11 (5)** — Step 3.4: IST helpers, daily pick rules (weekday / week-track / ran-tracks / weekday fallback), lazy + midnight-timer rollover, today / day / archive endpoints, DATE-as-string parser. 64 tests pass; checked live (boot picked rainfall-ledger for 2026-11-11). Then: missed days are backfilled so the archive has no holes (user's call); 66 tests.
 

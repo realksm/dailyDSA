@@ -9,6 +9,7 @@ import { createMailer, type Mailer } from "./mailer.js";
 import { authRoutes } from "./routes/auth.js";
 import { dailyRoutes } from "./routes/daily.js";
 import { healthRoutes } from "./routes/health.js";
+import { problemRoutes } from "./routes/problems.js";
 import { pgSessionStore, sessionMiddleware } from "./session.js";
 
 export interface AppDeps {
@@ -50,7 +51,9 @@ export function createApp(deps: AppDeps): express.Express {
   api.use(loadUser(pool));
   api.use(healthRoutes(pool));
   api.use(authRoutes({ pool, config, mailer: deps.mailer ?? createMailer(config), logError }));
-  api.use(dailyRoutes({ pool, now: deps.now ?? (() => new Date()) }));
+  const now = deps.now ?? (() => new Date());
+  api.use(dailyRoutes({ pool, now }));
+  api.use(problemRoutes({ pool, now, dataDir: config.dataDir }));
   for (const r of deps.routes ?? []) api.use(r);
   api.use(notFoundHandler);
 

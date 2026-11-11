@@ -1,4 +1,5 @@
-import type { Role } from "./problem.js";
+import type { ProblemKind, Role, TimeLimits } from "./problem.js";
+import type { Lang } from "./lang.js";
 
 /** Error body of every non-2xx /api response. `details` lists per-field problems for `invalid_request`. */
 export interface ApiError {
@@ -44,4 +45,30 @@ export interface DailyToday extends DailyEntry {
 export interface DailyArchive {
   days: DailyEntry[];
   nextBefore: string | null;
+}
+
+/** GET /api/problems/:slug — everything the problem page and editor need. */
+export interface ProblemView {
+  slug: string;
+  title: string;
+  kind: ProblemKind;
+  statementMd: string;
+  /** The first tests, shown on the page and used by Run. `output` is the reference answer. */
+  samples: { input: string; output: string }[];
+  /** A checker grades the output, so any valid answer is accepted, not only the one shown. */
+  anyValidAnswer: boolean;
+  /** Editor start code per language (input already read, solver writes solve()). */
+  templates: Record<Lang, string>;
+  limits: { timeMs: TimeLimits; memoryMb: number; outputMb: number };
+  status: SolveStatus;
+  solvedAt: string | null;
+  solutionsUnlocked: boolean;
+  /** "Show solutions" button: after a real (non-CE) attempt, until unlocked. */
+  canUnlockSolutions: boolean;
+  /** Track problems: always (the track is the pattern). Daily: only after solve/unlock. */
+  pattern: { slug: string; name: string } | null;
+  /** Track problems only: the ladder position and how many hints exist / were used. */
+  track: { position: number; hints: number; hintsUsed: number } | null;
+  /** IST days this problem was the daily (oldest first, never after today). */
+  dailyDays: string[];
 }
