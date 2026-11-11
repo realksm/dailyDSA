@@ -4,7 +4,7 @@ import type pg from "pg";
 import { z } from "zod";
 import type { DailyArchive, DailyToday } from "@dailydsa/shared";
 import { me, requireUser } from "../auth.js";
-import { dailyEntries, ensureDailyPick } from "../daily.js";
+import { catchUpDaily, dailyEntries, ensureDailyPick } from "../daily.js";
 import { HttpError, notFound, parse } from "../errors.js";
 import { isDay, istDate, nextIstMidnight } from "../ist.js";
 
@@ -23,6 +23,9 @@ export function dailyRoutes({ pool, now }: { pool: pg.Pool; now: () => Date }): 
   r.get("/daily/today", async (req, res) => {
     const t = now();
     const today = istDate(t);
+    // Today missing means the rollover didn't run (e.g. the server was down): fill the gap too.
+    const has = await pool.query("SELECT 1 FROM daily_schedule WHERE day = $1", [today]);
+    if (has.rowCount === 0) await catchUpDaily(pool, today);
     if (!(await ensureDailyPick(pool, today))) throw noDaily();
     const [entry] = await dailyEntries(pool, { userId: me(req).id, today, day: today });
     if (!entry) throw noDaily();

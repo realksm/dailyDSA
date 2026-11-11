@@ -82,6 +82,33 @@ export async function ensureDailyPick(db: Db, day: string): Promise<DailyPick | 
   return { day, problemId: won.rows[0]!.problem_id };
 }
 
+/** Backfill horizon: a gap longer than this (a year of downtime) is not filled. */
+export const MAX_CATCH_UP_DAYS = 366;
+
+/**
+ * Makes sure every day from the first scheduled day through `today` has a pick, oldest first,
+ * so the archive has no holes after the server was down (each missed day gets the pick its
+ * own rules would have made, e.g. the track of that week). Returns the picks it made.
+ */
+export async function catchUpDaily(db: Db, today: string): Promise<DailyPick[]> {
+  const missing = await db.query<{ day: string }>(
+    `SELECT g.day::date::text AS day
+       FROM generate_series(
+              greatest(coalesce((SELECT min(day) FROM daily_schedule WHERE day <= $1), $1::date), $1::date - $2::int),
+              $1::date, interval '1 day') AS g(day)
+      WHERE NOT EXISTS (SELECT 1 FROM daily_schedule d WHERE d.day = g.day::date)
+      ORDER BY 1`,
+    [today, MAX_CATCH_UP_DAYS],
+  );
+  const made: DailyPick[] = [];
+  for (const { day } of missing.rows) {
+    const p = await ensureDailyPick(db, day);
+    if (!p) break; // empty bank: nothing to pick for any day
+    if (p.rule) made.push(p);
+  }
+  return made;
+}
+
 interface EntryRow {
   day: string;
   slug: string;
@@ -132,8 +159,8 @@ export async function dailyEntries(
 }
 
 /**
- * Makes today's pick now and again just after every IST midnight, so the pick doesn't wait for
- * the first visitor. Returns a stop function.
+ * Catches up (fills missed days, then today) now and again just after every IST midnight, so the
+ * pick doesn't wait for the first visitor. Returns a stop function.
  */
 export function startDailyRollover(pool: pg.Pool, log: { info: (m: string) => void; error: (e: unknown) => void }, now: () => Date = () => new Date()): () => void {
   let timer: NodeJS.Timeout | undefined;
@@ -141,9 +168,9 @@ export function startDailyRollover(pool: pg.Pool, log: { info: (m: string) => vo
   const run = async () => {
     const day = istDate(now());
     try {
-      const p = await ensureDailyPick(pool, day);
-      if (!p) log.info(`daily ${day}: no eligible problem`);
-      else if (p.rule) log.info(`daily ${day}: picked problem ${p.problemId} (${p.rule})`);
+      const made = await catchUpDaily(pool, day);
+      for (const p of made) log.info(`daily ${p.day}: picked problem ${p.problemId} (${p.rule})`);
+      if (made.length === 0 && !(await ensureDailyPick(pool, day))) log.info(`daily ${day}: no eligible problem`);
     } catch (e) {
       log.error(e);
     }

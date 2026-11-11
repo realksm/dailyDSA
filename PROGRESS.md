@@ -38,7 +38,7 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck
-pnpm test                           # 64 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 66 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
@@ -95,7 +95,7 @@ spike/               throwaway go-judge proof
 - **Login errors:** unknown email and wrong password give the same 401 `bad_credentials`, and an argon2 verify always runs (dummy hash). `account_disabled` (403) is only shown after a correct password.
 - **Invite codes:** `DSA-XXXX-XXXX` from an unambiguous alphabet; input is trimmed + upper-cased. Use counted in the same transaction as the user insert (row lock), rolled back if the email is taken.
 - **Dates:** the db package makes pg return DATE columns as `YYYY-MM-DD` strings (pg's default Date at local midnight shifts the day off-IST). IST helpers in `apps/server/src/ist.ts` use a fixed +05:30 offset (India has no DST).
-- **Daily pick details:** "last shown" counts every `daily_schedule` row, future pins included, so a pinned problem isn't also picked just before its date. Weekend chain: week's track pattern → weekend problems of patterns whose track ran in an *earlier* week → weekday pool (also used if the week's track has no weekend problems). Insert is `ON CONFLICT (day) DO NOTHING` + read back, so racing requests are safe without a lock. Missed days (server down all day) are not backfilled.
+- **Daily pick details:** "last shown" counts every `daily_schedule` row, future pins included, so a pinned problem isn't also picked just before its date. Weekend chain: week's track pattern → weekend problems of patterns whose track ran in an *earlier* week → weekday pool (also used if the week's track has no weekend problems). Insert is `ON CONFLICT (day) DO NOTHING` + read back, so racing requests are safe without a lock. **Missed days are backfilled** (`catchUpDaily`): every day from the first scheduled day through today gets a pick, oldest first, each by its own day's rules (that week's track etc.); runs at boot, at each rollover, and on `/today` when today is missing. Horizon 366 days.
 - **Daily API** (`requireUser`): `GET /api/daily/today` (lazy pick; adds `nextRolloverAt`; 404 `no_daily` if the bank is empty), `GET /api/daily?before=&limit=` (archive, newest first, ≤ today, keyset paging via `nextBefore`), `GET /api/daily/:day` (future days 404 so pins can't be peeked). Entries carry status new/attempted/solved, `solvedAt`, `pattern` only after solve/unlock, `review.lastShownOn` for repeats. Types `DailyEntry`/`DailyToday`/`DailyArchive` in shared. `startDailyRollover` picks on boot and ~2 s after each IST midnight. `createApp` takes an injectable `now` clock.
 - **Line endings:** `.gitattributes` forces LF (test files are compared byte-wise inside Linux).
 
@@ -115,13 +115,13 @@ Suggested order (each piece testable on its own):
 
 - Upload test inputs to go-judge once per problem (fileId) instead of sending content per run — only if large tests prove slow.
 - Advisory lock shared by the queue worker and the validate CLI (key reserved: 727002) — implement with the worker (go-judge `-parallelism 1` already prevents overlapping runs).
-- Weekend pool needs ≥2 problems per track pattern; we have 1 for two-pointers (`exact-gap`) — write another when doing track content.
+- Weekend pool needs ≥2 problems per track pattern; we have 1 for two-pointers (`exact-gap`), so a two-pointers weekend shows it Sat and Sun — the user will write more weekend problems (planned, step 6).
 - Remaining two-pointers ladder problems (#2–#5) + lesson.
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
 
-- **2026-11-11 (5)** — Step 3.4: IST helpers, daily pick rules (weekday / week-track / ran-tracks / weekday fallback), lazy + midnight-timer rollover, today / day / archive endpoints, DATE-as-string parser. 64 tests pass; checked live (boot picked rainfall-ledger for 2026-11-11).
+- **2026-11-11 (5)** — Step 3.4: IST helpers, daily pick rules (weekday / week-track / ran-tracks / weekday fallback), lazy + midnight-timer rollover, today / day / archive endpoints, DATE-as-string parser. 64 tests pass; checked live (boot picked rainfall-ledger for 2026-11-11). Then: missed days are backfilled so the archive has no holes (user's call); 66 tests.
 
 - **2026-11-11** — Reviewed plan, recorded decisions (git-folder problems, 24/6 launch mix, platform-first milestone). Built + passed go-judge spike. Scaffolded pnpm/TS monorepo (shared, judge, db, cli). Schema + migrations. Validate/import CLI with 19 passing tests. First 3 problems validated and imported. Picked two pointers as the first track.
 - **2026-11-11 (4)** — Step 3.3: auth (signup with invite, login, logout, me, change password) + password reset by email (migration 003, mailer, PLAN §5/§8/§13 updated). CLI `admin create|reset-password`, `invite create`. Fixed: dropping a stale session left `req.session` undefined. 55 tests pass; reset flow checked live against the running server.

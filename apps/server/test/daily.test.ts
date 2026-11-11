@@ -7,7 +7,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { createPool } from "@dailydsa/db";
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
-import { chooseDailyProblem, dailyEntries, ensureDailyPick } from "../src/daily.js";
+import { catchUpDaily, chooseDailyProblem, dailyEntries, ensureDailyPick } from "../src/daily.js";
 import { addDays, isDay, isoWeekday, isWeekend, istDate, nextIstMidnight, weekStart } from "../src/ist.js";
 import { memoryMailer } from "../src/mailer.js";
 import { createUser } from "../src/users.js";
@@ -134,6 +134,31 @@ describe.skipIf(!dbUp)("daily pick (needs db + migrations)", () => {
       expect(await chooseDailyProblem(db, addDays(SAT, 14))).toMatchObject({ rule: "ran-tracks" });
     }));
 
+  it("catches up missed days in order, each with its own day's rules", () =>
+    sandbox(async (db) => {
+      await problem(db);
+      await problem(db);
+      const sw = await problem(db, { pool: "weekend", pattern: "sliding-window" });
+      await scheduleTrack(db, MON, "sliding-window");
+      await ensureDailyPick(db, MON);
+      await db.query("INSERT INTO daily_schedule (day, problem_id) VALUES ($1, $2)", [addDays(MON, 30), sw]); // future pin: untouched
+
+      const made = await catchUpDaily(db, addDays(MON, 7)); // server "down" Tue..next Mon
+      expect(made.map((p) => p.day)).toEqual([1, 2, 3, 4, 5, 6, 7].map((i) => addDays(MON, i)));
+      expect(made.find((p) => p.day === SAT)).toMatchObject({ problemId: sw, rule: "week-track" });
+      expect(made.at(-1)!.rule).toBe("weekday");
+      expect(await catchUpDaily(db, addDays(MON, 7))).toEqual([]);
+
+      const r = await db.query<{ n: number }>("SELECT count(*)::int AS n FROM daily_schedule WHERE day <= $1", [addDays(MON, 7)]);
+      expect(r.rows[0]!.n).toBe(8);
+    }));
+
+  it("catch-up with no history only picks today", () =>
+    sandbox(async (db) => {
+      await problem(db);
+      expect((await catchUpDaily(db, MON)).map((p) => p.day)).toEqual([MON]);
+    }));
+
   it("returns undefined when nothing is eligible", () =>
     sandbox(async (db) => {
       expect(await ensureDailyPick(db, MON)).toBeUndefined();
@@ -199,5 +224,11 @@ describe.skipIf(!dbUp)("daily pick (needs db + migrations)", () => {
       expect((await agent.get(`/api/daily/${addDays(MON, 9)}`)).status).toBe(404);
       expect((await agent.get("/api/daily/2030-02-30")).body.error.code).toBe("invalid_request");
       expect((await agent.get("/api/daily?limit=0")).status).toBe(400);
+
+      // Nobody visits for three days: the next visit fills them so the archive has no holes.
+      clock = new Date(clock.getTime() + 4 * 86_400_000);
+      expect((await agent.get("/api/daily/today")).body.day).toBe(addDays(MON, 7));
+      const recent = await agent.get("/api/daily?limit=5");
+      expect(recent.body.days.map((d: { day: string }) => d.day)).toEqual([7, 6, 5, 4, 3].map((i) => addDays(MON, i)));
     }));
 });
