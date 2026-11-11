@@ -72,8 +72,11 @@ export interface ProblemView {
    * links to it; otherwise "a track for this pattern is coming".
    */
   pattern: { slug: string; name: string; trackOpen: boolean } | null;
-  /** Track problems only: the ladder position and how many hints exist / were used. */
-  track: { position: number; hints: number; hintsUsed: number } | null;
+  /**
+   * Track problems only: the ladder position, how many hints exist / were taken, and the bodies
+   * (Markdown) of the hints taken so far, level 1 first.
+   */
+  track: { position: number; hints: number; hintsUsed: number; revealed: string[] } | null;
   /** IST days this problem was the daily (oldest first, never after today). */
   dailyDays: string[];
   /** The user's latest code per language (Run or Submit), so the editor reopens where they left off. */
@@ -191,13 +194,15 @@ export interface HistoryEntry {
   /** "Solved after viewing solutions" (PLAN §4). */
   solvedAfterSolutions: boolean;
   hintsUsed: number;
+  /** Solved, and the first hint was taken before that (PLAN §2). */
+  solvedWithHints: boolean;
   /** Track problems: always. Daily: only after solve/unlock. */
   pattern: { slug: string; name: string } | null;
   /** Track problems: the ladder position. */
   track: { position: number } | null;
   /** IST days this problem was the daily (oldest first, never after today). */
   dailyDays: string[];
-  /** Latest Run/Submit or unlock. */
+  /** Latest Run/Submit, unlock or hint. */
   lastActivityAt: string | null;
 }
 
@@ -273,6 +278,26 @@ export interface StaffTrack {
   pattern: { slug: string; name: string };
   title: string;
   ladder: number;
+  hasLesson: boolean;
+  /** Last change to the title or lesson (ISO); send it back as `expectedUpdatedAt` when saving. */
+  updatedAt: string;
+}
+
+/** GET /api/admin/tracks/:pattern (admin, setter): the lesson editor. */
+export interface StaffTrackDetail extends StaffTrack {
+  lessonMd: string;
+  /** The ladder problems with their editor templates, for the lesson's template code. */
+  problems: { position: number; slug: string; title: string; templates: Record<Lang, string> }[];
+}
+
+/**
+ * PATCH /api/admin/tracks/:pattern (admin, setter). With `expectedUpdatedAt`, the save is refused
+ * (409 `stale`) if someone else saved in between.
+ */
+export interface TrackPatch {
+  title?: string;
+  lessonMd?: string;
+  expectedUpdatedAt?: string;
 }
 
 export interface TrackWeek {
@@ -289,4 +314,55 @@ export interface Schedule {
   days: ScheduleDay[];
   /** Weeks overlapping [from, to]. */
   weeks: TrackWeek[];
+}
+
+// ───────────── tracks (PLAN §2) ─────────────
+
+/** One problem of a track's ladder as the signed-in user sees it. */
+export interface LadderStep {
+  /** 1..5: opens on Monday + position − 1 of a week the track runs. */
+  position: number;
+  /** Open to solvers: its ladder day of some run of the track has come. Once open, never closes. */
+  open: boolean;
+  /** While locked: the next IST day it opens, or null if no run is scheduled. */
+  opensOn: string | null;
+  /** Null while locked (setters and admins always get it). */
+  problem: { slug: string; title: string } | null;
+  status: SolveStatus;
+  hints: number;
+  hintsUsed: number;
+}
+
+/** A track in the Tracks library. */
+export interface TrackSummary {
+  pattern: { slug: string; name: string };
+  title: string;
+  /** Mondays of every week it runs, past and scheduled, oldest first. */
+  weeks: string[];
+  /** The Monday of the week it is running now, if it is. */
+  runningWeek: string | null;
+  /** One of its weeks has started. Solvers only ever see released tracks. */
+  released: boolean;
+  hasLesson: boolean;
+  ladder: LadderStep[];
+  /** Ladder problems the user solved ("4/5 solved" with ladder.length). */
+  solved: number;
+}
+
+/** GET /api/tracks — running track first, then by first week; unscheduled ones (staff only) last. */
+export interface TrackLibrary {
+  today: string;
+  tracks: TrackSummary[];
+}
+
+/** GET /api/tracks/:pattern — the lesson page. 404 for solvers until its first week starts. */
+export interface TrackView extends TrackSummary {
+  lessonMd: string;
+  lessonUpdatedAt: string;
+  today: string;
+}
+
+/** POST /api/problems/:slug/hints — take hint `level` (the next one; taking one already taken is a no-op). */
+export interface HintRequest {
+  level: number;
 }

@@ -430,3 +430,76 @@ select { padding-right: 28px; }
 .sol-locked { padding: 32px 0; max-width: 46ch; }
 .sol-locked h2 { font-size: 18px; margin-bottom: 8px; }
 .sol-locked p + p { margin-top: 16px; }
+
+/* ───────── tracks (library, lesson page, ladder) ───────── */
+
+.eyebrow { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.eyebrow a { color: var(--muted); }
+.eyebrow a:hover { color: var(--primary); }
+.crumb { margin-bottom: 8px; }
+
+.track-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.track-card {
+  display: flex; flex-direction: column; gap: 12px; padding: 20px 24px;
+  text-decoration: none; color: var(--text); transition: border-color 120ms ease-out;
+}
+.track-card:hover { border-color: var(--line-strong); }
+.track-card h2 { font-size: 18px; }
+.track-card[data-running] { border-color: var(--primary); }
+.track-card[data-running] .eyebrow span:first-child { color: var(--primary); font-weight: 500; }
+
+.ladder-dots { display: flex; gap: 4px; }
+.ladder-dots span { width: 28px; height: 6px; border-radius: 3px; background: var(--sunk); border: 1px solid var(--line-strong); }
+.ladder-dots span[data-s="solved"] { background: var(--ok); border-color: var(--ok); }
+.ladder-dots span[data-s="attempted"] { background: var(--warn-soft); border-color: var(--warn); }
+.ladder-dots span[data-s="locked"] { border-style: dashed; border-color: var(--line); }
+
+.track-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: start; }
+.track-main h1 { font-size: 30px; letter-spacing: -0.02em; margin: 8px 0 20px; }
+.track-main .lesson { max-width: 72ch; }
+.track-side { position: sticky; top: calc(var(--topbar) + 24px); }
+.ladder { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.ladder-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ladder-head h2 { font-size: 15px; }
+.ladder ol { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.ladder li > a, .ladder li > div {
+  display: grid; grid-template-columns: 24px 1fr auto; grid-template-areas: "n t dot" "n m m";
+  align-items: center; column-gap: 10px; row-gap: 2px; padding: 8px 10px; border-radius: var(--r-sm);
+  text-decoration: none; color: var(--text); transition: background 120ms ease-out;
+}
+.ladder li > a:hover { background: var(--sunk); }
+.ladder-n {
+  grid-area: n; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  font: 500 12px var(--mono); background: var(--sunk); color: var(--muted);
+}
+.ladder-t { grid-area: t; font-size: 14px; font-weight: 500; min-width: 0; }
+.ladder .status-dot { grid-area: dot; }
+.ladder-meta { grid-area: m; display: flex; gap: 6px; align-items: center; }
+.ladder-meta:empty { display: none; }
+.ladder li[data-locked] .ladder-t { font-weight: 400; }
+
+.lesson > * + * { margin-top: 16px; }
+.lesson .md h2 { font-size: 19px; margin-top: 32px; }
+.lesson .md h3 { font-size: 16px; margin-top: 24px; }
+.lesson > .md:first-child > :first-child { margin-top: 0; }
+
+.code-tabs { border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); overflow: hidden; }
+.code-tabs-head { display: flex; align-items: center; gap: 8px; padding: 0 8px 0 10px; border-bottom: 1px solid var(--line); min-height: 38px; }
+.code-tabs-head .tabs { border-bottom: 0; }
+.code-tabs-head .tabs button { padding-top: 8px; padding-bottom: 8px; }
+
+.week-track { margin-top: 24px; padding: 20px 24px; display: flex; align-items: center; gap: 24px; }
+.week-track h2 { font-size: 20px; }
+
+/* hints on ladder problems */
+.hints { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+.hints h2 { font-size: 16px; display: flex; gap: 8px; align-items: baseline; }
+.hint { border-left: 3px solid var(--primary); background: var(--sunk); border-radius: 0 var(--r-sm) var(--r-sm) 0; padding: 10px 14px; }
+.hint-k { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.hint .md { font-size: 14px; }
+
+/* admin lesson editor */
+.lesson-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; height: calc(100vh - var(--topbar) - 280px); min-height: 480px; }
+.lesson-edit textarea { width: 100%; height: 100%; resize: none; font: 400 13.5px/1.6 var(--mono); padding: 14px 16px; }
+.lesson-preview { overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); padding: 20px 24px; }
+.lesson-preview > h1 { font-size: 24px; margin-bottom: 16px; }

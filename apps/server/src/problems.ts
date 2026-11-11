@@ -42,6 +42,7 @@ interface Row {
   hints_used: number | null;
   position: number | null;
   hint_count: number;
+  revealed: string[];
   daily_days: string[];
   last_code: Partial<Record<Lang, string>>;
 }
@@ -76,6 +77,8 @@ export async function problemView(
             up.first_attempt_at, up.solved_at, up.solutions_unlocked_at, up.submit_count, up.hints_used,
             tp.position,
             (SELECT count(*)::int FROM problem_hints h WHERE h.problem_id = p.id) AS hint_count,
+            coalesce((SELECT array_agg(h.body_md ORDER BY h.level) FROM problem_hints h
+                       WHERE h.problem_id = p.id AND h.level <= coalesce(up.hints_used, 0)), '{}') AS revealed,
             coalesce((SELECT array_agg(d.day::text ORDER BY d.day) FROM daily_schedule d
                        WHERE d.problem_id = p.id AND d.day <= $2::date), '{}') AS daily_days,
             coalesce((SELECT jsonb_object_agg(l.lang, l.code) FROM (
@@ -109,7 +112,7 @@ export async function problemView(
     solutionsUnlocked: unlocked,
     canUnlockSolutions: !unlocked && x.first_attempt_at !== null,
     pattern: showPattern && x.pattern_slug && x.pattern_name ? { slug: x.pattern_slug, name: x.pattern_name, trackOpen: x.track_open } : null,
-    track: x.kind === "track" && x.position !== null ? { position: x.position, hints: x.hint_count, hintsUsed: x.hints_used ?? 0 } : null,
+    track: x.kind === "track" && x.position !== null ? { position: x.position, hints: x.hint_count, hintsUsed: x.hints_used ?? 0, revealed: x.revealed } : null,
     dailyDays: x.daily_days,
     lastCode: x.last_code,
   };

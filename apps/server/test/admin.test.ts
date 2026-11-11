@@ -226,7 +226,11 @@ describe.skipIf(!dbUp)("admin API", () => {
       expect((await week(MON, "heaps-top-k")).body.error.code).toBe("not_future"); // this week started
       const res = await week(NEXT, "heaps-top-k");
       expect(res.body).toEqual({
-        weekStart: NEXT, track: { id: tp.trackId, title: "heaps-top-k", pattern: { slug: "heaps-top-k", name: "Heaps / top-k" }, ladder: 1 },
+        weekStart: NEXT,
+        track: {
+          id: tp.trackId, title: "heaps-top-k", pattern: { slug: "heaps-top-k", name: "Heaps / top-k" }, ladder: 1,
+          hasLesson: false, updatedAt: expect.any(String),
+        },
       });
       expect(((await admin.agent.get("/api/admin/tracks")).body as { id: number }[]).some((t) => t.id === tp.trackId)).toBe(true);
 

@@ -1,5 +1,5 @@
 // The problem page and its Solutions tab: GET /api/problems/:slug, POST /api/problems/:slug/unlock-solutions,
-// GET /api/problems/:slug/solutions.
+// GET /api/problems/:slug/solutions, and hints on track problems: POST /api/problems/:slug/hints.
 import { Router, type Request } from "express";
 import type pg from "pg";
 import { z } from "zod";
@@ -9,6 +9,7 @@ import { HttpError, notFound, parse } from "../errors.js";
 import { istDate } from "../ist.js";
 import { problemView } from "../problems.js";
 import { listSolutions, solutionsAccess, unlockSolutions } from "../solutions.js";
+import { takeHint } from "../tracks.js";
 
 const Slug = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/, "Not a problem slug.");
 const SolutionsQuery = z.object({
@@ -16,6 +17,7 @@ const SolutionsQuery = z.object({
   before: z.coerce.number().int().positive().max(2 ** 53).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
+const HintBody = z.object({ level: z.number().int().min(1).max(3) });
 
 export function problemRoutes({ pool, now, dataDir }: { pool: pg.Pool; now: () => Date; dataDir: string }): Router {
   const r = Router();
@@ -63,6 +65,21 @@ export function problemRoutes({ pool, now, dataDir }: { pool: pg.Pool; now: () =
         ...(q.before !== undefined && { before: q.before }),
       }),
     );
+  });
+
+  /**
+   * Take the next hint (PLAN §2). `level` must be the next one; one already taken is a no-op, so a
+   * double click is harmless. Recorded in history. Answers the updated problem page.
+   */
+  r.post("/problems/:slug/hints", async (req, res) => {
+    const slug = parse(Slug, req.params.slug);
+    const { level } = parse(HintBody, req.body);
+    const a = await access(req, slug);
+    const result = await takeHint(pool, { userId: me(req).id, problemId: a.id, level });
+    if (result === "no_hints") throw new HttpError(400, "no_hints", "This problem has no hints.");
+    if (result === "no_such_hint") throw new HttpError(400, "no_such_hint", "This problem doesn't have that many hints.");
+    if (result === "out_of_order") throw new HttpError(400, "hint_order", "Hints open in order: take the earlier ones first.");
+    res.json(await view(req, slug));
   });
 
   return r;

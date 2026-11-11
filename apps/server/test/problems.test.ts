@@ -177,7 +177,7 @@ describe.skipIf(!dbUp)("GET /api/problems/:slug", () => {
       for (const role of ["setter", "admin"] as const) {
         const { agent } = await signIn(db, clock, role);
         expect((await agent.get(`/api/problems/${p.slug}`)).status).toBe(200);
-        expect((await agent.get(`/api/problems/${t.slug}`)).body.track).toEqual({ position: 5, hints: 0, hintsUsed: 0 });
+        expect((await agent.get(`/api/problems/${t.slug}`)).body.track).toEqual({ position: 5, hints: 0, hintsUsed: 0, revealed: [] });
       }
     }));
 });

@@ -45,7 +45,7 @@ function Problems() {
   }
   const solved = ps.filter((p) => p.status === "solved");
   const afterSolutions = solved.filter((p) => p.solvedAfterSolutions).length;
-  const withHints = solved.filter((p) => p.hintsUsed > 0).length;
+  const withHints = solved.filter((p) => p.solvedWithHints).length;
   const submits = ps.reduce((n, p) => n + p.submitCount, 0);
 
   return (
@@ -101,7 +101,11 @@ function ProblemRow({ p }: { p: HistoryEntry }) {
             <span className="row" style={{ gap: 6 }}>
               {p.pattern && <span className="badge badge-primary">{p.pattern.name}</span>}
               {p.solvedAfterSolutions && <span className="badge badge-warn">After solutions</span>}
-              {p.hintsUsed > 0 && <span className="badge">{p.hintsUsed} hint{p.hintsUsed === 1 ? "" : "s"}</span>}
+              {p.hintsUsed > 0 && (
+                <span className={p.solvedWithHints ? "badge badge-warn" : "badge"} title={p.solvedWithHints ? "Hints taken before solving" : undefined}>
+                  {p.solvedWithHints ? "With " : ""}{p.hintsUsed} hint{p.hintsUsed === 1 ? "" : "s"}
+                </span>
+              )}
             </span>
           </span>
         </span>

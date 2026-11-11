@@ -15,6 +15,7 @@ import { healthRoutes } from "./routes/health.js";
 import { historyRoutes } from "./routes/history.js";
 import { problemRoutes } from "./routes/problems.js";
 import { submissionRoutes } from "./routes/submissions.js";
+import { trackRoutes } from "./routes/tracks.js";
 import { pgSessionStore, sessionMiddleware } from "./session.js";
 
 export interface AppDeps {
@@ -65,6 +66,7 @@ export function createApp(deps: AppDeps): express.Express {
   api.use(problemRoutes({ pool, now, dataDir: config.dataDir }));
   api.use(submissionRoutes({ pool, now, onQueued: deps.onQueued ?? (() => {}) }));
   api.use(historyRoutes({ pool, now }));
+  api.use(trackRoutes({ pool, now }));
   api.use(adminRoutes({ pool, now }));
   for (const r of deps.routes ?? []) api.use(r);
   api.use(notFoundHandler);

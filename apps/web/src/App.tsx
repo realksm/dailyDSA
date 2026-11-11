@@ -11,6 +11,7 @@ import { HistoryPage } from "./pages/History";
 import { ProblemPage } from "./pages/Problem";
 import { SubmissionPage } from "./pages/Submission";
 import { Today } from "./pages/Today";
+import { TrackPage, TracksPage } from "./pages/Tracks";
 
 /** Pages reachable without an account. */
 const PUBLIC = ["/login", "/signup", "/forgot-password", "/reset-password"];
@@ -69,6 +70,8 @@ function Routes(): ReactNode {
   if (match("/", path)) return <Today />;
   if (match("/archive", path)) return <Archive />;
   if ((m = match("/p/:slug", path))) return <ProblemPage key={m.slug} slug={m.slug!} />;
+  if (match("/tracks", path)) return <TracksPage />;
+  if ((m = match("/tracks/:pattern", path))) return <TrackPage key={m.pattern} pattern={m.pattern!} />;
   if (match("/history", path)) return <HistoryPage />;
   if ((m = match("/submissions/:id", path)) && /^\d+$/.test(m.id!)) return <SubmissionPage id={Number(m.id)} />;
   if (match("/account", path)) return <Account />;
@@ -97,6 +100,7 @@ function TopBar() {
       <nav className="nav" aria-label="Main">
         <NavLink to="/" exact>Today</NavLink>
         <NavLink to="/archive">Archive</NavLink>
+        <NavLink to="/tracks">Tracks</NavLink>
         <NavLink to="/history">History</NavLink>
         {isStaff(me) && <NavLink to="/admin">Admin</NavLink>}
       </nav>

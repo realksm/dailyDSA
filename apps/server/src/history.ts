@@ -1,5 +1,5 @@
 // The history page (PLAN §2, §4): every problem the user has touched and how it went —
-// solved, solved after viewing solutions, hints used — plus their own submission list.
+// solved, solved after viewing solutions, solved with hints — plus their own submission list.
 import type pg from "pg";
 import type {
   HistoryEntry, Lang, ProblemKind, SubmissionKind, SubmissionList, SubmissionStatus, Verdict,
@@ -19,6 +19,7 @@ interface HistoryRow {
   solved_verdict_lang: Lang | null;
   solutions_unlocked_at: Date | null;
   hints_used: number;
+  first_hint_at: Date | null;
   submit_count: number;
   run_count: number;
   last_at: Date | null;
@@ -38,9 +39,9 @@ export async function history(db: Db, o: { userId: number; today: string }): Pro
          FROM submissions WHERE user_id = $1 GROUP BY problem_id)
      SELECT p.slug, p.title, p.kind, pt.slug AS pattern_slug, pt.name AS pattern_name, tp.position,
             up.first_attempt_at, up.solved_at, up.solved_verdict_lang, up.solutions_unlocked_at,
-            coalesce(up.hints_used, 0) AS hints_used, coalesce(up.submit_count, 0) AS submit_count,
+            coalesce(up.hints_used, 0) AS hints_used, up.first_hint_at, coalesce(up.submit_count, 0) AS submit_count,
             coalesce(t.runs, 0) AS run_count,
-            greatest(t.last_at, up.solutions_unlocked_at) AS last_at,
+            greatest(t.last_at, up.solutions_unlocked_at, up.last_hint_at) AS last_at,
             coalesce((SELECT array_agg(d.day::text ORDER BY d.day) FROM daily_schedule d
                        WHERE d.problem_id = p.id AND d.day <= $2::date), '{}') AS daily_days
        FROM problems p
@@ -67,6 +68,7 @@ export async function history(db: Db, o: { userId: number; today: string }): Pro
       // The button sets solutions_unlocked_at, solving never does (submissions.ts finish()).
       solvedAfterSolutions: x.solved_at !== null && x.solutions_unlocked_at !== null && x.solutions_unlocked_at < x.solved_at,
       hintsUsed: x.hints_used,
+      solvedWithHints: x.solved_at !== null && x.first_hint_at !== null && x.first_hint_at < x.solved_at,
       pattern: showPattern && x.pattern_slug && x.pattern_name ? { slug: x.pattern_slug, name: x.pattern_name } : null,
       track: x.kind === "track" && x.position !== null ? { position: x.position } : null,
       dailyDays: x.daily_days,

@@ -158,7 +158,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
           </button>
         </div>
         <div className="solve-left-inner">
-          {leftTab === "statement" ? <Statement p={p} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
+          {leftTab === "statement" ? <Statement p={p} onChange={replace} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
         </div>
       </section>
 
@@ -243,10 +243,19 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   );
 }
 
-function Statement({ p }: { p: ProblemView }) {
+function Statement({ p, onChange }: { p: ProblemView; onChange: (v: ProblemView) => void }) {
   const lim = p.limits;
   return (
     <>
+      {p.track && p.pattern && (
+        <div className="eyebrow crumb">
+          <Link to="/tracks">Tracks</Link>
+          <span aria-hidden>/</span>
+          <Link to={`/tracks/${p.pattern.slug}`}>{p.pattern.name}</Link>
+          <span aria-hidden>/</span>
+          <span>Ladder {p.track.position}</span>
+        </div>
+      )}
       <h1>{p.title}</h1>
       <div className="prob-meta">
         <StatusBadge status={p.status} />
@@ -281,11 +290,7 @@ function Statement({ p }: { p: ProblemView }) {
         </section>
       )}
 
-      {p.track && p.track.hints > 0 && (
-        <p className="muted small" style={{ marginTop: 28 }}>
-          This ladder problem has {p.track.hints} hint{p.track.hints === 1 ? "" : "s"}. Hints arrive with the tracks update.
-        </p>
-      )}
+      {p.track && p.track.hints > 0 && <Hints p={p} track={p.track} onChange={onChange} />}
       {p.pattern && !p.track && (
         <p className="small" style={{ marginTop: 28 }}>
           {p.pattern.trackOpen ? (
@@ -304,3 +309,42 @@ function Statement({ p }: { p: ProblemView }) {
   );
 }
 
+
+/** Progressive hints on ladder problems (PLAN §2): one at a time, recorded in history. */
+function Hints({ p, track, onChange }: { p: ProblemView; track: NonNullable<ProblemView["track"]>; onChange: (v: ProblemView) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const next = track.hintsUsed + 1;
+  const take = async () => {
+    if (track.hintsUsed === 0 && p.status !== "solved" && !confirm("Take a hint?\n\nHints open one at a time, and your history shows that you used them.")) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onChange(await api.takeHint(p.slug, next));
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="hints" aria-labelledby="hints-h">
+      <h2 id="hints-h">Hints <span className="muted small num">{track.hintsUsed}/{track.hints} used</span></h2>
+      {track.revealed.map((h, i) => (
+        <div className="hint" key={i}>
+          <div className="hint-k">Hint {i + 1}</div>
+          <Markdown>{h}</Markdown>
+        </div>
+      ))}
+      {error && <Notice>{error}</Notice>}
+      {next <= track.hints ? (
+        <p>
+          <button className="btn btn-sm" onClick={() => void take()} disabled={busy}>
+            {busy ? "Opening…" : `Show hint ${next}${track.hints > 1 ? ` of ${track.hints}` : ""}`}
+          </button>
+          {track.hintsUsed === 0 && <span className="muted small" style={{ marginLeft: 12 }}>Stuck? Hint 1 shows how the pattern applies here; later ones get more specific.</span>}
+        </p>
+      ) : null}
+    </section>
+  );
+}

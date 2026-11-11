@@ -1,4 +1,4 @@
-// The admin page. Setters: schedule (day pins) and the problem bank. Admins also: track weeks,
+// The admin page. Setters: schedule (day pins), the problem bank and track lessons. Admins also: track weeks,
 // users and invite codes. Only the future can be changed (the server enforces it too).
 import { useState } from "react";
 import { ROLES, type AdminUser, type InviteCode, type Role, type ScheduleDay, type StaffProblem, type StaffTrack } from "@dailydsa/shared";
@@ -7,21 +7,22 @@ import { useMe } from "../../auth";
 import { addDays, fmtDay, fmtStamp } from "../../format";
 import { CopyButton, LoadError, Notice, SkeletonRows, useLoad, useTitle } from "../../components/ui";
 import { Link, useRouter } from "../../router";
+import { TracksTab } from "./Lessons";
 
-type Tab = "schedule" | "problems" | "users" | "invites";
+type Tab = "schedule" | "problems" | "tracks" | "users" | "invites";
 
 export function Admin() {
   const me = useMe();
   const { path, navigate } = useRouter();
   const isAdmin = me.role === "admin";
-  const tabs: [Tab, string][] = [["schedule", "Schedule"], ["problems", "Problems"], ...(isAdmin ? ([["users", "Users"], ["invites", "Invite codes"]] as [Tab, string][]) : [])];
+  const tabs: [Tab, string][] = [["schedule", "Schedule"], ["problems", "Problems"], ["tracks", "Tracks"], ...(isAdmin ? ([["users", "Users"], ["invites", "Invite codes"]] as [Tab, string][]) : [])];
   const want = path.split("/")[2] as Tab | undefined;
   const tab: Tab = tabs.some(([t]) => t === want) ? want! : "schedule";
   useTitle(`Admin · ${tabs.find(([t]) => t === tab)![1]}`);
 
   return (
     <main className="page">
-      <div className="page-head"><div><h1>Admin</h1><p>{isAdmin ? "Schedule, problems, users and invites." : "Schedule and problem bank."}</p></div></div>
+      <div className="page-head"><div><h1>Admin</h1><p>{isAdmin ? "Schedule, problems, lessons, users and invites." : "Schedule, problem bank and lessons."}</p></div></div>
       <div className="tabs admin-tabs" role="tablist">
         {tabs.map(([t, label]) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => navigate(`/admin/${t}`, { replace: true })}>{label}</button>
@@ -29,6 +30,7 @@ export function Admin() {
       </div>
       {tab === "schedule" && <ScheduleTab isAdmin={isAdmin} />}
       {tab === "problems" && <ProblemsTab />}
+      {tab === "tracks" && <TracksTab />}
       {tab === "users" && isAdmin && <UsersTab />}
       {tab === "invites" && isAdmin && <InvitesTab />}
     </main>

@@ -1,15 +1,17 @@
 // Home: today's daily problem, the countdown to the next one, the streak and this week at a glance.
 import { useEffect, useState } from "react";
-import type { DailyEntry, DailyToday } from "@dailydsa/shared";
+import type { DailyEntry, DailyToday, TrackLibrary } from "@dailydsa/shared";
 import { api, ApiErr } from "../api";
 import { addDays, dailyStreak, daysAgo, fmtCountdown, fmtDay, fmtDayLong, fmtStamp } from "../format";
 import { LoadError, Skeleton, StatusBadge, StatusDot, useLoad, useTitle } from "../components/ui";
 import { Link } from "../router";
+import { LadderDots } from "./Tracks";
 
 export function Today() {
   useTitle("Today");
   const today = useLoad(() => api.today(), []);
   const archive = useLoad(() => api.archive(undefined, 366), []);
+  const tracks = useLoad(() => api.tracks(), []);
 
   if (today.error) {
     if (today.error instanceof ApiErr && today.error.code === "no_daily") {
@@ -43,6 +45,8 @@ export function Today() {
           {t && archive.data ? <Stats days={days} today={t.day} /> : <><Skeleton h={48} /><Skeleton h={48} /></>}
         </aside>
       </div>
+
+      {tracks.data && <WeekTrack lib={tracks.data} />}
 
       {t && archive.data && <Week days={days} today={t.day} />}
 
@@ -90,6 +94,37 @@ function TodayCard({ t, onRollover }: { t: DailyToday; onRollover: () => void })
         <span className="muted small num">Next problem in {left}</span>
       </div>
     </>
+  );
+}
+
+/** This week's track: the lesson, and today's ladder problem (Monday = 1 … Friday = 5). */
+function WeekTrack({ lib }: { lib: TrackLibrary }) {
+  const t = lib.tracks.find((x) => x.runningWeek);
+  if (!t) return null;
+  const dow = (new Date(`${lib.today}T00:00:00Z`).getUTCDay() + 6) % 7; // 0 = Monday
+  const todays = dow < 5 ? t.ladder.find((s) => s.position === dow + 1 && s.problem) : undefined;
+  const next = t.ladder.find((s) => s.open && s.problem && s.status !== "solved");
+  return (
+    <section className="card week-track" aria-labelledby="wt-h">
+      <div className="grow stack-sm">
+        <div className="eyebrow"><span>This week's track</span></div>
+        <h2 id="wt-h">{t.title}</h2>
+        <div className="row" style={{ gap: 16 }}>
+          <LadderDots ladder={t.ladder} />
+          <span className="num small"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved</span></span>
+        </div>
+      </div>
+      <div className="row" style={{ gap: 8 }}>
+        <Link to={`/tracks/${t.pattern.slug}`} className="btn">{t.hasLesson ? "Read the lesson" : "Open the track"}</Link>
+        {todays?.problem ? (
+          <Link to={`/p/${todays.problem.slug}`} className="btn btn-primary">
+            {todays.status === "solved" ? "Today's ladder problem ✓" : `Ladder ${todays.position}: ${todays.problem.title}`}
+          </Link>
+        ) : next?.problem ? (
+          <Link to={`/p/${next.problem.slug}`} className="btn btn-primary">Catch up: ladder {next.position}</Link>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

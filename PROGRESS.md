@@ -17,8 +17,8 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 2 | Problem format + validate CLI (+2–3 problems) | ✅ done — `packages/cli`, `problems/README.md`, 3 problems validated + imported |
 | 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ✅ done — 3.1–3.7 API + 3.8 web app (`apps/web`) |
 | 4 | Solutions tab + polish | ✅ done — unlock + solutions API, Statement/Solutions tabs, pattern → track link (polish ideas moved to open questions) |
-| 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ **next** |
-| 6 | Content: a few problems + one track | 🟡 started — first track is **two pointers** (ladder 1/5: `budget-pairs`) |
+| 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ✅ done — tracks API + hints + lesson editor, `/tracks`, `/tracks/:pattern`, Today card |
+| 6 | Content: a few problems + one track | 🟡 **next** — first track is **two pointers** (ladder 1/5: `budget-pairs`; lesson not written yet) |
 | 7 | Go live | ☐ later — server not bought |
 
 ### Problems so far
@@ -38,7 +38,7 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck                      # tsc -b (packages + server) && tsc -p apps/web
-pnpm test                           # 96 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 100 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa template <slug> cpp > problems/<slug>/ref.cpp   # start a ref from the editor template
 pnpm dsa validate --all             # ~11 s per problem
@@ -67,8 +67,8 @@ packages/judge       go-judge client + judge() orchestrator (compile once → ru
 packages/db          pg pool + SQL migration runner (migrations/NNN_*.sql) + `withJudgeLock` (advisory lock 727002)
 packages/cli         `pnpm dsa` — list / new / validate / import / admin / invite
 problems/            one folder per problem (+ _template, README.md)
-apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Solutions tab (`solutions.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`), history (`history.ts`), admin API (`admin.ts`, `routes/admin.ts`); `users.ts` is also used by the CLI
-apps/web             Vite + React 19 + Monaco: today, archive, problem/editor, history, submission, account, admin, auth pages
+apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Solutions tab (`solutions.ts`), tracks + hints (`tracks.ts`, `routes/tracks.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`), history (`history.ts`), admin API (`admin.ts`, `routes/admin.ts`); `users.ts` is also used by the CLI
+apps/web             Vite + React 19 + Monaco: today, archive, tracks + lesson, problem/editor, history, submission, account, admin (incl. lesson editor), auth pages
 spike/               throwaway go-judge proof
 .data/               (gitignored) generated tests: .data/tests/<slug>/<hash>/NN.in|NN.ans
 ```
@@ -128,6 +128,11 @@ spike/               throwaway go-judge proof
 - **Web Solutions tab:** left pane has Statement / Solutions tabs (sticky); locked view explains the rule and shows the button (with a confirm) when allowed; unlocked = language filter (defaults to the editor's language), reference code pinned on top, accepted code as collapsible cards (author, time, memory, Copy). Monaco (read-only) mounts only for open cards. After a first AC the result notice offers "See how others solved it".
 - **Reference solutions follow the editor template** (user's rule): they're the official code on the Solutions tab, so they look like the editor. `templateMismatch()` in shared: the `solve` line (or `main` for the generic template) must be there unchanged and everything after the solver's part must equal the template; helpers/includes above `solve` are allowed. `loadProblem` enforces it, so every `dsa` command refuses a ref that drifts. `pnpm dsa template <slug> <lang>` prints the template to start from. All 3 problems' refs were rewritten this way, re-validated and imported.
 - **Monaco keybindings are global:** `editor.addCommand` bindings are shared by every editor on the page (last registered wins), so read-only viewers register none — otherwise Ctrl+Enter in the real editor broke once a solution card opened. Read-only viewers also pass the mouse wheel to the page at their ends and hide the line highlight.
+- **Tracks API** (`requireUser`): `GET /api/tracks` (type `TrackLibrary`: running track first, then released by first week; staff also see unreleased/unscheduled ones, marked `released: false`) and `GET /api/tracks/:pattern` (`TrackView` = summary + `lessonMd`). Solvers see a track once one of its weeks has started (404 before, like problems). Each ladder step: `open` by exactly the `openToSolvers` rule, `opensOn` (next ladder day of a scheduled run) while locked, `problem` hidden while locked (staff always get it), status, hints/hintsUsed. `weeks` lists every run, past and future; `runningWeek` = the Monday of the week containing today. Progress = solved / ladder size (not a fixed 5, while ladders are being written).
+- **Hints:** `POST /api/problems/:slug/hints {level}` → updated `ProblemView`. Only the next level (`hint_order` otherwise); a level already taken is a no-op (double clicks); `no_hints` for daily or hintless problems, `no_such_hint` above the count; same 404 release rules. `ProblemView.track.revealed` = bodies of the hints taken. Migration 004 adds `user_problems.first_hint_at`/`last_hint_at`: history's `solvedWithHints` = first hint before solving (like "solved after viewing solutions"), and the latest hint counts as activity. Hints after solving are allowed and don't mark it. The web asks for a confirm before the first hint on an unsolved problem.
+- **Lessons** live in the DB (`tracks.lesson_md`), edited by admins *and setters*: `GET /api/admin/tracks/:pattern` (`StaffTrackDetail`: lesson + each ladder problem's editor templates) and `PATCH /api/admin/tracks/:pattern {title?, lessonMd?, expectedUpdatedAt?}` (≤ 100 000 chars; `expectedUpdatedAt` → 409 `stale` if someone saved in between; `updated_at` uses `clock_timestamp()`). The ladder (lesson section 5) is drawn by the track page, not written in the lesson.
+- **Lesson code blocks:** C++/Java/Python fences (`cpp`/`c++`, `java`, `py`/`python`) separated only by blank lines render as one read-only Monaco block with a tab per language, starting on the solver's editor language (`components/Lesson.tsx` `lessonParts`). The editor's "Insert template code…" inserts a ladder problem's editor template in all three languages, so lesson code matches the editor (PLAN §2). "Start from the outline" fills the five sections.
+- **Web tracks:** `/tracks` (cards: when it runs, ladder dots, n/m solved), `/tracks/:pattern` (lesson + sticky ladder), "This week's track" card on Today (today's ladder problem Mon–Fri, else the first unsolved open one), Tracks nav link, breadcrumb + hints box on ladder problems, Admin → Tracks tab (`/admin/tracks`, `/admin/tracks/:pattern`: Markdown left, live preview right, asks before leaving with unsaved changes).
 
 ## Step 3 log: core app
 
@@ -141,12 +146,11 @@ Suggested order (each piece testable on its own):
 7. ✅ **History + admin API:** history and own-submissions list; admin users / invites / password reset; staff problem list, schedule view, pins; admin track weeks.
 8. ✅ **apps/web:** every page above, checked live in headless Chromium (login → Run → Submit AC → solved + pattern shown; admin invite create, pin/unpin, week schedule/unschedule; light + dark).
 
-## Next up — step 5: Tracks (PLAN §2)
+## Next up — step 6: Content (PLAN §10)
 
-- API: `GET /api/tracks` (library: each track, its weeks, my "n/5 solved"), `GET /api/tracks/:pattern` (lesson Markdown + ladder with open/locked per day by the same rule as `openToSolvers`, my status per problem); visible once one of its weeks has started (staff: always). Hints: `POST /api/problems/:slug/hints/next` reveals the next level (`hints_used` +1, ≤ the hint count, track problems only) and `ProblemView.track` should carry the bodies of the hints already used.
-- Admin/setter: edit a track's lesson Markdown (`PUT /api/admin/tracks/:id/lesson`), with a preview; the lesson template code uses `editorTemplate(lang, spec, body)`.
-- Web: `/tracks` (library) and `/tracks/:pattern` (lesson: spot it / core idea / template code / mistakes / ladder), a hints box on track problems, "this week's track" on Today, a Tracks nav link. The problem page already links `/tracks/:pattern` when `trackOpen`.
-- Content (step 6) can go alongside: the two-pointers lesson + ladder #2–#5.
+- Two-pointers ladder #2–#5 (`problems/<slug>/`, `kind: track`, `position`, 3 hints each) and at least one more two-pointers **weekend** problem.
+- The two-pointers lesson, written in Admin → Tracks (outline button + "Insert template code").
+- A few more weekday problems so the daily bank isn't just `rainfall-ledger`.
 
 ## Open questions / for later
 
@@ -155,10 +159,14 @@ Suggested order (each piece testable on its own):
 - Remaining two-pointers ladder problems (#2–#5) + lesson.
 - The dev DB has a test admin from the 3.8 browser check: `webcheck@example.test` (id 239); the step 4 check also left it a WA Submit on `exact-gap` and an unlock (solutions opened before solving). Keep it for trying the UI (`pnpm dsa admin reset-password webcheck@example.test` for a new password) or delete it.
 - Servers from earlier sessions (started 09:37 / 09:50 / 09:52) may still be running on ports 3000–3002 with older code; stop them and restart `pnpm server` to get the current API.
+- **Dev DB:** two-pointers is scheduled for the week of 2026-11-09 (inserted by SQL for the step 5 browser check, since the API only schedules future weeks), so the Today card and `/tracks` show it. Undo with `DELETE FROM track_weeks WHERE week_start = '2026-11-09'`. The `webcheck` admin also took hint 1 on `budget-pairs`.
+- Lessons live only in the DB (backed up nightly), not in git like problems. If that feels fragile, a `dsa lesson export/import` could mirror them into `problems/_tracks/<pattern>.md`.
 - Polish left from step 4: a CSP header for the served app (needs a browser check: Monaco injects inline styles), a draggable split between statement and editor.
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (12)** — Step 5: tracks. `GET /api/tracks` + `/tracks/:pattern` (release rule, ladder open/locked/opensOn, progress), hints `POST …/hints` (in order, idempotent; migration 004 hint times → history `solvedWithHints`), admin/setter lesson editing with a stale-save guard and per-problem template insertion. Web: Tracks library, lesson page with language-tabbed code, Today's week-track card, hints box, Admin → Tracks editor. 100 tests pass; walked through in headless Chromium on PORT=3005 (library → outline + template → save → lesson page → Today card → hint 1 → history), no page errors. Next: step 6 content (two-pointers ladder #2–#5 + lesson).
 
 - **2026-11-11 (10)** — Step 4: Show solutions button (`POST …/unlock-solutions`) and the solutions list (`GET …/solutions`: reference code + latest accepted code per author and language, language filter, paging); `pattern.trackOpen` for the track link. Web: Statement / Solutions tabs, locked view + confirm, collapsible read-only code cards. Fixed Ctrl+Enter breaking once a read-only editor mounted (Monaco keybindings are page-global). 94 tests pass; checked in headless Chromium on PORT=3004 (lock → unlock → list → filter → Ctrl+Enter still runs; light + dark). Next: step 5 (tracks).
 - **2026-11-11 (11)** — Reference solutions now follow the editor template (enforced by `loadProblem`, new `dsa template` command, README + `_template` updated); refs of exact-gap, rainfall-ledger and budget-pairs rewritten as template + `solve()` body, re-validated (limits unchanged, 500 ms floor) and imported. 96 tests pass.
