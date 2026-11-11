@@ -58,3 +58,7 @@ App-shell track only: buttons lift 1px on hover (shadow grows to 4px) and press 
 ## Assets
 
 Mark: three rising bars in a rounded square (`apps/web/public/favicon.svg`, `BrandMark` in `components/ui.tsx`). No photos or illustrations; this is a tool.
+
+## Landing page (2026-11-11)
+
+The one exception to "laptop-only" and "no scroll animation": `apps/web/src/landing/`. Same tokens and fonts; display type goes bigger (hero clamp 48–84px, section h2 clamp 38–76px, −0.045em), cards get 6px hard shadows, and the judge section is always dark (dark-theme tones). Motion there is GSAP + Lenis, all skipped under reduced motion. Still no photos or illustrations: visuals are the app's own interface (day squares, test squares, verdict badges). Interface icons are Solar via `src/landing/solar.ts` (landing only).

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { isStaff, useAuth, useMe } from "./auth";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BrandMark, Spinner } from "./components/ui";
@@ -13,19 +13,22 @@ import { SubmissionPage } from "./pages/Submission";
 import { Today } from "./pages/Today";
 import { TrackPage, TracksPage } from "./pages/Tracks";
 
-/** Pages reachable without an account. */
-const PUBLIC = ["/login", "/signup", "/forgot-password", "/reset-password"];
+/** Pages reachable without an account. "/" is the landing page while signed out. */
+const PUBLIC = ["/welcome", "/login", "/signup", "/forgot-password", "/reset-password"];
+
+// Its own chunk: GSAP and Lenis are only downloaded by people who see the landing page.
+const Landing = lazy(() => import("./landing/Landing"));
 
 export function App() {
   const { user, bootError } = useAuth();
   const { path, search, navigate } = useRouter();
   const isPublic = PUBLIC.includes(path);
+  const isLanding = path === "/welcome" || (path === "/" && user === null);
 
   // Signed out on a private page: go to login and come back afterwards.
   useEffect(() => {
-    if (user === null && !isPublic) {
-      const next = path === "/" ? "" : `?next=${encodeURIComponent(path + window.location.search)}`;
-      navigate(`/login${next}`, { replace: true });
+    if (user === null && !isPublic && path !== "/") {
+      navigate(`/login?next=${encodeURIComponent(path + window.location.search)}`, { replace: true });
     }
     // Signed in on login/signup: nothing to do there.
     if (user && (path === "/login" || path === "/signup")) navigate(safeNext(search.get("next")), { replace: true });
@@ -36,6 +39,14 @@ export function App() {
       <div className="auth-wrap">
         <Spinner label="Loading…" />
       </div>
+    );
+  }
+
+  if (isLanding) {
+    return (
+      <Suspense fallback={<div className="auth-wrap"><Spinner label="Loading…" /></div>}>
+        <Landing />
+      </Suspense>
     );
   }
 

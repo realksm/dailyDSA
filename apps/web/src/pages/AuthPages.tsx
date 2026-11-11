@@ -13,7 +13,7 @@ function AuthCard({ title, sub, children, foot }: { title: string; sub?: ReactNo
   return (
     <main className="auth-wrap">
       <div className="auth-card">
-        <div className="brand"><BrandMark /><span>daily<b>DSA</b></span></div>
+        <Link to="/" className="brand" aria-label="dailyDSA, about the site"><BrandMark /><span>daily<b>DSA</b></span></Link>
         <div className="card card-pad">
           <h1>{title}</h1>
           {sub && <p className="sub">{sub}</p>}
