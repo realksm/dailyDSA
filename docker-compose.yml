@@ -1,0 +1,9 @@
+services:
+  judge:
+    build: ./judge
+    privileged: true          # needed by go-judge's sandbox (namespaces + cgroups)
+    shm_size: 256m
+    # Dev only: published on localhost so the spike can reach it.
+    # In production the port is NOT published; only the backend on the Docker network talks to it.
+    ports:
+      - "127.0.0.1:5050:5050"
