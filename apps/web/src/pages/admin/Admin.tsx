@@ -326,7 +326,8 @@ function InvitesTab() {
 
   if (inv.error) return <LoadError error={inv.error} retry={inv.reload} />;
 
-  const signupLink = (code: string) => `${window.location.origin}/signup?code=${encodeURIComponent(code)}`;
+  // Invite links open the landing page in its "you're invited" mode; its button carries the code on to /signup.
+  const signupLink = (code: string) => `${window.location.origin}/welcome?code=${encodeURIComponent(code)}`;
 
   return (
     <div className="stack" style={{ gap: 24 }}>

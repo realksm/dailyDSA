@@ -14,6 +14,17 @@ interface AuthState {
 
 const AuthCtx = createContext<AuthState | null>(null);
 
+const SIGNED_IN_KEY = "dsa.signedIn";
+
+/** True when this browser was signed out the last time the app checked. Only a hint for first paint. */
+export function wasSignedOut(): boolean {
+  try {
+    return localStorage.getItem(SIGNED_IN_KEY) === "0";
+  } catch {
+    return false;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Me | null | undefined>(undefined);
   const [bootError, setBootError] = useState<string | null>(null);
@@ -29,6 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => setSessionLostHandler(undefined);
   }, []);
+
+  // Remember whether this browser was signed in, so "/" can show the landing page without waiting for /api/me.
+  useEffect(() => {
+    if (user === undefined) return;
+    try {
+      localStorage.setItem(SIGNED_IN_KEY, user ? "1" : "0");
+    } catch {
+      /* storage blocked: the landing page just waits for /api/me */
+    }
+  }, [user]);
 
   const value = useMemo<AuthState>(
     () => ({

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { isStaff, useAuth, useMe } from "./auth";
+import { isStaff, useAuth, useMe, wasSignedOut } from "./auth";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BrandMark, Spinner } from "./components/ui";
 import { Link, match, NavLink, useRouter } from "./router";
@@ -23,7 +23,9 @@ export function App() {
   const { user, bootError } = useAuth();
   const { path, search, navigate } = useRouter();
   const isPublic = PUBLIC.includes(path);
-  const isLanding = path === "/welcome" || (path === "/" && user === null);
+  // While /api/me is in flight, a browser that was signed out last time gets the landing page straight away.
+  const [hintOut] = useState(wasSignedOut);
+  const isLanding = path === "/welcome" || (path === "/" && (user === null || (user === undefined && hintOut)));
 
   // Signed out on a private page: go to login and come back afterwards.
   useEffect(() => {
@@ -34,19 +36,19 @@ export function App() {
     if (user && (path === "/login" || path === "/signup")) navigate(safeNext(search.get("next")), { replace: true });
   }, [user, isPublic, path, search, navigate]);
 
-  if (user === undefined) {
-    return (
-      <div className="auth-wrap">
-        <Spinner label="Loading…" />
-      </div>
-    );
-  }
-
   if (isLanding) {
     return (
       <Suspense fallback={<div className="auth-wrap"><Spinner label="Loading…" /></div>}>
         <Landing />
       </Suspense>
+    );
+  }
+
+  if (user === undefined) {
+    return (
+      <div className="auth-wrap">
+        <Spinner label="Loading…" />
+      </div>
     );
   }
 
