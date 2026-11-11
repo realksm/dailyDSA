@@ -81,6 +81,7 @@ problems/            one folder per problem (+ _template, README.md)
 apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Solutions tab (`solutions.ts`), tracks + hints (`tracks.ts`, `routes/tracks.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`), history (`history.ts`), admin API (`admin.ts`, `routes/admin.ts`); `users.ts` is also used by the CLI
 apps/web             Vite + React 19 + Monaco: today, archive, tracks + lesson, problem/editor, history, submission, account, admin (incl. lesson editor), auth pages
 spike/               throwaway go-judge proof
+.claude/skills/      project skills: daily-problem, new-track (how to write content)
 .data/               (gitignored) generated tests: .data/tests/<slug>/<hash>/NN.in|NN.ans
 ```
 
@@ -180,6 +181,8 @@ The first milestone (platform + a handful of problems + one track) is reached. C
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (16)** — Project skills for writing content: `.claude/skills/daily-problem/SKILL.md` (design → yaml → statement → gen.py → template refs → naive → checker → validate → import → docs) and `.claude/skills/new-track/SKILL.md` (plan the ladder + weekend problems, `dsa track new`, hints, lesson rules incl. running the example code in the judge container, `track check` until ready, import, docs).
 
 - **2026-11-11 (15)** — Tracks are easier to create: the ladder order moved from each problem's `position` into `problems/_tracks/<pattern>.yaml`; new `pnpm dsa track new|add|check|import` (scaffold a whole track with its weekend problems, check what's missing, import it all); importing rewrites the DB ladder from the file in one go; new folders get template refs so they load at once; `dsa lesson` replaced by `dsa track`. two-pointers migrated (5 problem.yaml lost pattern/position → re-validated, same limits; DB ladder unchanged). 117 tests pass (new `track.test.ts`: ladder schema, scaffold guards, reorder, one-ladder rule, check, `syncLadder` in a rolled-back transaction); CLI also exercised on a scratch copy of `problems/`.
 
