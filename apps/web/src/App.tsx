@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { isStaff, useAuth, useMe } from "./auth";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BrandMark, Spinner } from "./components/ui";
 import { Link, match, NavLink, useRouter } from "./router";
 import { Account } from "./pages/Account";
@@ -49,7 +50,9 @@ export function App() {
   return (
     <>
       <TopBar />
-      <Routes />
+      <ErrorBoundary resetKey={path}>
+        <Routes />
+      </ErrorBoundary>
     </>
   );
 }

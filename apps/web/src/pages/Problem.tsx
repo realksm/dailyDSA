@@ -48,7 +48,7 @@ function Solve({ p, refresh }: { p: ProblemView; refresh: () => void }) {
   // Per language: the local draft, else the last code sent, else the template.
   const [code, setCode] = useState<Record<Lang, string>>(() => {
     const out = {} as Record<Lang, string>;
-    for (const l of LANGS) out[l] = store.get(draftKey(p.slug, l)) ?? p.lastCode[l] ?? p.templates[l];
+    for (const l of LANGS) out[l] = store.get(draftKey(p.slug, l)) ?? p.lastCode?.[l] ?? p.templates[l];
     return out;
   });
   const [customInput, setCustomInput] = useState(() => p.samples[0]?.input ?? "");
