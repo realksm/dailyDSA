@@ -15,7 +15,7 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 0 | go-judge spike | ✅ done — all checks pass (`spike/judge-spike.mjs`) |
 | 1 | Schema | ✅ done — `packages/db/migrations/001_init.sql`, patterns seeded in `002` |
 | 2 | Problem format + validate CLI (+2–3 problems) | ✅ done — `packages/cli`, `problems/README.md`, 3 problems validated + imported |
-| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, **3.2 server skeleton next** |
+| 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ⏳ in progress — 3.1 editor templates ✅, 3.2 server skeleton ✅, **3.3 auth next** |
 | 4 | Solutions tab + polish | ☐ |
 | 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ |
 | 6 | Content: a few problems + one track | 🟡 started — first track is **two pointers** (ladder 1/5: `budget-pairs`) |
@@ -38,10 +38,11 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck
-pnpm test                           # 35 tests; go-judge ones skip if the judge isn't up
+pnpm test                           # 46 tests; go-judge ones skip if the judge isn't up
 pnpm dsa list                       # problem states
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
+pnpm server                         # API on 127.0.0.1:3000 (runs migrations first); GET /api/health
 node spike/judge-spike.mjs          # full sandbox check incl. timing noise
 ```
 
@@ -57,7 +58,7 @@ packages/judge       go-judge client + judge() orchestrator (compile once → ru
 packages/db          pg pool + SQL migration runner (migrations/NNN_*.sql)
 packages/cli         `pnpm dsa` — list / new / validate / import
 problems/            one folder per problem (+ _template, README.md)
-apps/server          (empty) Express API + queue worker — step 3
+apps/server          Express API (app factory, config, sessions, errors, argon2); queue worker comes in 3.6
 spike/               throwaway go-judge proof
 .data/               (gitignored) generated tests: .data/tests/<slug>/<hash>/NN.in|NN.ans
 ```
@@ -80,13 +81,15 @@ spike/               throwaway go-judge proof
 - **Hidden tests:** only the first failing hidden test reveals its input/output.
 - **Template conventions:** bool prints `YES`/`NO`; array returns print one per line unless `join: spaces` (new optional `InputSpec` field); Python collects output and writes once; Java prints through a shared buffered `out`; `void` = solve() prints itself. Var names starting with `_` or in `RESERVED_NAMES` are rejected by the yaml schema (the template uses `_it`, `_x`, `_res`, …).
 - **Template `body` param:** the same generator will produce the lesson template code (PLAN §2), so lessons match the editor style.
+- **API errors:** every non-2xx is `{ error: { code, message, details? } }`; zod failures → 400 `invalid_request` with per-field details; unexpected errors → 500 `internal`, logged, never leaked.
+- **CSRF:** no tokens. State-changing `/api` requests must be `application/json` (415 otherwise), cookies are SameSite=Lax, and CORS is never enabled.
 - **Line endings:** `.gitattributes` forces LF (test files are compared byte-wise inside Linux).
 
 ## Next up — step 3: core app
 
 Suggested order (each piece testable on its own):
 1. ✅ **Editor templates**: `editorTemplate(lang, spec?, body?)` in `packages/shared/src/template.ts`. Conventions are in `problems/README.md`. `packages/cli/test/templates.test.ts` judges every problem's logic through its template within the calibrated limits (all 9 pass, max CPU < 60% of the limit).
-2. **apps/server skeleton:** Express, `express-session` + `connect-pg-simple`, argon2 passwords, zod request validation, error handler.
+2. ✅ **apps/server skeleton:** `createApp(deps)` in `apps/server/src/app.ts` (tests inject a MemoryStore, a fake pool and extra routers). `loadConfig()` reads env via zod; production refuses the dev `SESSION_SECRET`. Sessions in Postgres (`dsa.sid`, httpOnly, SameSite=Lax, secure in prod, 30 days rolling, no cookie until login). `parse(schema, body)` + one error handler → `ApiError` body (`packages/shared/src/api.ts`). argon2id helpers incl. `dummyHash()` for constant-time unknown-email logins. `GET /api/health`.
 3. **Auth:** signup with invite code (uses/expiry/disabled, role from code), login, logout, `/api/me`. Bootstrap first admin via `pnpm dsa admin create` (or a seed script).
 4. **Daily:** IST date helper; `ensureDailyPick(day)` (weekday pool / weekend pool by week's track pattern / no-track weekend = patterns that already ran, fallback weekday pool); called lazily on request + on a timer at IST midnight. Archive endpoint.
 5. **Problem view:** statement + samples (first `sample_count` tests from disk) + template + limits + my status; pattern tag only after solve/unlock.
@@ -104,4 +107,5 @@ Suggested order (each piece testable on its own):
 ## Session log
 
 - **2026-11-11** — Reviewed plan, recorded decisions (git-folder problems, 24/6 launch mix, platform-first milestone). Built + passed go-judge spike. Scaffolded pnpm/TS monorepo (shared, judge, db, cli). Schema + migrations. Validate/import CLI with 19 passing tests. First 3 problems validated and imported. Picked two pointers as the first track.
+- **2026-11-11 (3)** — Step 3.2: `apps/server` skeleton (Express 5, pg sessions, zod, error handler, argon2, health). `migrate(url?)`. pnpm `allowBuilds` for argon2/esbuild. 46 tests pass.
 - **2026-11-11 (2)** — Step 3.1: editor templates for C++/Java/Python + generic fallback; `join` field; reserved-name check; template-judging integration test over all 3 problems. 35 tests pass.

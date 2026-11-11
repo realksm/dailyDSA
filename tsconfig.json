@@ -1,4 +1,10 @@
 {
   "files": [],
-  "references": [{ "path": "packages/shared" }, { "path": "packages/judge" }, { "path": "packages/db" }, { "path": "packages/cli" }]
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/judge" },
+    { "path": "packages/db" },
+    { "path": "packages/cli" },
+    { "path": "apps/server" }
+  ]
 }

@@ -6,7 +6,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "db:migrate": "pnpm --filter @dailydsa/db migrate",
-    "dsa": "tsx packages/cli/src/main.ts"
+    "dsa": "tsx packages/cli/src/main.ts",
+    "server": "tsx apps/server/src/main.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

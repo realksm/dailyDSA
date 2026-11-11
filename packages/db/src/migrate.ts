@@ -7,8 +7,8 @@ import { createPool } from "./pool.js";
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
-export async function migrate(): Promise<string[]> {
-  const pool = createPool();
+export async function migrate(url?: string): Promise<string[]> {
+  const pool = createPool(url);
   const client = await pool.connect();
   try {
     await client.query("CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())");
