@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./users": "./src/users.ts",
+    "./password": "./src/password.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts"
@@ -14,6 +18,7 @@
     "connect-pg-simple": "^10.0.0",
     "express": "^5.3.0",
     "express-session": "^1.19.0",
+    "nodemailer": "^10.4.0",
     "pg": "^8.23.1",
     "zod": "^4.6.7"
   },
@@ -21,6 +26,7 @@
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.19.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "supertest": "^7.3.2"

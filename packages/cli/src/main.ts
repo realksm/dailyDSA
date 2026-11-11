@@ -3,10 +3,12 @@
 //   pnpm dsa new <slug>               copy problems/_template to problems/<slug>
 //   pnpm dsa validate <slug>|--all    run the full validation (needs go-judge)
 //   pnpm dsa import <slug>|--all      upsert validated problems into the database
+//   pnpm dsa admin create|reset-password …, pnpm dsa invite create …   (see accounts.ts)
 import { cp, stat } from "node:fs/promises";
 import path from "node:path";
 import { createPool } from "@dailydsa/db";
 import { GoJudge } from "@dailydsa/judge";
+import { accountsCommand } from "./accounts.js";
 import { importProblem } from "./importer.js";
 import { PROBLEMS_DIR, ProblemError, listProblems, loadProblem } from "./problem.js";
 import { ValidationError, validate } from "./validate.js";
@@ -85,8 +87,11 @@ async function main(): Promise<number> {
       }
       return failed ? 1 : 0;
     }
+    case "admin":
+    case "invite":
+      return accountsCommand(cmd, args, (s) => console.log(c.green(s)));
     default:
-      console.log("usage: pnpm dsa list | new <slug> | validate <slug>|--all | import <slug>|--all");
+      console.log("usage: pnpm dsa list | new <slug> | validate <slug>|--all | import <slug>|--all | admin create|reset-password | invite create");
       return cmd ? 1 : 0;
   }
 }

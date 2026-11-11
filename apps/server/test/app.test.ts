@@ -10,6 +10,7 @@ import { loadConfig } from "../src/config.js";
 import { badRequest, parse } from "../src/errors.js";
 import { dummyHash, hashPassword, verifyPassword } from "../src/password.js";
 import { pgSessionStore, SESSION_COOKIE } from "../src/session.js";
+import { createUser } from "../src/users.js";
 
 const config = loadConfig({ NODE_ENV: "test" });
 
@@ -37,7 +38,9 @@ function testRoutes(): Router {
   return r;
 }
 
-const fakePool = (ok: boolean) => ({ query: async () => (ok ? { rows: [] } : Promise.reject(new Error("down"))) }) as unknown as pg.Pool;
+// Every query "finds" user 7 (loadUser drops sessions whose user doesn't exist).
+const user7 = { id: 7, email: "u7@x.test", name: "U7", role: "solver", password_hash: "", disabled: false };
+const fakePool = (ok: boolean) => ({ query: async () => (ok ? { rows: [user7] } : Promise.reject(new Error("down"))) }) as unknown as pg.Pool;
 
 function memApp(dbOk = true) {
   const logError = vi.fn();
@@ -49,7 +52,10 @@ describe("config", () => {
   it("refuses production without a real session secret", () => {
     expect(() => loadConfig({ NODE_ENV: "production" })).toThrow(/SESSION_SECRET/);
     expect(() => loadConfig({ NODE_ENV: "production", SESSION_SECRET: "short" })).toThrow(/32/);
-    expect(loadConfig({ NODE_ENV: "production", SESSION_SECRET: "x".repeat(40) }).production).toBe(true);
+    const prod = { NODE_ENV: "production", SESSION_SECRET: "x".repeat(40), SMTP_URL: "smtps://u:p@mail.test:465", APP_URL: "https://dsa.test/" };
+    expect(loadConfig(prod)).toMatchObject({ production: true, appUrl: "https://dsa.test" });
+    expect(() => loadConfig({ ...prod, SMTP_URL: undefined })).toThrow(/SMTP_URL/);
+    expect(() => loadConfig({ ...prod, APP_URL: "http://dsa.test" })).toThrow(/https/);
   });
   it("has dev defaults", () => {
     expect(config.port).toBe(3000);
@@ -139,15 +145,25 @@ describe.skipIf(!dbUp)("sessions in Postgres (needs db + migrations)", () => {
   it("stores the session row and reads it back", async () => {
     const app = createApp({ config, pool, sessionStore: pgSessionStore(pool, false), routes: [testRoutes()] });
     const agent = request.agent(app);
-    const login = await agent.post("/api/login-as").send({ id: 42 });
-    const sid = decodeURIComponent(String(login.headers["set-cookie"]).match(/dsa\.sid=([^;]+)/)![1]!).slice(2).split(".")[0]!;
+    const u = await createUser(pool, { email: `s${Date.now()}@app-test.local`, name: "S", password: "whatever123", role: "solver" });
     try {
+      const login = await agent.post("/api/login-as").send({ id: u.id });
+      const sid = decodeURIComponent(String(login.headers["set-cookie"]).match(/dsa\.sid=([^;]+)/)![1]!).slice(2).split(".")[0]!;
       const row = await pool.query<{ sess: { userId: number } }>("SELECT sess FROM session WHERE sid = $1", [sid]);
-      expect(row.rows[0]?.sess.userId).toBe(42);
-      expect((await agent.get("/api/whoami")).body).toEqual({ userId: 42 });
+      expect(row.rows[0]?.sess.userId).toBe(u.id);
+      expect((await agent.get("/api/whoami")).body).toEqual({ userId: u.id });
       expect((await request(app).get("/api/health")).body).toEqual({ ok: true, db: true });
     } finally {
-      await pool.query("DELETE FROM session WHERE sid = $1", [sid]);
+      await pool.query("DELETE FROM session WHERE (sess ->> 'userId')::int = $1", [u.id]);
+      await pool.query("DELETE FROM users WHERE id = $1", [u.id]);
     }
+  });
+
+  it("drops a session whose user no longer exists, without breaking the request", async () => {
+    const app = createApp({ config, pool, sessionStore: pgSessionStore(pool, false), routes: [testRoutes()] });
+    const agent = request.agent(app);
+    await agent.post("/api/login-as").send({ id: -1 });
+    expect((await agent.get("/api/whoami")).body).toEqual({ userId: null });
+    expect((await agent.post("/api/auth/logout").send({})).body).toEqual({ ok: true });
   });
 });

@@ -100,7 +100,8 @@ After the first 8 weeks, either the tracks repeat for newcomers or new patterns 
 
 - Sign up with email, password and an invite code. The admin sets each code's number of uses and expiry, and can turn it off.
 - Roles: Admin, Setter, Solver.
-- The admin resets forgotten passwords from the admin page.
+- **Forgotten password:** "Forgot password" emails a one-time reset link (valid 60 minutes). The admin can also reset a password from the admin page (or `pnpm dsa admin reset-password`).
+- Changing or resetting a password logs the account out on every other device.
 
 ---
 
@@ -180,6 +181,7 @@ One validate command runs on the production server. A problem cannot go live unt
 - **Submission queue:** the `submissions` table itself; a single worker claims the oldest queued row with `FOR UPDATE SKIP LOCKED`, so no Redis or extra queue library is needed. The validate CLI takes the same Postgres advisory lock, so it never judges at the same time as the worker.
 - **Verdict updates:** the page polls for the result about once a second.
 - **Login:** cookie sessions stored in PostgreSQL, passwords hashed with argon2.
+- **Email:** password-reset mails over SMTP from a transactional provider (e.g. Brevo or Zoho free tier); in development they are printed to the console.
 - **Markdown:** statements and lessons are rendered through a sanitiser, with KaTeX for maths.
 - **Code execution:** go-judge, with a custom image for C++, Java and Python.
 - **Deployment:** everything in Docker Compose, with Caddy for HTTPS.
@@ -236,7 +238,6 @@ Most of the time goes into steps 3 and 6 (content), not the code.
 - Leaderboards
 - Streak rankings
 - Comments / discussion per problem
-- Password reset by email
 - Mixed-review mode
 - More tracks beyond the first 8
 - Revisit showing failed hidden-test input (e.g. show only the first failing hidden test, or only after a few attempts) if hard-coding becomes a problem

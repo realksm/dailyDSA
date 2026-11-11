@@ -6,6 +6,7 @@
   "dependencies": {
     "@dailydsa/db": "workspace:*",
     "@dailydsa/judge": "workspace:*",
+    "@dailydsa/server": "workspace:*",
     "@dailydsa/shared": "workspace:*",
     "pg": "^8.23.1",
     "yaml": "^2.9.1",

@@ -41,6 +41,9 @@ importers:
       express-session:
         specifier: ^1.19.0
         version: 1.19.0
+      nodemailer:
+        specifier: ^10.4.0
+        version: 10.4.0
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -57,6 +60,9 @@ importers:
       '@types/express-session':
         specifier: ^1.19.0
         version: 1.19.0
+      '@types/nodemailer':
+        specifier: ^8.0.2
+        version: 8.0.2
       '@types/pg':
         specifier: ^8.23.1
         version: 8.23.1
@@ -75,6 +81,9 @@ importers:
       '@dailydsa/judge':
         specifier: workspace:*
         version: link:../judge
+      '@dailydsa/server':
+        specifier: workspace:*
+        version: link:../../apps/server
       '@dailydsa/shared':
         specifier: workspace:*
         version: link:../shared
@@ -435,6 +444,9 @@ packages:
 
   '@types/node@26.6.6':
     resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
+
+  '@types/nodemailer@8.0.2':
+    resolution: {integrity: sha512-c7M5ox8p0nEOfbJ2E9Qcmt8/QCu/VzsiAhzBiZbvky2PhKZDHpKB3sQHBM5MEZNkCfBOaS6S9//AGPRTNB7IaA==}
 
   '@types/pg@8.23.1':
     resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
@@ -982,6 +994,10 @@ packages:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
     hasBin: true
 
+  nodemailer@10.4.0:
+    resolution: {integrity: sha512-fyy6r4Q5euRJ9Qr3Cts9K7SZrfe9zmz9oLOYiAR02MEJRDRci+99y0OoYBYBgpLffOqkkjXrB/d26VfiMje/kA==}
+    engines: {node: '>=20.0.0'}
+
   object-inspect@1.13.4:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
     engines: {node: '>= 0.4'}
@@ -1519,6 +1535,10 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
+  '@types/nodemailer@8.0.2':
+    dependencies:
+      '@types/node': 26.6.6
+
   '@types/pg@8.23.1':
     dependencies:
       '@types/node': 26.6.6
@@ -2011,6 +2031,8 @@ snapshots:
   node-addon-api@8.9.2: {}
 
   node-gyp-build@4.8.4: {}
+
+  nodemailer@10.4.0: {}
 
   object-inspect@1.13.4: {}
 
