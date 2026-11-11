@@ -353,6 +353,10 @@ body:has(.lp) { min-width: 0; }
 .lp .lp-btn-ink, .lp .lp-btn-ink:hover { background: #221a2c; color: #fffbf5; border-color: #221a2c; }
 .lp-final-card .btn:not(.lp-btn-ink) { background: #fffbf5; color: #221a2c; }
 .lp-final-card .btn { box-shadow: 3px 3px 0 #221a2c; }
+/* Who runs it: an invite comes from a person. */
+.lp-final-card .lp-final-by { margin-top: 32px; padding-top: 20px; border-top: 1.5px solid currentColor; font-size: 15px; }
+.lp-final-by a { display: inline-flex; align-items: center; gap: 4px; color: inherit; font-weight: 700; text-underline-offset: 3px; }
+.lp-final-by .lp-icon { width: 16px; height: 16px; transform: rotate(-45deg); }
 @media (hover: hover) { .lp-final-card .btn:hover { box-shadow: 5px 5px 0 #221a2c; } }
 
 /* ───────── footer ───────── */
@@ -363,6 +367,7 @@ body:has(.lp) { min-width: 0; }
   font-size: 14px; color: var(--muted);
 }
 .lp-footer .brand { margin-right: auto; }
+.lp-footer-author { color: var(--text); font-weight: 600; text-underline-offset: 3px; }
 .lp-credit { width: 100%; font-size: 13px; }
 .lp-credit a { color: var(--muted); }
 

@@ -97,7 +97,10 @@ function inviteCode(raw: string | null): string | null {
 }
 
 
-const WEEK: { day: string; lead?: ReactNode; ladder?: number; items: ReactNode[] }[] = [
+/** The site's maker, credited in the invite card and the footer. */
+const GITHUB = "https://github.com/realksm";
+
+const WEEK:{ day: string; lead?: ReactNode; ladder?: number; items: ReactNode[] }[] = [
   { day: "Mon", lead: <><Icon name="lesson" />The lesson goes up</>, ladder: 1, items: ["Weekday daily"] },
   { day: "Tue", ladder: 2, items: ["Weekday daily"] },
   { day: "Wed", ladder: 3, items: ["Weekday daily"] },
@@ -680,6 +683,11 @@ export default function Landing() {
                 </div>
               </>
             )}
+            {!signedIn && (
+              <p className="lp-final-by">
+                Built and run by <a href={GITHUB} rel="noreferrer" target="_blank">realksm<span className="sr-only"> on GitHub (opens in a new tab)</span><Icon name="arrow" className="lp-icon lp-arrow" /></a>
+              </p>
+            )}
           </div>
         </section>
       </main>
@@ -687,6 +695,7 @@ export default function Landing() {
       <footer className="lp-footer">
         <div className="brand"><BrandMark /><span>daily<b>DSA</b></span></div>
         <p>One problem a day, one pattern a week. All problems are original.</p>
+        <p>Made by <a className="lp-footer-author" href={GITHUB} rel="noreferrer" target="_blank">realksm<span className="sr-only"> on GitHub (opens in a new tab)</span></a></p>
         <p className="lp-credit">
           Icons: <a href="https://www.figma.com/community/file/1166831539721848736" rel="noreferrer" target="_blank">Solar</a> by 480 Design,{" "}
           <a href="https://creativecommons.org/licenses/by/4.0/" rel="noreferrer" target="_blank">CC BY 4.0</a>.
