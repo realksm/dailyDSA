@@ -1,0 +1,16 @@
+title: Three Platforms
+kind: daily
+pool: weekend
+pattern: two-pointers     # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: na, type: int }
+    - { name: nb, type: int }
+    - { name: nc, type: int }
+    - { name: a, type: "long[]", length: na }
+    - { name: b, type: "long[]", length: nb }
+    - { name: c, type: "long[]", length: nc }
+  returns: long

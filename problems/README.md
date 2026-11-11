@@ -40,7 +40,7 @@ Generated tests are **not** committed; they go to `.data/tests/<slug>/<hash>/` a
 - `bool` prints `YES` / `NO`. Arrays print one element per line, or space-separated with `join: spaces`.
 - `multi: true`: the first token is T, then T cases; each case's result is printed in order.
 - `returns: void`: solve() prints itself (C++ `cout`, Java `out`, Python `print`). Use it for "print any …" / "-1 if none" outputs.
-- Var names can't be keywords or template internals (`out`, `in`, `res`, `solve`, …) or start with `_`.
+- Var names can't be keywords or template internals (`out`, `in`, `res`, `solve`, …) or start with `_`. Also avoid names that shadow Python built-ins (`len`, `sum`, `max`, `min`, `list`, `map`, …): solvers would lose them inside `solve()`.
 - No `input:` = a generic template with a fast reader; the solver writes all of main.
 
 **Reference solutions follow the template.** They are the official solutions on the Solutions tab, next to the solver's own code, so they must look like what the solver sees in the editor. Start each from `pnpm dsa template <slug> <lang>` and write only the inside of `solve()` (and with no `input:`, the inside of `main`). Extra includes/imports and helper functions *above* `solve` are fine; the `solve` line and everything after its body (main, input reading, the fast reader) must stay exactly as generated. Every `dsa` command checks this when it loads a problem. If you change `input:`, regenerate the template and move your `solve()` body over.

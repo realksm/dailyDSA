@@ -208,6 +208,8 @@ One validate command runs on the production server. A problem cannot go live unt
 
 **First milestone:** the platform, a handful of problems, and one track (lesson + ladder). Remaining content is planned after that.
 
+**Lesson template code** uses the editor template of one of the track's ladder problems but solves a different example task, so the lesson never gives away a ladder solution.
+
 ---
 
 ## 11. Build order
@@ -217,8 +219,8 @@ One validate command runs on the production server. A problem cannot go live unt
 2. **Problem format + validate CLI**, built alongside 2–3 real problems.
 3. **Core:** accounts and invites, today's problem, the editor, Run/Submit, history, the admin page.
 4. **Solutions tab and polish.**
-5. **Tracks:** lesson pages (Markdown from the admin page), track ladders, progressive hints, per-track progress, the Tracks library, and weekly scheduling.
-6. **Content:** a few problems and one track for the first milestone; the rest planned afterwards.
+5. **Tracks:** lesson pages (Markdown in the problem repo), track ladders, progressive hints, per-track progress, the Tracks library, and weekly scheduling.
+6. **Content:** a few problems and one track for the first milestone; the rest planned afterwards. Done for the milestone: the two pointers track (lesson + 5-problem ladder), 2 two-pointers weekend problems, 3 weekday problems.
 7. **Go live:** buy the server, re-run validation there, a setup script and a step-by-step guide, off-server backups.
 
 Most of the time goes into steps 3 and 6 (content), not the code.

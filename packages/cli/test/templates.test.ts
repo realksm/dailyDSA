@@ -91,6 +91,29 @@ for i in range(n):
     prefix[i + 1] = prefix[i] + rain[i]
 return [prefix[r] - prefix[l - 1] for l, r in queries]`,
   },
+  // int[] return with join: spaces
+  "signal-towers": {
+    cpp: `vector<int> to(n, 0), waiting;
+for (int j = 0; j < n; j++) {
+    while (!waiting.empty() && h[waiting.back()] < h[j]) { to[waiting.back()] = j + 1; waiting.pop_back(); }
+    waiting.push_back(j);
+}
+return to;`,
+    java: `int[] to = new int[n], waiting = new int[n];
+int top = 0;
+for (int j = 0; j < n; j++) {
+    while (top > 0 && h[waiting[top - 1]] < h[j]) to[waiting[--top]] = j + 1;
+    waiting[top++] = j;
+}
+return to;`,
+    py: `to = [0] * n
+waiting = []
+for j in range(n):
+    while waiting and h[waiting[-1]] < h[j]:
+        to[waiting.pop()] = j + 1
+    waiting.append(j)
+return to`,
+  },
 };
 
 const gj = new GoJudge();

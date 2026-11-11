@@ -1,0 +1,13 @@
+title: Trail Days
+kind: daily
+pool: weekday
+pattern: binary-search-answer   # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: d, type: int }
+    - { name: dist, type: "long[]", length: n }
+  returns: long

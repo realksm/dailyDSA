@@ -1,0 +1,24 @@
+title: Cable Cars
+kind: track
+pattern: two-pointers
+position: 3
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: cap, type: long }
+    - { name: w, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    Sort the weights. The heaviest person has to ride in some car; the only question is who, if
+    anyone, rides with them. Look at the heaviest and the lightest person together.
+  - >-
+    Keep `l` at the lightest person still waiting and `r` at the heaviest. Each step sends one
+    car up with `r` in it, and maybe `l` too. Count the cars.
+  - >-
+    If `w[l] + w[r] <= cap`, put them in the same car (`l++`, `r--`); if even the lightest
+    person doesn't fit with `r`, nobody does, so `r` rides alone (`r--`). Either way that's one
+    car. Keep going while `l <= r`, so the last person on their own also gets a car.

@@ -1,0 +1,26 @@
+title: Shared Free Time
+kind: track
+pattern: two-pointers
+position: 4
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: m, type: int }
+    - { name: a, type: "int[][]", rows: n, cols: 2 }
+    - { name: b, type: "int[][]", rows: m, cols: 2 }
+  returns: long
+hints:
+  - >-
+    Both lists are already sorted. Keep one index into each list and compare the two current
+    slots, the way you would merge two sorted lists.
+  - >-
+    For the current slots `a[i]` and `b[j]`, the time both are free is from `max` of the starts
+    to `min` of the ends, if that is positive. Add it to a 64-bit total. Then you have to drop
+    one of the two slots.
+  - >-
+    Drop the slot that **ends first**: every later slot of the other list starts after the
+    current one, so the slot that ends first can't overlap anything else. If `a[i]` ends before
+    `b[j]`, move `i`, otherwise move `j`.

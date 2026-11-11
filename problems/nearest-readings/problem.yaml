@@ -1,0 +1,25 @@
+title: Nearest Readings
+kind: track
+pattern: two-pointers
+position: 2
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: m, type: int }
+    - { name: a, type: "long[]", length: n }
+    - { name: b, type: "long[]", length: m }
+  returns: long
+hints:
+  - >-
+    Sort both lists. Then walk through them together, the way you would merge two sorted lists:
+    one index `i` in `a` and one index `j` in `b`, both starting at the smallest value.
+  - >-
+    At each step look at the gap `|a[i] - b[j]|` and keep the smallest one seen so far. The
+    question is which index to move next.
+  - >-
+    Move the index pointing at the smaller value. If `a[i] < b[j]`, every later `b` is even
+    bigger, so `a[i]` can't do better than it just did: move `i`. Otherwise move `j`. Stop when
+    either list runs out. A gap of 0 is the best possible, so you may stop early.

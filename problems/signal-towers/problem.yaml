@@ -1,0 +1,13 @@
+title: Signal Towers
+kind: daily
+pool: weekday
+pattern: monotonic-stack   # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: h, type: "int[]", length: n }
+  returns: "int[]"
+  join: spaces

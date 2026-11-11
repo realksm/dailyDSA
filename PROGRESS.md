@@ -18,7 +18,7 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ✅ done — 3.1–3.7 API + 3.8 web app (`apps/web`) |
 | 4 | Solutions tab + polish | ✅ done — unlock + solutions API, Statement/Solutions tabs, pattern → track link (polish ideas moved to open questions) |
 | 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ✅ done — tracks API + hints + lesson editor, `/tracks`, `/tracks/:pattern`, Today card |
-| 6 | Content: a few problems + one track | 🟡 **next** — first track is **two pointers** (ladder 1/5: `budget-pairs`; lesson not written yet) |
+| 6 | Content: a few problems + one track | ✅ done for the milestone — **two pointers** track (lesson + ladder 5/5), 2 weekend + 3 weekday daily problems |
 | 7 | Go live | ☐ later — server not bought |
 
 ### Problems so far
@@ -27,9 +27,17 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 |---|---|---|
 | `rainfall-ledger` | daily · weekday · prefix-sums | range sums, 12 tests |
 | `exact-gap` | daily · weekend · two-pointers | any valid pair → **checker** + `wrong.cpp` |
-| `budget-pairs` | track two-pointers #1 | count pairs ≤ budget, 3 hints |
+| `budget-pairs` | track two-pointers #1 | count pairs ≤ budget (opposite ends, count `r - l` at once) |
+| `nearest-readings` | track two-pointers #2 | min distance between aᵢ and bⱼ across two lists (walk two sorted lists) |
+| `cable-cars` | track two-pointers #3 | fewest cars, ≤ 2 people and ≤ C kg each (greedy from both ends, `l <= r`) |
+| `shared-free-time` | track two-pointers #4 | total overlap of two sorted slot lists (drop the slot that ends first) |
+| `even-stacks` | track two-pointers #5 | fewest adjacent merges to a palindrome (running sums from both ends); naive = O(n²) prefix-sum matching |
+| `three-platforms` | daily · weekend · two-pointers | one value from each of 3 lists, min max − min (advance the minimum) |
+| `trail-days` | daily · weekday · binary-search-answer | split into ≤ d consecutive days, min longest day |
+| `signal-towers` | daily · weekday · monotonic-stack | next strictly taller to the right, `join: spaces` |
 
-All limits currently sit at the 500 ms floor on the dev box (refs take 14–88 ms).
+Every track problem has 3 hints. Bank now: 3 weekday, 2 weekend (both two-pointers), 5 track.
+Limits sit at the 500 ms floor on the dev box except Python on `shared-free-time` (600), `three-platforms` and `trail-days` (900); slowest refs: C++ 43 ms, Java 75 ms, Python 278 ms.
 
 ## How to run (dev, Windows + Docker Desktop)
 
@@ -38,7 +46,7 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck                      # tsc -b (packages + server) && tsc -p apps/web
-pnpm test                           # 100 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 110 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa template <slug> cpp > problems/<slug>/ref.cpp   # start a ref from the editor template
 pnpm dsa validate --all             # ~11 s per problem
@@ -133,6 +141,9 @@ spike/               throwaway go-judge proof
 - **Hints:** `POST /api/problems/:slug/hints {level}` → updated `ProblemView`. Only the next level (`hint_order` otherwise); a level already taken is a no-op (double clicks); `no_hints` for daily or hintless problems, `no_such_hint` above the count; same 404 release rules. `ProblemView.track.revealed` = bodies of the hints taken. Migration 004 adds `user_problems.first_hint_at`/`last_hint_at`: history's `solvedWithHints` = first hint before solving (like "solved after viewing solutions"), and the latest hint counts as activity. Hints after solving are allowed and don't mark it. The web asks for a confirm before the first hint on an unsolved problem.
 - **Lessons live in git** (user's call, replacing the first admin-page editor): `problems/_tracks/<pattern>.md`, first line `# Title`, then the sections `LESSON_SECTIONS` (shared) in order. `pnpm dsa lesson new|check|import <pattern>|--all`; `dsa import --all` also imports every lesson; `dsa list` shows lessons. Why git: lessons are coupled to the ladder problems (already in git), get history/diffs, move to the real server with everything else, and can be checked. **Check:** title 3–100 chars, the four sections, and `## Template code` has exactly one C++, Java and Python block per group, each passing `templateMismatch` against a ladder problem's `input:` (problems loaded from git; the generic template only counts if a ladder problem uses it, since it matches almost anything). Import upserts `tracks` (creates the row if no ladder problem was imported yet) and only bumps `updated_at` when the title or text changed; problem import never touches a track's title or lesson. The ladder (lesson section 5) is drawn by the track page. Setters/admins preview an imported lesson on `/tracks/<pattern>` (they see unreleased tracks).
 - **Lesson code blocks:** C++/Java/Python fences (`cpp`/`c++`, `java`, `py`/`python`) separated only by blank lines are one group (`lessonParts` in `packages/shared/src/lesson.ts`, used by both the CLI check and the site), shown as one read-only Monaco block with a tab per language, starting on the solver's editor language.
+- **Lesson template code gives nothing away:** `## Template code` keeps a ladder problem's editor template (so `lesson check` passes) but fills `solve()` with a *different* example task — two pointers: closest pair sum to a target in the `budget-pairs` shape, shared values of two lists in the `nearest-readings` shape. The example code was compiled and run in all three languages. Keep code lines ≤ ~70 chars: the lesson's code viewer is narrow and cuts longer lines.
+- **Input var names don't shadow Python built-ins** (`len`, `sum`, `max`, …): `trail-days` uses `dist`, not `len`. Added to problems/README.md.
+- **Writing refs:** a scratch splice script (template from `dsa template` + a solve() body) was used; it isn't in the repo. Generating the template by hand with `pnpm dsa template` works the same.
 - **Web tracks:** `/tracks` (cards: when it runs, ladder dots, n/m solved), `/tracks/:pattern` (lesson + sticky ladder), "This week's track" card on Today (today's ladder problem Mon–Fri, else the first unsolved open one), Tracks nav link, breadcrumb + hints box on ladder problems, Admin → Tracks tab (read-only: each track, ladder size, lesson imported or missing, last import).
 
 ## Step 3 log: core app
@@ -147,17 +158,16 @@ Suggested order (each piece testable on its own):
 7. ✅ **History + admin API:** history and own-submissions list; admin users / invites / password reset; staff problem list, schedule view, pins; admin track weeks.
 8. ✅ **apps/web:** every page above, checked live in headless Chromium (login → Run → Submit AC → solved + pattern shown; admin invite create, pin/unpin, week schedule/unschedule; light + dark).
 
-## Next up — step 6: Content (PLAN §10)
+## Next up
 
-- Two-pointers ladder #2–#5 (`problems/<slug>/`, `kind: track`, `position`, 3 hints each) and at least one more two-pointers **weekend** problem.
-- The two-pointers lesson: `pnpm dsa lesson new two-pointers`, write it, `pnpm dsa lesson check`/`import` (see `problems/README.md` → Track lessons).
-- A few more weekday problems so the daily bank isn't just `rainfall-ledger`.
+The first milestone (platform + a handful of problems + one track) is reached. Choose with the user:
+- **More content** (PLAN §10/§12): grow the weekday bank towards ~24, and the next launch tracks (lesson + 5-problem ladder + 2 weekend problems each). Natural next track: sliding window (the two-pointers lesson already points to it).
+- **Step 7, go live:** buy the server, setup script + guide, re-run `pnpm dsa validate --all` there, backups.
+- Smaller polish from the open questions below (CSP header, draggable split).
 
 ## Open questions / for later
 
 - Upload test inputs to go-judge once per problem (fileId) instead of sending content per run — only if large tests prove slow.
-- Weekend pool needs ≥2 problems per track pattern; we have 1 for two-pointers (`exact-gap`), so a two-pointers weekend shows it Sat and Sun — the user will write more weekend problems (planned, step 6).
-- Remaining two-pointers ladder problems (#2–#5) + lesson.
 - The dev DB has a test admin from the 3.8 browser check: `webcheck@example.test` (id 239); the step 4 check also left it a WA Submit on `exact-gap` and an unlock (solutions opened before solving). Keep it for trying the UI (`pnpm dsa admin reset-password webcheck@example.test` for a new password) or delete it.
 - Servers from earlier sessions (started 09:37 / 09:50 / 09:52) may still be running on ports 3000–3002 with older code; stop them and restart `pnpm server` to get the current API.
 - **Dev DB:** two-pointers is scheduled for the week of 2026-11-09 (inserted by SQL for the step 5 browser check, since the API only schedules future weeks), so the Today card and `/tracks` show it. Undo with `DELETE FROM track_weeks WHERE week_start = '2026-11-09'`. The `webcheck` admin also took hint 1 on `budget-pairs`.
@@ -165,6 +175,8 @@ Suggested order (each piece testable on its own):
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (14)** — Step 6 content: two-pointers ladder #2–#5 (`nearest-readings`, `cable-cars`, `shared-free-time`, `even-stacks`, 3 hints each), weekend `three-platforms`, weekday `trail-days` (binary search on the answer) and `signal-towers` (monotonic stack); all validated (naive TLEs on 3–7 tests each) and imported. Lesson `problems/_tracks/two-pointers.md` written (spotting clues, the "which pointer is useless?" argument, three shapes, worked example, two language-tabbed example templates, common mistakes), checked and imported; example code run in C++/Java/Python. `signal-towers` added to templates.test.ts (first `int[]` + `join: spaces` problem). 110 tests pass. Lesson page, library and problem pages checked in headless Chromium on PORT=3006 (light + dark, no page errors).
 
 - **2026-11-11 (13)** — Lessons moved to git: `problems/_tracks/<pattern>.md`, `dsa lesson new|check|import` (checks title, sections and that the template code follows a ladder problem's editor template), `dsa import --all` includes lessons. Removed the admin lesson editor and its API (`GET/PATCH /api/admin/tracks/:pattern`); Admin → Tracks is a read-only list. `lessonParts` moved to `packages/shared`. 107 tests pass; CLI checked on a scratch copy of `problems/`.
 

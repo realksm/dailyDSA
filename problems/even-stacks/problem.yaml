@@ -1,0 +1,26 @@
+title: Even Stacks
+kind: track
+pattern: two-pointers
+position: 5
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: a, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    Look at the two ends of the row. In the finished row, the first stack and the last stack
+    must weigh the same. Each of them is built from some stacks at its own end of the original
+    row. Work inwards from both ends at once.
+  - >-
+    Keep `l` and `r` at the two ends, and the weight of the stack currently being built at each
+    end: `left = a[l]` and `right = a[r]`. Count the merges you do.
+  - >-
+    If `left == right`, those two stacks match: move both pointers inwards and start new ones.
+    If `left < right`, the left stack is too light and only a merge can make it heavier: merge
+    in the next stack (`l++`, `left += a[l]`, one merge). Otherwise do the same on the right.
+    All weights are positive, so a side never needs to merge more than this. The sums need
+    64 bits.
