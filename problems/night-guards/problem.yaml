@@ -1,0 +1,14 @@
+title: Night Guards
+kind: daily
+pool: weekend
+pattern: binary-search-answer     # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 15
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: m, type: int }
+    - { name: guard, type: "long[]", length: n }
+    - { name: lamp, type: "long[]", length: m }
+  returns: long

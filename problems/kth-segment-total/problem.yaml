@@ -1,0 +1,13 @@
+title: Kth Segment Total
+kind: daily
+pool: weekend
+pattern: binary-search-answer     # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: k, type: long }
+    - { name: takings, type: "long[]", length: n }
+  returns: long

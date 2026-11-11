@@ -1,0 +1,8 @@
+# The Binary search on the answer track's ladder, easiest first: #1 opens on Monday of the track's week,
+# #2 on Tuesday, … #5 on Friday. Reordering needs no re-validation; then run: pnpm dsa track import binary-search-answer
+ladder:
+  - tanker-capacity
+  - tent-spacing
+  - widget-factory
+  - kth-combo
+  - median-stretch

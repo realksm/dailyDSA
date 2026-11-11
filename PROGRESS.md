@@ -18,7 +18,7 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ✅ done — 3.1–3.7 API + 3.8 web app (`apps/web`) |
 | 4 | Solutions tab + polish | ✅ done — unlock + solutions API, Statement/Solutions tabs, pattern → track link (polish ideas moved to open questions) |
 | 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ✅ done — tracks API + hints + lesson editor, `/tracks`, `/tracks/:pattern`, Today card |
-| 6 | Content: a few problems + one track | ✅ done for the milestone — **two pointers** track (lesson + ladder 5/5), 2 weekend + 3 weekday daily problems |
+| 6 | Content: a few problems + one track | ✅ done for the milestone, and growing — **4 tracks** (two pointers, sliding window, prefix sums, binary search on the answer: lesson + ladder 5/5 + 2 weekend each), 3 weekday daily problems |
 | 7 | Go live | ☐ later — server not bought |
 
 ### Problems so far
@@ -35,9 +35,30 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | `three-platforms` | daily · weekend · two-pointers | one value from each of 3 lists, min max − min (advance the minimum) |
 | `trail-days` | daily · weekday · binary-search-answer | split into ≤ d consecutive days, min longest day |
 | `signal-towers` | daily · weekday · monotonic-stack | next strictly taller to the right, `join: spaces` |
+| `quiet-stretch` | track sliding-window #1 | fixed-size window |
+| `fuel-run` | track sliding-window #2 | longest window under a cap |
+| `badge-scans` | track sliding-window #3 | counts per value inside the window |
+| `spice-road` | track sliding-window #4 | shortest covering window |
+| `steady-readings` | track sliding-window #5 | count windows with max − min bounded (max/min deques) |
+| `harvest-window` | daily · weekend · sliding-window | window length in a range (prefix sums + deque) |
+| `varied-segments` | daily · weekend · sliding-window | exactly-k via atMost(k) − atMost(k − 1) |
+| `fair-split` | track prefix-sums #1 | prefix vs total |
+| `stage-lights` | track prefix-sums #2 | difference array |
+| `even-shares` | track prefix-sums #3 | remainder counts, negative values |
+| `orchard-plots` | track prefix-sums #4 | 2D prefix sums |
+| `tiring-weeks` | track prefix-sums #5 | +1/−1 marks, first occurrence of P − 1 |
+| `staircase-paint` | daily · weekend · prefix-sums | second-order difference array |
+| `trim-ledger` | daily · weekend · prefix-sums | shortest block with a given remainder |
+| `tanker-capacity` | track binary-search-answer #1 | smallest capacity with Σ⌈wᵢ/C⌉ ≤ T (plain "first yes") |
+| `tent-spacing` | track binary-search-answer #2 | maximise the minimum gap of k tents (greedy check, "last yes", round up) |
+| `widget-factory` | track binary-search-answer #3 | earliest T with Σ⌊T/sᵢ⌋ ≥ G, answer ~1e18 (stop the sum at G: overflow) |
+| `kth-combo` | track binary-search-answer #4 | k-th smallest aᵢ + bⱼ (count pairs ≤ X with two pointers); naive = heap |
+| `median-stretch` | track binary-search-answer #5 | max lower median of a stretch ≥ k days (±1 marks, P[r] > min P[0..r−k]); naive = two-heap running median |
+| `night-guards` | daily · weekend · binary-search-answer | guards on a line visit all lamps, min time (greedy: westmost guard takes the westmost lamp, left-first vs right-first); naive = O(n·m²) DP, also stress-tested 2000× |
+| `kth-segment-total` | daily · weekend · binary-search-answer | k-th smallest subarray total, positive values (sliding-window count); naive = heap |
 
-Every track problem has 3 hints. Bank now: 3 weekday, 2 weekend (both two-pointers), 5 track.
-Limits sit at the 500 ms floor on the dev box except Python on `shared-free-time` (600), `three-platforms` and `trail-days` (900); slowest refs: C++ 43 ms, Java 75 ms, Python 278 ms.
+Every track problem has 3 hints. Bank now: 3 weekday, 8 weekend, 20 track (4 tracks).
+Limits sit at the 500 ms floor on the dev box except Python on `shared-free-time`, `staircase-paint` (600), `three-platforms`, `trail-days`, `night-guards` (900), `widget-factory` (1000), `kth-combo`, `median-stretch` (1100) and `kth-segment-total` (1500): binary search adds a 30–47× log factor that Python feels. Slowest refs: C++ 43 ms, Java 88 ms, Python 484 ms. The binary-search Python refs push the counting into C (`map(bisect, …)`, `accumulate`) to stay there.
 
 ## How to run (dev, Windows + Docker Desktop)
 
@@ -167,7 +188,7 @@ Suggested order (each piece testable on its own):
 ## Next up
 
 The first milestone (platform + a handful of problems + one track) is reached. Choose with the user:
-- **More content** (PLAN §10/§12): grow the weekday bank towards ~24, and the next launch tracks (lesson + 5-problem ladder + 2 weekend problems each). Natural next track: sliding window (the two-pointers lesson already points to it).
+- **More content** (PLAN §10/§12): grow the weekday bank towards ~24, and the next launch tracks (lesson + 5-problem ladder + 2 weekend problems each). Done so far: two pointers, sliding window, prefix sums, binary search on the answer. Left from `STARTING_PATTERNS`: monotonic stack, BFS / DFS, simple 1D DP, heaps / top-k (the binary-search lesson already points to heaps for small k).
 - **Step 7, go live:** buy the server, setup script + guide, re-run `pnpm dsa validate --all` there, backups.
 - Smaller polish from the open questions below (CSP header, draggable split).
 
@@ -181,6 +202,8 @@ The first milestone (platform + a handful of problems + one track) is reached. C
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-11 (17+)** — Tracks: sliding window (`1ec3ea3`) and prefix sums (`b2a186b`) were committed without PROGRESS entries; their rows above are filled in from those commits. Then **binary search on the answer**: ladder `tanker-capacity` → `tent-spacing` → `widget-factory` → `kth-combo` → `median-stretch`, weekend `night-guards` and `kth-segment-total`, lesson (spotting clues, the no…yes invariant, first-yes vs last-yes rounding, four check shapes, worked rope-cutting example, two example groups: rope cutting in the Tanker Capacity template and k-th smallest gap in the Kth Combo template). All 7 validated; `night-guards` and `kth-segment-total` refs also stress-tested against their naive in the judge container (2000 random small cases each); lesson code run in C++/Java/Python. `track check` ready, 117 tests pass, imported. Lesson page not looked at in a browser this time (same building blocks as earlier lessons: table, `$$`, tabs).
 
 - **2026-11-11 (16)** — Project skills for writing content: `.claude/skills/daily-problem/SKILL.md` (design → yaml → statement → gen.py → template refs → naive → checker → validate → import → docs) and `.claude/skills/new-track/SKILL.md` (plan the ladder + weekend problems, `dsa track new`, hints, lesson rules incl. running the example code in the judge container, `track check` until ready, import, docs).
 

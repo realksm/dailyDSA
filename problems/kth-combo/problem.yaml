@@ -1,0 +1,27 @@
+title: Kth Combo
+kind: track
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: m, type: int }
+    - { name: k, type: long }
+    - { name: mains, type: "long[]", length: n }
+    - { name: drinks, type: "long[]", length: m }
+  returns: long
+hints:
+  - >-
+    Don't list the combos. Ask instead: "how many combos cost at most `X`?" That count only grows
+    as `X` grows, so the answer is the smallest `X` whose count is at least `k`. Binary search
+    for it between `min(mains) + min(drinks)` and `max(mains) + max(drinks)`.
+  - >-
+    Sort both lists. To count the combos at most `X`, go through the mains from cheapest to
+    dearest and keep one index into the drinks: how many drinks still fit together with the
+    current main.
+  - >-
+    As the main gets dearer, the number of drinks that fit can only shrink, so the drinks index
+    only moves left and one count takes `O(n + m)`. If the count for `mid` is at least `k`, the
+    answer is at most `mid` (`hi = mid`), else `lo = mid + 1`. The count can reach `n * m`, so
+    keep it in 64 bits.

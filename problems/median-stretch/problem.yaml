@@ -1,0 +1,25 @@
+title: Median Stretch
+kind: track
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: k, type: int }
+    - { name: reading, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    Ask a yes/no question: "is there a stretch of at least `k` days whose median is at least
+    `x`?" If the answer is yes for some `x`, it is yes for every smaller `x` too. So binary
+    search for the largest `x` that gets a yes; trying only values that occur in the readings
+    is enough.
+  - >-
+    For one `x`, you don't need the actual medians. Mark each day `+1` if its reading is at
+    least `x` and `-1` if it is below. A stretch has median at least `x` exactly when its marks
+    add up to more than 0. Keep prefix sums `P` of the marks.
+  - >-
+    The stretch from day `l + 1` to day `r` is long enough when `r - l >= k`, and it is good when
+    `P[r] - P[l] > 0`. Walk `r` from `k` to `n` while keeping the smallest of `P[0..r-k]`; `x`
+    works if some `P[r]` is bigger than that minimum. Each check is `O(n)`.

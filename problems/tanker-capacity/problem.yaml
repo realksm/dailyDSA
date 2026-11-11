@@ -1,0 +1,24 @@
+title: Tanker Capacity
+kind: track
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: trips, type: long }
+    - { name: need, type: "long[]", length: n }
+  returns: long
+hints:
+  - >-
+    If a tanker of capacity `C` can do the job in at most `trips` trips, any bigger tanker can
+    too. So the capacities go "too small, too small, …, enough, enough": binary search for the
+    first one that is enough instead of trying them one by one.
+  - >-
+    Keep a range `[lo, hi]` that surely contains the answer: `lo = 1`, and `hi` = the largest
+    need (then every house takes one trip, and `trips >= n`). A check for one capacity `C` adds
+    up the trips: house `i` takes `ceil(need[i] / C)` of them.
+  - >-
+    Take `mid = (lo + hi) / 2`. If `mid` is enough, the answer is at most `mid` (`hi = mid`);
+    otherwise it is above (`lo = mid + 1`). Stop when `lo == hi`. Write the ceiling as
+    `(need[i] + C - 1) / C` and keep the trip total in 64 bits.

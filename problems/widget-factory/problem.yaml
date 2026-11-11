@@ -1,0 +1,22 @@
+title: Widget Factory
+kind: track
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: m, type: int }
+    - { name: goal, type: long }
+    - { name: secs, type: "long[]", length: m }
+  returns: long
+hints:
+  - >-
+    If the machines can finish the order within `T` seconds, they can within any longer time
+    too. So binary search on the time `T`.
+  - >-
+    In `T` seconds machine `i` makes `floor(T / secs[i])` widgets. Search between 1 and
+    `min(secs) * goal`: the fastest machine alone finishes by then.
+  - >-
+    Check a time `T` by adding up `T / secs[i]` over the machines, but **stop as soon as the
+    total reaches `goal`**. `T` can be close to 10^18, and with many fast machines the full sum
+    would overflow 64 bits. Then the usual: if `T` is enough, `hi = T`, else `lo = T + 1`.
