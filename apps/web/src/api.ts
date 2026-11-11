@@ -2,7 +2,7 @@
 // server's { error: { code, message, details } } body (packages/shared/src/api.ts).
 import type {
   AdminUser, DailyArchive, DailyEntry, DailyToday, History, InviteCode, Lang, Me, PasswordResetByAdmin,
-  ProblemView, Role, Schedule, ScheduleDay, StaffProblem, StaffTrack, SubmissionKind, SubmissionList,
+  ProblemView, Role, Schedule, Solutions, ScheduleDay, StaffProblem, StaffTrack, SubmissionKind, SubmissionList,
   SubmissionQueued, SubmissionView, TrackWeek,
 } from "@dailydsa/shared";
 
@@ -81,6 +81,9 @@ export const api = {
   run: (slug: string, lang: Lang, code: string, customInput: string) =>
     call<SubmissionQueued>("POST", `/problems/${enc(slug)}/run`, { lang, code, customInput }),
   submit: (slug: string, lang: Lang, code: string) => call<SubmissionQueued>("POST", `/problems/${enc(slug)}/submit`, { lang, code }),
+  unlockSolutions: (slug: string) => call<ProblemView>("POST", `/problems/${enc(slug)}/unlock-solutions`),
+  solutions: (slug: string, p: { lang?: Lang | undefined; before?: number; limit?: number }) =>
+    call<Solutions>("GET", `/problems/${enc(slug)}/solutions${q(p)}`),
   submission: (id: number) => call<SubmissionView>("GET", `/submissions/${id}`),
   submissions: (p: { problem?: string; kind?: SubmissionKind; before?: number; limit?: number }) =>
     call<SubmissionList>("GET", `/submissions${q(p)}`),

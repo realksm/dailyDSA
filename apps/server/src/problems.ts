@@ -34,6 +34,7 @@ interface Row {
   tests_hash: string;
   pattern_slug: string | null;
   pattern_name: string | null;
+  track_open: boolean;
   first_attempt_at: Date | null;
   solved_at: Date | null;
   solutions_unlocked_at: Date | null;
@@ -70,6 +71,8 @@ export async function problemView(
     `SELECT p.id, p.slug, p.title, p.kind, p.statement_md, p.input_spec, p.time_limits, p.memory_mb, p.output_mb,
             p.checker_py IS NOT NULL AS has_checker, p.sample_count, p.tests_hash,
             pt.slug AS pattern_slug, pt.name AS pattern_name,
+            EXISTS (SELECT 1 FROM tracks t JOIN track_weeks w ON w.track_id = t.id
+                     WHERE t.pattern_slug = p.pattern_slug AND w.week_start <= $2::date) AS track_open,
             up.first_attempt_at, up.solved_at, up.solutions_unlocked_at, up.submit_count, up.hints_used,
             tp.position,
             (SELECT count(*)::int FROM problem_hints h WHERE h.problem_id = p.id) AS hint_count,
@@ -105,7 +108,7 @@ export async function problemView(
     solvedAt: x.solved_at ? x.solved_at.toISOString() : null,
     solutionsUnlocked: unlocked,
     canUnlockSolutions: !unlocked && x.first_attempt_at !== null,
-    pattern: showPattern && x.pattern_slug && x.pattern_name ? { slug: x.pattern_slug, name: x.pattern_name } : null,
+    pattern: showPattern && x.pattern_slug && x.pattern_name ? { slug: x.pattern_slug, name: x.pattern_name, trackOpen: x.track_open } : null,
     track: x.kind === "track" && x.position !== null ? { position: x.position, hints: x.hint_count, hintsUsed: x.hints_used ?? 0 } : null,
     dailyDays: x.daily_days,
     lastCode: x.last_code,

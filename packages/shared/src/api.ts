@@ -66,8 +66,12 @@ export interface ProblemView {
   solutionsUnlocked: boolean;
   /** "Show solutions" button: after a real (non-CE) attempt, until unlocked. */
   canUnlockSolutions: boolean;
-  /** Track problems: always (the track is the pattern). Daily: only after solve/unlock. */
-  pattern: { slug: string; name: string } | null;
+  /**
+   * Track problems: always (the track is the pattern). Daily: only after solve/unlock.
+   * `trackOpen`: the pattern's track has started running (its first week has begun), so the page
+   * links to it; otherwise "a track for this pattern is coming".
+   */
+  pattern: { slug: string; name: string; trackOpen: boolean } | null;
   /** Track problems only: the ladder position and how many hints exist / were used. */
   track: { position: number; hints: number; hintsUsed: number } | null;
   /** IST days this problem was the daily (oldest first, never after today). */
@@ -132,6 +136,39 @@ export interface SubmissionSummary {
 /** GET /api/submissions?problem=&kind=&before=&limit= — the caller's own, newest first; pass `nextBefore` as `before`. */
 export interface SubmissionList {
   submissions: SubmissionSummary[];
+  nextBefore: number | null;
+}
+
+// ───────────── solutions (PLAN §4) ─────────────
+
+/** The setter's reference solution, pinned at the top of the Solutions tab. */
+export interface OfficialSolution {
+  lang: Lang;
+  code: string;
+}
+
+/** Someone's accepted code: their latest accepted Submit in that language. */
+export interface AcceptedSolution {
+  /** The submission id (also the paging key). */
+  id: number;
+  author: string;
+  /** The caller's own. */
+  mine: boolean;
+  lang: Lang;
+  code: string;
+  maxCpuMs: number | null;
+  maxMemoryKb: number | null;
+  createdAt: string;
+}
+
+/**
+ * GET /api/problems/:slug/solutions?lang=&before=&limit= — once solved or unlocked (else 403
+ * `solutions_locked`). Newest first; pass `nextBefore` as `before` for more. `official` is the same
+ * on every page.
+ */
+export interface Solutions {
+  official: OfficialSolution[];
+  accepted: AcceptedSolution[];
   nextBefore: number | null;
 }
 

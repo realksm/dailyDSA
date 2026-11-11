@@ -399,3 +399,34 @@ select { padding-right: 28px; }
   font: 500 16px var(--mono); padding: 10px 12px; background: var(--sunk); border-radius: var(--r-sm);
   user-select: all; letter-spacing: 0.02em;
 }
+
+/* ───────── solutions tab ───────── */
+
+.left-tabs { position: sticky; top: 0; z-index: 2; background: var(--surface); padding: 0 16px; }
+.link-btn { font: inherit; color: var(--primary); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+
+.seg { display: inline-flex; align-self: flex-start; border: 1px solid var(--line-strong); border-radius: var(--r-sm); overflow: hidden; }
+.seg button {
+  font: 500 13px var(--font); color: var(--muted); background: var(--surface);
+  border: 0; border-left: 1px solid var(--line); padding: 5px 12px; cursor: pointer;
+  transition: color 120ms ease-out, background-color 120ms ease-out;
+}
+.seg button:first-child { border-left: 0; }
+.seg button:hover { color: var(--text); }
+.seg button[aria-checked="true"] { color: var(--on-primary); background: var(--primary); }
+
+.sol-h { font-size: 13px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.sol { border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); overflow: hidden; }
+.sol-head { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
+.sol[data-open] .sol-head { border-bottom: 1px solid var(--line); }
+.sol-toggle {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+  background: none; border: 0; padding: 8px 10px; font: 400 13px var(--font); color: var(--text); cursor: pointer; text-align: left;
+}
+.sol-toggle:hover { background: var(--sunk); }
+.sol-toggle b { font-weight: 500; }
+.sol-toggle .tm { font: 400 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.chev { width: 10px; color: var(--muted); }
+.sol-locked { padding: 32px 0; max-width: 46ch; }
+.sol-locked h2 { font-size: 18px; margin-bottom: 8px; }
+.sol-locked p + p { margin-top: 16px; }

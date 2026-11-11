@@ -1,10 +1,12 @@
-// The problem page: statement + samples on the left; editor, custom input and results on the right.
+// The problem page: statement + samples (or the Solutions tab) on the left; editor, custom input and
+// results on the right.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { JAVA_MAIN_CLASS_MESSAGE, LANG_LABEL, LANGS, javaHasMainClass, type Lang, type ProblemView, type SubmissionKind, type SubmissionView } from "@dailydsa/shared";
 import { api, ApiErr, errorMessage } from "../api";
 import { fmtDay, fmtStamp } from "../format";
 import { CodeEditor } from "../components/LazyEditor";
 import { Markdown } from "../components/Markdown";
+import { SolutionsPanel } from "../components/Solutions";
 import { ResultView } from "../components/Result";
 import { CopyButton, LoadError, Notice, Skeleton, StatusBadge, useLoad, useTitle, VerdictBadge } from "../components/ui";
 import { Link } from "../router";
@@ -37,10 +39,11 @@ export function ProblemPage({ slug }: { slug: string }) {
       </div>
     );
   }
-  return <Solve p={view.data} refresh={view.reload} />;
+  return <Solve p={view.data} refresh={view.reload} replace={(v) => view.setData(() => v)} />;
 }
 
-function Solve({ p, refresh }: { p: ProblemView; refresh: () => void }) {
+function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; replace: (v: ProblemView) => void }) {
+  const [leftTab, setLeftTab] = useState<"statement" | "solutions">("statement");
   const [lang, setLangState] = useState<Lang>(() => {
     const l = store.get("dsa.lang");
     return (LANGS as readonly string[]).includes(l ?? "") ? (l as Lang) : "cpp";
@@ -147,9 +150,15 @@ function Solve({ p, refresh }: { p: ProblemView; refresh: () => void }) {
 
   return (
     <div className="solve">
-      <section className="solve-left" aria-label="Problem statement">
+      <section className="solve-left" aria-label="Problem">
+        <div className="tabs left-tabs" role="tablist">
+          <button role="tab" aria-selected={leftTab === "statement"} onClick={() => setLeftTab("statement")}>Statement</button>
+          <button role="tab" aria-selected={leftTab === "solutions"} onClick={() => setLeftTab("solutions")}>
+            Solutions{!p.solutionsUnlocked && <span className="count" aria-label="locked">· locked</span>}
+          </button>
+        </div>
         <div className="solve-left-inner">
-          <Statement p={p} />
+          {leftTab === "statement" ? <Statement p={p} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
         </div>
       </section>
 
@@ -210,7 +219,10 @@ function Solve({ p, refresh }: { p: ProblemView; refresh: () => void }) {
                 {justSolved && (
                   <div style={{ marginBottom: 12 }}>
                     <Notice tone="ok">
-                      Solved{p.pattern && !p.track ? <>. This was a <b>{p.pattern.name}</b> problem</> : ""}. Nicely done.
+                      Solved{p.pattern && !p.track ? <>. This was a <b>{p.pattern.name}</b> problem</> : ""}. Nicely done.{" "}
+                      {leftTab !== "solutions" && (
+                        <button className="link-btn" onClick={() => setLeftTab("solutions")}>See how others solved it</button>
+                      )}
                     </Notice>
                   </div>
                 )}
@@ -272,6 +284,15 @@ function Statement({ p }: { p: ProblemView }) {
       {p.track && p.track.hints > 0 && (
         <p className="muted small" style={{ marginTop: 28 }}>
           This ladder problem has {p.track.hints} hint{p.track.hints === 1 ? "" : "s"}. Hints arrive with the tracks update.
+        </p>
+      )}
+      {p.pattern && !p.track && (
+        <p className="small" style={{ marginTop: 28 }}>
+          {p.pattern.trackOpen ? (
+            <>This was a {p.pattern.name.toLowerCase()} problem. <Link to={`/tracks/${p.pattern.slug}`}>Practise more in the {p.pattern.name} track →</Link></>
+          ) : (
+            <span className="muted">This was a {p.pattern.name.toLowerCase()} problem. A track for this pattern is coming.</span>
+          )}
         </p>
       )}
       {p.status !== "new" && (

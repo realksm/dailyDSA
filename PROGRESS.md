@@ -16,8 +16,8 @@ No server yet — everything runs locally in Docker; the Hostinger box is bought
 | 1 | Schema | ✅ done — `packages/db/migrations/001_init.sql`, patterns seeded in `002` |
 | 2 | Problem format + validate CLI (+2–3 problems) | ✅ done — `packages/cli`, `problems/README.md`, 3 problems validated + imported |
 | 3 | Core app (accounts, daily, editor, Run/Submit, history, admin) | ✅ done — 3.1–3.7 API + 3.8 web app (`apps/web`) |
-| 4 | Solutions tab + polish | ☐ **next** |
-| 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ |
+| 4 | Solutions tab + polish | ✅ done — unlock + solutions API, Statement/Solutions tabs, pattern → track link (polish ideas moved to open questions) |
+| 5 | Tracks (lesson, ladder, hints, progress, library, scheduling) | ☐ **next** |
 | 6 | Content: a few problems + one track | 🟡 started — first track is **two pointers** (ladder 1/5: `budget-pairs`) |
 | 7 | Go live | ☐ later — server not bought |
 
@@ -38,7 +38,7 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck                      # tsc -b (packages + server) && tsc -p apps/web
-pnpm test                           # 89 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 94 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa validate --all             # ~11 s per problem
 pnpm dsa import --all
@@ -66,7 +66,7 @@ packages/judge       go-judge client + judge() orchestrator (compile once → ru
 packages/db          pg pool + SQL migration runner (migrations/NNN_*.sql) + `withJudgeLock` (advisory lock 727002)
 packages/cli         `pnpm dsa` — list / new / validate / import / admin / invite
 problems/            one folder per problem (+ _template, README.md)
-apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`), history (`history.ts`), admin API (`admin.ts`, `routes/admin.ts`); `users.ts` is also used by the CLI
+apps/server          Express API: app factory, config, sessions, errors, auth, mailer, daily (`ist.ts`, `daily.ts`), problem page (`problems.ts`), Solutions tab (`solutions.ts`), Run/Submit queue + judge worker (`submissions.ts`, `routes/submissions.ts`), history (`history.ts`), admin API (`admin.ts`, `routes/admin.ts`); `users.ts` is also used by the CLI
 apps/web             Vite + React 19 + Monaco: today, archive, problem/editor, history, submission, account, admin, auth pages
 spike/               throwaway go-judge proof
 .data/               (gitignored) generated tests: .data/tests/<slug>/<hash>/NN.in|NN.ans
@@ -121,6 +121,11 @@ spike/               throwaway go-judge proof
 - **Look:** see `.tastemaker/style-lock.md` (tokens, fonts, contrast). Light/dark follow the OS; IBM Plex Sans/Mono via @fontsource (no Google Fonts request). `min-width: 1024px` (laptops only).
 - **Dependency age policy:** pnpm enforces a minimum release age (1 day). If an install fails on a too-new version, pin an older one; never keep the `minimumReleaseAgeExclude` entry pnpm may write into pnpm-workspace.yaml. Vite is pinned to 8.3.7 (same as vitest uses), @vitejs/plugin-react to 6.1.2.
 - **Serving the build:** if `WEB_DIR` (default `apps/web/dist`) has an `index.html`, the server serves `/assets` as immutable (an unknown asset is a 404, not index.html) and answers other non-/api GETs with index.html (`Cache-Control: no-cache`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` so the reset token never leaks).
+- **Solutions tab API** (`requireUser`, same 404 release rules as the problem page): `POST /api/problems/:slug/unlock-solutions` = the Show solutions button → the updated `ProblemView`; needs `first_attempt_at` (a non-CE Submit) else 403 `no_attempt`; idempotent, and a no-op once solved (so solving never counts as "after viewing"). The unlock time is the DB clock, like submissions' `created_at` it's compared with. `GET /api/problems/:slug/solutions?lang=&before=&limit=` (type `Solutions`) → 403 `solutions_locked` until solved/unlocked; `official` = `problem_solutions` (the refs, already stored by `dsa import`), `accepted` = per author + language only the **latest** AC Submit (Runs never count), newest first, keyset by submission id, limit ≤ 50 (default 20). Shows author names (invite-only group) and `mine`.
+- **Staff get no shortcut** to solutions: setters/admins open problems early but follow the same unlock rules (they have the refs in git; the admin also solves dailies, so no spoilers).
+- **`ProblemView.pattern.trackOpen`**: the pattern's track has a week starting ≤ today. Daily problems then link "Practise more in the X track →" to `/tracks/:pattern` (the page arrives in step 5), else "A track for this pattern is coming".
+- **Web Solutions tab:** left pane has Statement / Solutions tabs (sticky); locked view explains the rule and shows the button (with a confirm) when allowed; unlocked = language filter (defaults to the editor's language), reference code pinned on top, accepted code as collapsible cards (author, time, memory, Copy). Monaco (read-only) mounts only for open cards. After a first AC the result notice offers "See how others solved it".
+- **Monaco keybindings are global:** `editor.addCommand` bindings are shared by every editor on the page (last registered wins), so read-only viewers register none — otherwise Ctrl+Enter in the real editor broke once a solution card opened. Read-only viewers also pass the mouse wheel to the page at their ends and hide the line highlight.
 
 ## Step 3 log: core app
 
@@ -134,23 +139,26 @@ Suggested order (each piece testable on its own):
 7. ✅ **History + admin API:** history and own-submissions list; admin users / invites / password reset; staff problem list, schedule view, pins; admin track weeks.
 8. ✅ **apps/web:** every page above, checked live in headless Chromium (login → Run → Submit AC → solved + pattern shown; admin invite create, pin/unpin, week schedule/unschedule; light + dark).
 
-## Next up — step 4: Solutions tab + polish
+## Next up — step 5: Tracks (PLAN §2)
 
-- API: `POST /api/problems/:slug/unlock-solutions` (needs `canUnlockSolutions`, sets `solutions_unlocked_at`) and `GET /api/problems/:slug/solutions?lang=` (accepted code from everyone once solved or unlocked; the setter's ref pinned on top; ref files live in git, so the import has to store them or the server reads them).
-- Web: Statement / Solutions tabs on the left pane, a "Show solutions" button with a confirm, the pattern linking to its track ("a track for this pattern is coming" if not released).
-- Polish ideas: a CSP header for the served app (needs a browser check: Monaco injects inline styles), a draggable split between statement and editor.
+- API: `GET /api/tracks` (library: each track, its weeks, my "n/5 solved"), `GET /api/tracks/:pattern` (lesson Markdown + ladder with open/locked per day by the same rule as `openToSolvers`, my status per problem); visible once one of its weeks has started (staff: always). Hints: `POST /api/problems/:slug/hints/next` reveals the next level (`hints_used` +1, ≤ the hint count, track problems only) and `ProblemView.track` should carry the bodies of the hints already used.
+- Admin/setter: edit a track's lesson Markdown (`PUT /api/admin/tracks/:id/lesson`), with a preview; the lesson template code uses `editorTemplate(lang, spec, body)`.
+- Web: `/tracks` (library) and `/tracks/:pattern` (lesson: spot it / core idea / template code / mistakes / ladder), a hints box on track problems, "this week's track" on Today, a Tracks nav link. The problem page already links `/tracks/:pattern` when `trackOpen`.
+- Content (step 6) can go alongside: the two-pointers lesson + ladder #2–#5.
 
 ## Open questions / for later
 
 - Upload test inputs to go-judge once per problem (fileId) instead of sending content per run — only if large tests prove slow.
 - Weekend pool needs ≥2 problems per track pattern; we have 1 for two-pointers (`exact-gap`), so a two-pointers weekend shows it Sat and Sun — the user will write more weekend problems (planned, step 6).
 - Remaining two-pointers ladder problems (#2–#5) + lesson.
-- The dev DB has a test admin from the 3.8 browser check: `webcheck@example.test` (id 239). Keep it for trying the UI (`pnpm dsa admin reset-password webcheck@example.test` for a new password) or delete it.
-- Servers from earlier sessions (started 09:37 / 09:50 / 09:52) are still running on ports 3000–3002 with older code; stop them and restart `pnpm server` to get the current API.
+- The dev DB has a test admin from the 3.8 browser check: `webcheck@example.test` (id 239); the step 4 check also left it a WA Submit on `exact-gap` and an unlock (solutions opened before solving). Keep it for trying the UI (`pnpm dsa admin reset-password webcheck@example.test` for a new password) or delete it.
+- Servers from earlier sessions (started 09:37 / 09:50 / 09:52) may still be running on ports 3000–3002 with older code; stop them and restart `pnpm server` to get the current API.
+- Polish left from step 4: a CSP header for the served app (needs a browser check: Monaco injects inline styles), a draggable split between statement and editor.
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
 
+- **2026-11-11 (10)** — Step 4: Show solutions button (`POST …/unlock-solutions`) and the solutions list (`GET …/solutions`: reference code + latest accepted code per author and language, language filter, paging); `pattern.trackOpen` for the track link. Web: Statement / Solutions tabs, locked view + confirm, collapsible read-only code cards. Fixed Ctrl+Enter breaking once a read-only editor mounted (Monaco keybindings are page-global). 94 tests pass; checked in headless Chromium on PORT=3004 (lock → unlock → list → filter → Ctrl+Enter still runs; light + dark). Next: step 5 (tracks).
 - **2026-11-11 (9)** — Step 3.8: `apps/web` (Vite + React 19 + Monaco): auth pages, today, archive, problem page with editor/Run/Submit/results, history + submissions, submission page, account, admin (schedule + pins + track weeks, problems, users, invites). The server serves the built app (`WEB_DIR`, 3 new tests). 89 tests pass; walked through every page in headless Chromium against a fresh server (PORT=3003). Step 3 is complete. Then: a blank problem page traced to a stale server on :3000 (no `lastCode`); the page now guards it and routes sit in an `ErrorBoundary`. Next: step 4 (Solutions tab).
 
 - **2026-11-11 (8)** — Step 3.7: `GET /api/history`, `GET /api/submissions` (own, paged), `/api/admin/*` (users: role/disable/reset password; invite codes CRUD; problems; tracks; schedule view; day pins for staff; track weeks for admins; future-only edits). Bodyless DELETE allowed past the JSON guard. 86 tests pass; live boot checked on PORT=3002. Next: 3.8 web app (Vite + React + Monaco).

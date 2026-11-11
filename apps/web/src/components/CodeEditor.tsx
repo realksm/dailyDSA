@@ -42,9 +42,12 @@ export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, h
   submit.current = onSubmit;
 
   const mount: OnMount = (ed, m) => {
+    if (readOnly) return;
+    // Monaco's addCommand keybindings are shared by every editor on the page (the last one
+    // registered wins), so only the real editor registers them; read-only viewers stay out.
     ed.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.Enter, () => run.current?.());
     ed.addCommand(m.KeyMod.CtrlCmd | m.KeyMod.Shift | m.KeyCode.Enter, () => submit.current?.());
-    if (!readOnly) ed.focus();
+    ed.focus();
   };
 
   return (
@@ -66,7 +69,9 @@ export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, h
         tabSize: 4,
         detectIndentation: false,
         automaticLayout: true,
-        renderLineHighlight: "line",
+        renderLineHighlight: readOnly ? "none" : "line",
+        // Read-only viewers sit inside a scrolling page: let the wheel scroll the page at their ends.
+        scrollbar: { alwaysConsumeMouseWheel: !readOnly },
         padding: { top: 12, bottom: 12 },
         smoothScrolling: false,
         cursorBlinking: "solid",
