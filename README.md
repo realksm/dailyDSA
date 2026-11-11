@@ -27,15 +27,28 @@ All problems are original, and none are copied from other platforms. Solutions a
 
 ### Today
 
-The daily problem, your streak, the last 30 days and the week laid out as Daily and Ladder rows.
+The daily problem with a countdown to midnight IST, how many of the group have solved it today, your streak, the last 30 days and the week laid out as Daily and Ladder rows.
 
 ![Today page](docs/screenshots/today.png)
+
+<details>
+<summary>On a phone</summary>
+
+Today, the problem statements and the tracks work on a phone, for checking your streak or reading the problem on the way. The editor stays on the laptop.
+
+<img src="docs/screenshots/today-phone.png" alt="Today page on a phone" width="320">
+
+</details>
 
 ### The problem page
 
 Statement on the left, Monaco editor on the right, results underneath. **Run** checks the samples plus your own input; **Submit** runs every hidden test.
 
 ![Problem page with an accepted submission](docs/screenshots/problem.png)
+
+Solving a daily for the first time reveals its pattern: the hidden card turns over to show the pattern and a small diagram of it, and today's square fills in.
+
+![The pattern revealed after an accepted submission](docs/screenshots/reveal.png)
 
 <details>
 <summary>Dark mode (follows your OS)</summary>
@@ -46,7 +59,7 @@ Statement on the left, Monaco editor on the right, results underneath. **Run** c
 
 ### Tracks and lessons
 
-One pattern a week. Each track has a lesson ("how to spot it", the core idea, worked examples in all three languages, common mistakes) and a five-problem ladder with three hints per problem.
+One pattern a week, laid out as a timeline with this week's track first. Each pattern has a small diagram of it at work, and each track has a lesson (a step-through of that diagram, "how to spot it", the core idea, worked examples in all three languages, common mistakes) and a five-problem ladder with three hints per problem.
 
 ![Tracks library](docs/screenshots/tracks.png)
 
@@ -83,10 +96,11 @@ Pin a problem to a future day, choose which track runs each week, and manage pro
 - New problem at midnight IST, picked from separate **weekday** (easier) and **weekend** (harder, from the week's pattern) pools
 - Pattern tag hidden until you solve the problem or unlock its solutions, then linked to the matching track
 - Every past day stays open in the **archive**; a repeated problem shows as review with your earlier result
-- Streaks count only days solved before midnight IST
+- Streaks count only days solved before midnight IST, with an optional reminder email at 9 pm IST when a streak is about to break
+- The pattern is revealed on your first accepted submission, with a diagram of it
 
 **Tracks**
-- A lesson per pattern with KaTeX maths and code examples in all three languages
+- A lesson per pattern with KaTeX maths, code examples in all three languages and a step-through diagram
 - A five-problem ladder that opens one rung a day (Mon–Fri), with 3 hints per problem
 - Tracks so far: **two pointers, sliding window, prefix sums, binary search on the answer** (20 ladder problems + 8 weekend problems + 3 weekday dailies)
 
@@ -100,6 +114,7 @@ Pin a problem to a future day, choose which track runs each week, and manage pro
 - Invite-only signup, password reset by email, rate-limited logins
 - Roles: solver, setter, admin
 - Admin pages for the schedule, problems, track lessons, users and invite codes
+- Light and dark themes (system by default, switchable in the top bar); Today, statements and tracks work on phones
 
 ## Tech stack
 
