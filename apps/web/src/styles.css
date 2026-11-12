@@ -1145,3 +1145,45 @@ span.lesson-rung .icon { width: 14px; height: 14px; }
 .pd-keys kbd { font: 500 11px var(--mono); padding: 1px 5px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--sunk); }
 @media (max-width: 760px) { .pd-keys { display: none; } }
 @media (max-width: 760px) { .fluid .track-side { max-height: none; overflow: visible; } .fluid .lesson-toc { display: none; } }
+
+/* ── Phase 5 (2026-11-12): history heatmap, pattern map, filter chips; archive weeks ── */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+  border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--muted);
+  font-family: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: border-color 120ms ease-out, color 120ms ease-out, background 120ms ease-out;
+}
+.chip:hover { color: var(--text); border-color: var(--edge); }
+.chip[aria-pressed="true"] { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-text); font-weight: 600; }
+.chip .count { font-size: 12px; opacity: 0.8; }
+.history-heat { padding: 18px 22px; }
+.history-heat h2, .pattern-map h3 { font-size: 16px; }
+.history-heat h2 { margin-bottom: 12px; }
+.heatmap { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.hm-scroll { overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.hm-grid { display: grid; grid-auto-rows: 13px; gap: 3px; width: max-content; }
+.hm-month, .hm-dow { font-size: 10.5px; line-height: 13px; color: var(--muted); white-space: nowrap; overflow: visible; }
+.hm-sq { width: 13px; height: 13px; border-radius: 3px; background: var(--sunk); border: 1px solid var(--line); display: inline-block; }
+.hm-sq[data-l="1"] { background: color-mix(in srgb, var(--accent) 40%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.hm-sq[data-l="2"] { background: color-mix(in srgb, var(--accent) 70%, var(--surface)); border-color: var(--accent); }
+.hm-sq[data-l="3"] { background: var(--accent); border-color: var(--c-ink); }
+.hm-sq[data-future] { background: transparent; border-color: transparent; }
+.hm-sq[data-today] { outline: 1.5px solid var(--text); outline-offset: 1px; }
+.hm-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.hm-key { display: inline-flex; align-items: center; gap: 3px; }
+.hm-key .hm-sq { width: 11px; height: 11px; }
+.pattern-map { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.pattern-map li { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.pattern-map li[data-empty] { background: transparent; border-style: dashed; }
+.pm-bar { height: 8px; border-radius: 4px; background: var(--sunk); border: 1px solid var(--line); overflow: hidden; margin: 2px 0; }
+.pm-bar i { display: block; height: 100%; background: var(--primary); }
+.shown-more { color: var(--primary-text); font-weight: 500; }
+.archive-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.archive-tools .btn .icon { width: 17px; height: 17px; }
+.archive-table .week-row th {
+  text-align: left; padding: 14px 16px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.archive-table tbody:first-child .week-row th { padding-top: 10px; }
+.archive-table .week-row a { color: var(--primary-text); text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; }
+.card:has(> .archive-table) { overflow: hidden; }

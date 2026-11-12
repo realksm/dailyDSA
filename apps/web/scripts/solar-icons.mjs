@@ -36,6 +36,13 @@ const NAMES = {
   moon: "moon-linear",
   auto: "monitor-linear",
   laptop: "laptop-minimalistic-linear",
+  shuffle: "shuffle-linear",
+  chevron: "alt-arrow-down-linear",
+  user: "user-circle-linear",
+  pen: "pen-linear",
+  compare: "transfer-horizontal-linear",
+  code: "code-linear",
+  warn: "danger-triangle-linear",
 };
 
 const lines = Object.entries(NAMES).map(([key, name]) => {

@@ -38,12 +38,12 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 
 ## Phase 5: History and Archive
 
-- [ ] **21. "Shown" cell**: "Mon 9 Nov +1 more" (or stacked dates) instead of a run-on list.
-- [ ] **22. "Solved after viewing solutions" becomes a filter chip** (with "used hints").
-- [ ] **23. Pattern progress map** on History: per pattern, solved / tried, hints used, after solutions, last practised, link to the track. `API`
-- [ ] **24. Long-term heatmap of solved days** on History (all time, not just 30 days).
-- [ ] **25. Archive grouped by week** with the week's track name in each header.
-- [ ] **26. Archive pattern filter** (solved problems only, since the pattern stays hidden) **+ "Random unsolved"** button.
+- [x] **21. "Shown" cell**: "Mon 9 Nov +1 more" (or stacked dates) instead of a run-on list.
+- [x] **22. "Solved after viewing solutions" becomes a filter chip** (with "used hints").
+- [x] **23. Pattern progress map** on History: per pattern, solved / tried, hints used, after solutions, last practised, link to the track. `API`
+- [x] **24. Long-term heatmap of solved days** on History (all time, not just 30 days).
+- [x] **25. Archive grouped by week** with the week's track name in each header.
+- [x] **26. Archive pattern filter** (solved problems only, since the pattern stays hidden) **+ "Random unsolved"** button.
 
 ## Phase 6: Submission and Account
 
