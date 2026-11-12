@@ -289,6 +289,17 @@ select { padding-right: 28px; }
 .tabs button:hover { color: var(--text); }
 .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--primary); }
 .tabs .count { font-size: 12px; color: var(--muted); margin-left: 4px; }
+/* Sliding underline (components/TabInk.tsx). The selected tab keeps its border width, so nothing shifts. */
+.tabs[data-ink] { position: relative; }
+.tabs[data-ink] button[aria-selected="true"] { border-bottom-color: transparent; }
+.tab-ink {
+  position: absolute; left: 0; bottom: -1px; height: 3px; width: 0;
+  background: var(--primary); border-radius: 3px 3px 0 0; pointer-events: none; opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+.tab-ink[data-slide] { transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), width 260ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 120ms ease-out; }
+/* The new panel under a tab bar fades in. */
+.tab-panel { animation: fade 180ms ease-out; }
 
 .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
 .empty h3 { color: var(--text); margin-bottom: 6px; }

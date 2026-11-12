@@ -7,6 +7,7 @@ import { LANG_LABEL, LANGS, lessonParts, type Lang } from "@dailydsa/shared";
 import { CodeEditor } from "./LazyEditor";
 import { Markdown } from "./Markdown";
 import { CopyButton } from "./ui";
+import { TabInk } from "./TabInk";
 
 function preferredLang(): Lang | null {
   try {
@@ -39,6 +40,7 @@ function CodeTabs({ blocks }: { blocks: { lang: Lang; code: string }[] }) {
             {blocks.map((x, i) => (
               <button key={i} role="tab" aria-selected={i === pick} onClick={() => setPick(i)}>{LANG_LABEL[x.lang]}</button>
             ))}
+            <TabInk />
           </div>
         ) : (
           <span className="badge">{LANG_LABEL[b.lang]}</span>

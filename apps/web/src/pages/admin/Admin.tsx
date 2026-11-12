@@ -7,6 +7,7 @@ import { useMe } from "../../auth";
 import { addDays, fmtDay, fmtStamp } from "../../format";
 import { CopyButton, LoadError, Notice, SkeletonRows, useLoad, useTitle } from "../../components/ui";
 import { useConfirm } from "../../components/Confirm";
+import { TabInk } from "../../components/TabInk";
 import { Select } from "../../components/Select";
 import { Link, useRouter } from "../../router";
 import { TracksTab } from "./Lessons";
@@ -29,6 +30,7 @@ export function Admin() {
         {tabs.map(([t, label]) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => navigate(`/admin/${t}`, { replace: true })}>{label}</button>
         ))}
+        <TabInk />
       </div>
       {tab === "schedule" && <ScheduleTab isAdmin={isAdmin} />}
       {tab === "problems" && <ProblemsTab />}

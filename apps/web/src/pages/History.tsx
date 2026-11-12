@@ -5,6 +5,7 @@ import { api, errorMessage } from "../api";
 import { fmtDay, fmtKb, fmtMs, fmtStamp } from "../format";
 import { LoadError, Notice, SkeletonRows, StatusDot, useLoad, useTitle, VerdictBadge } from "../components/ui";
 import { Select } from "../components/Select";
+import { TabInk } from "../components/TabInk";
 import { Link, useRouter } from "../router";
 
 export function HistoryPage() {
@@ -25,6 +26,7 @@ export function HistoryPage() {
       <div className="tabs" role="tablist" style={{ marginBottom: 24 }}>
         <button role="tab" aria-selected={tab === "problems"} onClick={() => setTab("problems")}>Problems</button>
         <button role="tab" aria-selected={tab === "submissions"} onClick={() => setTab("submissions")}>Submissions</button>
+        <TabInk />
       </div>
       {tab === "problems" ? <Problems /> : <Submissions problem={problem} />}
     </main>

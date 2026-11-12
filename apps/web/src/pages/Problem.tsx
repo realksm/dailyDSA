@@ -13,6 +13,7 @@ import { Icon } from "../components/Icon";
 import { CopyButton, LoadError, Notice, Skeleton, StatusBadge, useLoad, useTitle, VerdictBadge } from "../components/ui";
 import { Link } from "../router";
 import { useConfirm } from "../components/Confirm";
+import { TabInk } from "../components/TabInk";
 import { Select } from "../components/Select";
 import { useStreak } from "../streak";
 
@@ -287,10 +288,13 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
           <button role="tab" aria-selected={leftTab === "solutions"} onClick={() => setLeftTab("solutions")}>
             Solutions{!p.solutionsUnlocked && <span className="count" aria-label="locked">· locked</span>}
           </button>
+          <TabInk />
         </div>
         <div className="solve-left-inner">
           <p className="phone-note"><Icon name="laptop" /><span>Read it here, solve it on a laptop: the editor needs a bigger screen.</span></p>
-          {leftTab === "statement" ? <Statement p={p} onChange={replace} justSolved={justSolved} onUseSample={(s) => void takeSample(s)} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
+          <div key={leftTab} className="tab-panel">
+            {leftTab === "statement" ? <Statement p={p} onChange={replace} justSolved={justSolved} onUseSample={(s) => void takeSample(s)} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
+          </div>
         </div>
       </section>
 
@@ -339,6 +343,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
                 {sub?.verdict && <span style={{ marginLeft: 6 }}><VerdictBadge verdict={sub.verdict} short /></span>}
                 {sub && sub.status !== "done" && <span className="spinner" style={{ display: "inline-block", marginLeft: 8, verticalAlign: -2 }} aria-hidden />}
               </button>
+              <TabInk />
             </div>
             <button
               className="icon-btn"
@@ -374,6 +379,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
           </div>
           {consoleOpen && <div className="console-body">
             {error && <div style={{ marginBottom: 12 }}><Notice>{error}</Notice></div>}
+            <div key={tab} className="tab-panel" style={{ height: tab === "input" ? "100%" : undefined }}>
             {tab === "input" ? (
               <div className="stack-sm" style={{ height: "100%" }}>
                 <label className="sr-only" htmlFor="custom">Custom input</label>
@@ -400,6 +406,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
             ) : (
               <p className="muted small">Run or Submit to see results here.</p>
             )}
+            </div>
           </div>}
         </div>
       </section>

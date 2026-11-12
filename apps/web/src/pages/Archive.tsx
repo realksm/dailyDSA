@@ -5,6 +5,7 @@ import { api, errorMessage } from "../api";
 import { istDay } from "../format";
 import { LoadError, Notice, SkeletonRows, useTitle } from "../components/ui";
 import { DayRow } from "./Today";
+import { TabInk } from "../components/TabInk";
 
 const PAGE = 60;
 type Filter = "all" | "open" | "solved";
@@ -55,6 +56,7 @@ export function Archive() {
                 <span className="count">{f === "all" ? days.length : f === "solved" ? solved : days.length - solved}</span>
               </button>
             ))}
+            <TabInk />
           </div>
         )}
       </div>
