@@ -55,6 +55,13 @@ function startDrag(e: ReactPointerEvent<HTMLElement>, move: (x: number, y: numbe
   el.addEventListener("pointercancel", onUp);
 }
 
+/** The draining fill inside Run/Submit during the cooldown. A negative delay starts it part-way in
+ *  (the cooldown begins at send, so judging has usually used some of it); fixed at mount so re-renders don't restart it. */
+function CoolFill({ until }: { until: number }) {
+  const [delay] = useState(() => Math.min(0, until - COOLDOWN_MS - Date.now()));
+  return <span className="cool-fill" style={{ animationDuration: `${COOLDOWN_MS}ms`, animationDelay: `${delay}ms` }} aria-hidden />;
+}
+
 export function ProblemPage({ slug }: { slug: string }) {
   const view = useLoad(() => api.problem(slug), [slug]);
   useTitle(view.data?.title ?? "Problem");
@@ -128,12 +135,14 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
     store.set(draftKey(p.slug, lang), null);
   };
 
-  // Re-render once the cooldown ends so the buttons come back.
+  // Re-render every 250 ms during the cooldown so the seconds left count down, and once more when it ends.
   useEffect(() => {
-    const ms = cooldownUntil - Date.now();
-    if (ms <= 0) return;
-    const id = setTimeout(() => tick((n) => n + 1), ms + 20);
-    return () => clearTimeout(id);
+    if (cooldownUntil <= Date.now()) return;
+    const id = setInterval(() => {
+      tick((n) => n + 1);
+      if (cooldownUntil <= Date.now()) clearInterval(id);
+    }, 250);
+    return () => clearInterval(id);
   }, [cooldownUntil]);
 
   // Poll the submission about once a second until it's done (PLAN §8).
@@ -170,7 +179,9 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   }, [subId, subDone, p.status, refresh, refreshStreak]);
 
   const pending = sending !== null || (sub !== null && sub.status !== "done");
-  const coolingDown = cooldownUntil > Date.now();
+  const coolLeftMs = Math.max(0, cooldownUntil - Date.now());
+  const coolingDown = coolLeftMs > 0;
+  const coolSecs = Math.ceil(coolLeftMs / 1000);
 
   const send = useCallback(
     async (kind: SubmissionKind) => {
@@ -315,13 +326,24 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
             </button>
             <div className="console-actions">
               {busyLabel && <span className="muted small">{busyLabel}</span>}
-              {!busyLabel && coolingDown && <span className="muted small">Wait a few seconds…</span>}
-              <button className="btn" onClick={() => void send("run")} disabled={pending || coolingDown} title="Run the samples and your custom input">
-                Run <span className="kbd-hint">{MOD}↵</span>
-              </button>
-              <button className="btn btn-primary" onClick={() => void send("submit")} disabled={pending || coolingDown} title="Judge every test">
-                Submit <span className="kbd-hint">{MOD}⇧↵</span>
-              </button>
+              {(["run", "submit"] as const).map((kind) => {
+                const cooling = !pending && coolingDown; // while judging, the busy label says why
+                return (
+                  <button
+                    key={kind}
+                    className={`btn${kind === "submit" ? " btn-primary" : ""}${cooling ? " btn-cooling" : ""}`}
+                    onClick={() => void send(kind)}
+                    disabled={pending || coolingDown}
+                    title={cooling ? `Ready again in ${coolSecs}s (one Run or Submit every ${COOLDOWN_MS / 1000}s)` : kind === "run" ? "Run the samples and your custom input" : "Judge every test"}
+                  >
+                    {cooling && <CoolFill key={cooldownUntil} until={cooldownUntil} />}
+                    {kind === "run" ? "Run" : "Submit"}{" "}
+                    {cooling
+                      ? <span className="kbd-hint cool-secs">· {coolSecs}s</span>
+                      : <span className="kbd-hint">{MOD}{kind === "submit" ? "⇧" : ""}↵</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
           {consoleOpen && <div className="console-body">

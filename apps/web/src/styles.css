@@ -504,6 +504,17 @@ body[data-dragging] .split-x::after, body[data-dragging] .split-y::after { backg
 /* System font for the hint: Plex has no ↵ / ⇧ glyphs. */
 .btn .kbd-hint { font: 400 11.5px system-ui, "Segoe UI", sans-serif; opacity: 0.8; margin-left: 2px; letter-spacing: 0.02em; }
 .btn-primary .kbd-hint { opacity: 0.9; }
+/* Run/Submit cooldown: the button stays readable; a dim layer drains left to right and the seconds count down. */
+.btn-cooling:disabled { opacity: 1; cursor: progress; position: relative; overflow: hidden; isolation: isolate; }
+.btn-cooling .cool-fill {
+  position: absolute; inset: 0; z-index: -1; transform-origin: right center;
+  background: var(--sunk); animation: cool-drain linear forwards;
+}
+/* Darken, not lighten: the on-primary text stays readable in both themes. */
+.btn-primary.btn-cooling .cool-fill { background: rgb(0 0 0 / 0.3); }
+.btn .cool-secs { font-variant-numeric: tabular-nums; min-width: 3.2ch; text-align: left; }
+@keyframes cool-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .btn-cooling .cool-fill { animation: none; } }
 .badge-btn { border: 0; cursor: pointer; font-family: var(--font); transition: color 120ms ease-out, background-color 120ms ease-out; }
 .badge-btn:hover { color: var(--text); background: var(--line); }
 
