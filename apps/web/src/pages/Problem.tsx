@@ -26,8 +26,9 @@ const store = {
   get(k: string): string | null {
     try { return localStorage.getItem(k); } catch { return null; }
   },
-  set(k: string, v: string | null) {
-    try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* ignore */ }
+  /** False when the browser refused (storage off, quota full). */
+  set(k: string, v: string | null): boolean {
+    try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); return true; } catch { return false; }
   },
 };
 const draftKey = (slug: string, lang: Lang) => `dsa.draft.${slug}.${lang}`;
@@ -79,6 +80,25 @@ export function ProblemPage({ slug }: { slug: string }) {
   return <Solve p={view.data} refresh={view.reload} replace={(v) => view.setData(() => v)} />;
 }
 
+/** Next to the language picker: says the code on screen is a draft kept in this browser, not yet sent. */
+function DraftNote({ dirty, stored, everSent }: { dirty: boolean; stored: boolean; everSent: boolean }) {
+  const away = everSent ? "your last Run or Submit" : "the template";
+  return (
+    <span className="draft-note" role="status">
+      {dirty && stored && (
+        <span className="draft-saved" title={`Kept in this browser only and differs from ${away}. Run or Submit to keep it with your account.`}>
+          <Icon name="check" />Draft saved
+        </span>
+      )}
+      {dirty && !stored && (
+        <span className="draft-unsaved" title="This browser won't store it (site data is blocked or full). Run or Submit to keep it.">
+          Draft not saved
+        </span>
+      )}
+    </span>
+  );
+}
+
 function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; replace: (v: ProblemView) => void }) {
   const [leftTab, setLeftTab] = useState<"statement" | "solutions">("statement");
   const ask = useConfirm();
@@ -92,6 +112,12 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
     for (const l of LANGS) out[l] = store.get(draftKey(p.slug, l)) ?? p.lastCode?.[l] ?? p.templates[l];
     return out;
   });
+  // The last code sent per language (server's lastCode, then this session's Runs/Submits). Code that
+  // differs from it (or from the template, before anything was sent) is a draft, kept in this browser.
+  const [sent, setSent] = useState<Partial<Record<Lang, string>>>(() => ({ ...p.lastCode }));
+  const [draftStored, setDraftStored] = useState(true);
+  const base = (l: Lang) => sent[l] ?? p.templates[l];
+  const saveDraft = (l: Lang, v: string, against = base(l)) => setDraftStored(store.set(draftKey(p.slug, l), v === against ? null : v));
   const [customInput, setCustomInput] = useState(() => p.samples[0]?.input ?? "");
   const [tab, setTab] = useState<"input" | "result">("input");
   const [sub, setSub] = useState<SubmissionView | null>(null);
@@ -122,7 +148,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   };
   const edit = (v: string) => {
     setCode((c) => ({ ...c, [lang]: v }));
-    store.set(draftKey(p.slug, lang), v === p.templates[lang] ? null : v);
+    saveDraft(lang, v);
   };
   // "Use as custom input" on a sample: fill the box, open its tab, focus it (once the tab has rendered).
   const customRef = useRef<HTMLTextAreaElement>(null);
@@ -159,7 +185,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
     });
     if (!ok) return;
     setCode((c) => ({ ...c, [lang]: p.templates[lang] }));
-    store.set(draftKey(p.slug, lang), null);
+    saveDraft(lang, p.templates[lang]); // kept as a draft when the last sent code differs, so a reload doesn't bring that back
   };
 
   // Re-render every 250 ms during the cooldown so the seconds left count down, and once more when it ends.
@@ -224,6 +250,8 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
         const q = kind === "run" ? await api.run(p.slug, lang, src, customInput) : await api.submit(p.slug, lang, src);
         setCooldownUntil(Date.now() + COOLDOWN_MS);
         setJustSolved(false);
+        setSent((x) => ({ ...x, [lang]: src }));
+        setDraftStored(store.set(draftKey(p.slug, lang), null)); // the server has it now
         setSub({
           id: q.id, problem: { slug: p.slug, title: p.title, anyValidAnswer: p.anyValidAnswer }, kind, lang, code: src, status: "queued",
           queuePosition: null, verdict: null, result: null, createdAt: new Date().toISOString(), finishedAt: null,
@@ -313,7 +341,8 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
         />
         <div className="editor-bar">
           <Select id="lang" aria-label="Language" value={lang} onChange={(v) => setLang(v as Lang)} options={LANGS.map((l) => ({ value: l, label: LANG_LABEL[l] }))} />
-          <button className="btn btn-ghost btn-sm" onClick={() => void resetCode()} disabled={code[lang] === p.templates[lang]}>Reset to template</button>
+          <DraftNote dirty={code[lang] !== base(lang)} stored={draftStored} everSent={sent[lang] !== undefined} />
+          <button className="btn btn-ghost btn-sm editor-reset" onClick={() => void resetCode()} disabled={code[lang] === p.templates[lang]}>Reset to template</button>
         </div>
 
         <div className="editor-host">
