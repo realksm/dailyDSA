@@ -199,6 +199,14 @@ The first milestone (platform + a handful of problems + one track) is reached. C
 - **Step 7, go live:** buy the server, setup script + guide, re-run `pnpm dsa validate --all` there, backups.
 - Smaller polish from the open questions below (CSP header).
 - Diagrams for the next patterns as their tracks get written (monotonic stack, BFS / DFS, 1D DP, heaps): one entry each in `DIAGRAMS` in `components/PatternDiagram.tsx`.
+- **Parked (2026-11-12) — Today: make the week's pattern and its lesson obvious.** Review of `pages/Today.tsx` found:
+  - The hero is the daily (e.g. Trail Days, binary search on the answer) with "Pattern hidden", so users assume it is the week's pattern; it usually isn't.
+  - The week's pattern is named only in the small eyebrow "Track: Two pointers · 1/5 solved" in the second card.
+  - The lesson is a bare "Read the lesson" button: no gist, no read/unread state (`TrackSummary` has only `hasLesson`).
+  - The rules are never stated: weekday dailies = mixed review, ladder = the week's pattern, weekend dailies = the week's pattern (only a weekend-only line on the hero says the last one).
+  - `TrackSummary.spotIt` (the lesson's "How to spot it" leads) already exists and is used on `/tracks` but not on Today.
+
+  Proposed, in order: (1) a "This week · <pattern>" band with 2–3 `spotIt` lines, ladder progress, the lesson button and next rung; (2) one line on the hero relating today's problem to the week ("Daily review: any pattern — this week's pattern is on the ladder below" / weekend: "Uses this week's pattern"); (3) a "Lesson" step before Ladder 1 with read/unread (needs a server-side "lesson opened" record). 1–2 are web-only. Decided: not the `build-awwwards-quality-sites` skill here (it's for marketing/landing pages: GSAP, smooth scroll, Three.js); the fix is hierarchy, and that skill may fit the public landing page later.
 
 ## Open questions / for later
 
