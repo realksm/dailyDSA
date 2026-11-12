@@ -1,23 +1,13 @@
 // Home: today's daily problem, the countdown to the next one, the streak, and this week (daily
 // problems and this week's track ladder) at a glance.
 import { useEffect, useState } from "react";
-import type { DailyEntry, DailyToday, LadderStep, TrackSummary } from "@dailydsa/shared";
+import type { DailyEntry, DailyToday, TrackSummary } from "@dailydsa/shared";
 import { api, ApiErr } from "../api";
 import { addDays, dailyStreak, daysAgo, fmtDay, fmtDayLong, fmtStamp, istDay } from "../format";
 import { Icon } from "../components/Icon";
 import { LoadError, Skeleton, StatusBadge, StatusDot, useLoad, useTitle } from "../components/ui";
+import { dowOf, ladderNext } from "../ladder";
 import { Link } from "../router";
-
-const dowOf = (day: string) => (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7; // 0 = Monday
-
-/** The ladder problem to do next: today's, else the first open one not solved yet. */
-function ladderNext(t: TrackSummary, today: string): { step: LadderStep; label: string } | null {
-  const dow = dowOf(today);
-  const todays = dow < 5 ? t.ladder.find((s) => s.position === dow + 1 && s.open && s.problem) : undefined;
-  if (todays && todays.status !== "solved") return { step: todays, label: `Ladder ${todays.position}: ${todays.problem!.title}` };
-  const next = t.ladder.find((s) => s.open && s.problem && s.status !== "solved");
-  return next ? { step: next, label: `Catch up: ladder ${next.position}` } : null;
-}
 
 export function Today() {
   useTitle("Today");

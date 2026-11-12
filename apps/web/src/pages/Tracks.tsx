@@ -4,10 +4,12 @@ import type { LadderStep, TrackSummary, TrackView } from "@dailydsa/shared";
 import { api } from "../api";
 import { isStaff, useMe } from "../auth";
 import { addDays, fmtDay } from "../format";
+import { Icon } from "../components/Icon";
 import { Lesson } from "../components/Lesson";
 import { Markdown } from "../components/Markdown";
 import { hasDiagram, PatternDiagram } from "../components/PatternDiagram";
 import { LoadError, Skeleton, SkeletonRows, StatusDot, useLoad, useTitle } from "../components/ui";
+import { trackAction } from "../ladder";
 import { Link } from "../router";
 
 /** "Running this week", "Ran the week of 4 Nov", … */
@@ -68,7 +70,7 @@ function TrackTimeline({ tracks, today, staff }: { tracks: TrackSummary[]; today
 
   return (
     <div className="tracks-tl">
-      {running && <RunningTrack t={running} />}
+      {running && <RunningTrack t={running} today={today} />}
       {groups.map((g) => (
         <section key={g.key} className="tl-group" aria-labelledby={`tl-${g.key}`}>
           <div className="tl-head">
@@ -106,45 +108,64 @@ function tlWhen(t: TrackSummary, today: string): string {
   return "No week yet";
 }
 
-/** This week's track: the one card on the page with the hard shadow. */
-function RunningTrack({ t }: { t: TrackSummary }) {
+/**
+ * This week's track: the one card on the page with the hard shadow. The title link stretches over
+ * the whole card (so it stays one big target) and the action button sits above it as its own link.
+ */
+function RunningTrack({ t, today }: { t: TrackSummary; today: string }) {
+  const action = trackAction(t, today);
   return (
-    <Link to={`/tracks/${t.pattern.slug}`} className="card card-hero track-feature">
+    <div className="card card-hero track-feature">
       <div className="track-feature-text">
         <div className="eyebrow">
           <span className="track-live">Running this week</span>
           {t.runningWeek && <span>{fmtDay(t.runningWeek)} – {fmtDay(addDays(t.runningWeek, 4))}</span>}
         </div>
-        <h2>{t.title}</h2>
+        <h2><Link to={`/tracks/${t.pattern.slug}`} className="track-feature-link">{t.title}</Link></h2>
         {t.spotIt.length > 0 && (
           <div className="track-spot">
             <Markdown>{t.spotIt.map((s) => `- ${s}`).join("\n")}</Markdown>
           </div>
         )}
-        <MiniLadder ladder={t.ladder} />
-        <span className="small num"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved{!t.hasLesson ? " · lesson coming" : ""}</span></span>
+        <MiniLadder ladder={t.ladder} next={action.next?.position} />
+        <div className="track-feature-cta">
+          {"to" in action ? (
+            <Link to={action.to} className="btn btn-lg btn-primary">{action.label}</Link>
+          ) : (
+            <span className="track-feature-state" data-kind={action.kind}>
+              {action.kind === "done" && <Icon name="check" />}
+              {action.label}
+            </span>
+          )}
+          <span className="small num"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved{!t.hasLesson ? " · lesson coming" : ""}</span></span>
+        </div>
       </div>
       {hasDiagram(t.pattern.slug) && (
         <div className="track-feature-pd">
           <PatternDiagram pattern={t.pattern.slug} />
         </div>
       )}
-    </Link>
+    </div>
   );
 }
 
-/** The ladder on a library card: numbered steps (solved / attempted / open / locked) with titles. */
-function MiniLadder({ ladder }: { ladder: LadderStep[] }) {
+/**
+ * The ladder on a library card: numbered steps (solved / attempted / open / locked) with titles.
+ * `next` marks the rung the card's button leads to.
+ */
+function MiniLadder({ ladder, next }: { ladder: LadderStep[]; next?: number }) {
   return (
     <ol className="mini-ladder">
       {ladder.map((s) => {
         const state = s.open ? s.status : "locked";
         const what = { solved: "solved", attempted: "attempted", new: "open", locked: "locked" }[state];
+        const isNext = s.position === next;
         return (
-          <li key={s.position} data-s={state}>
+          <li key={s.position} data-s={state} data-next={isNext || undefined}>
             <span className="ml-n num" aria-hidden>{s.position}</span>
             <span className="ml-t">{s.open && s.problem ? s.problem.title : s.problem ? <span className="muted">{s.problem.title}</span> : <span className="muted">Locked</span>}</span>
-            <span className="sr-only">, {what}</span>
+            {isNext && <span className="ml-next" aria-hidden>Next</span>}
+            <span className="sr-only">, {what}{isNext ? ", next" : ""}</span>
           </li>
         );
       })}
