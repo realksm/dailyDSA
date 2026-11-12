@@ -65,21 +65,27 @@ interface Props {
    * vertical scrollbar, so the page scrolls instead of a box inside it.
    */
   autoHeight?: boolean;
+  /** Soft-wrap long lines. Defaults to on for read-only viewers, off for the real editor. */
+  wordWrap?: boolean;
+  /** Alt+Z in the real editor (the VS Code shortcut). */
+  onToggleWrap?: () => void;
 }
 
 /** Read-only viewers: smaller type and a narrow gutter, so code reads like a figure, not an IDE. */
 const VIEW = { fontSize: 13, lineHeight: 20, pad: 10 };
 const EDIT = { fontSize: 14, lineHeight: 21, pad: 12 };
 
-export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, height = "100%", autoHeight }: Props) {
+export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, height = "100%", autoHeight, wordWrap = !!readOnly, onToggleWrap }: Props) {
   const font = useEditorTheme();
   const m = readOnly ? VIEW : EDIT;
   const [fitH, setFitH] = useState(() => value.split("\n").length * m.lineHeight + 2 * m.pad);
   // Keybindings are registered once; keep the latest callbacks in refs.
   const run = useRef(onRun);
   const submit = useRef(onSubmit);
+  const toggleWrap = useRef(onToggleWrap);
   run.current = onRun;
   submit.current = onSubmit;
+  toggleWrap.current = onToggleWrap;
 
   const mount: OnMount = (ed, mon) => {
     if (autoHeight) {
@@ -93,6 +99,7 @@ export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, h
     // registered wins), so only the real editor registers them; read-only viewers stay out.
     ed.addCommand(mon.KeyMod.CtrlCmd | mon.KeyCode.Enter, () => run.current?.());
     ed.addCommand(mon.KeyMod.CtrlCmd | mon.KeyMod.Shift | mon.KeyCode.Enter, () => submit.current?.());
+    ed.addCommand(mon.KeyMod.Alt | mon.KeyCode.KeyZ, () => toggleWrap.current?.());
     ed.focus();
   };
 
@@ -114,6 +121,11 @@ export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, h
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         tabSize: 4,
+        wordWrap: wordWrap ? "on" : "off",
+        // Wrapped lines keep their indent, so wrapped code still reads as the block it belongs to.
+        wrappingIndent: "same",
+        // Monaco's default breaks before "+" and "(", which splits "l++" and "solve(" in code; break after only.
+        wordWrapBreakBeforeCharacters: "",
         detectIndentation: false,
         automaticLayout: true,
         renderLineHighlight: readOnly ? "none" : "line",

@@ -35,7 +35,9 @@ const draftKey = (slug: string, lang: Lang) => `dsa.draft.${slug}.${lang}`;
 
 const clampNum = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
 /** The modifier shown on the Run/Submit buttons (Monaco maps CtrlCmd to ⌘ on a Mac). */
-const MOD = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl ";
+const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+const MOD_ALT = IS_MAC ? "⌥" : "Alt+";
+const MOD = IS_MAC ? "⌘" : "Ctrl ";
 
 /** Follows the pointer until release: `move` gets client x/y, `done` runs once at the end. */
 function startDrag(e: ReactPointerEvent<HTMLElement>, move: (x: number, y: number) => void, done: () => void, axis: "x" | "y" = "x") {
@@ -133,6 +135,8 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   // Layout: the statement/editor split and the bottom panel. Remembered per browser.
   const [leftPct, setLeftPct] = useState(() => clampNum(Number(store.get("dsa.split.left")) || 42, 28, 62));
   const [consoleOpen, setConsoleOpen] = useState(false);
+  const [wrap, setWrap] = useState(() => store.get("dsa.editor.wrap") === "1");
+  const toggleWrap = () => setWrap((w) => (store.set("dsa.editor.wrap", w ? null : "1"), !w));
   const [consoleH, setConsoleH] = useState(() => clampNum(Number(store.get("dsa.split.console")) || 280, 140, 640));
   const solveRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLElement>(null);
@@ -350,11 +354,22 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
             }))}
           />
           <DraftNote dirty={code[lang] !== base(lang)} stored={draftStored} everSent={sent[lang] !== undefined} />
+          <button
+            className="btn btn-ghost btn-sm editor-wrap"
+            aria-pressed={wrap}
+            onClick={toggleWrap}
+            title={`Wrap long lines (${MOD_ALT}Z)`}
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
+              <path d="M2 4h12M2 8h9.5a2.25 2.25 0 0 1 0 4.5H8M9.5 11 8 12.5 9.5 14M2 12.5h3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Wrap
+          </button>
           <button className="btn btn-ghost btn-sm editor-reset" onClick={() => void resetCode()} disabled={code[lang] === p.templates[lang]}>Reset to template</button>
         </div>
 
         <div className="editor-host">
-          <CodeEditor lang={lang} value={code[lang]} onChange={edit} onRun={() => void send("run")} onSubmit={() => void send("submit")} />
+          <CodeEditor lang={lang} value={code[lang]} onChange={edit} onRun={() => void send("run")} onSubmit={() => void send("submit")} wordWrap={wrap} onToggleWrap={toggleWrap} />
         </div>
 
         <div className="console" data-open={consoleOpen || undefined} style={consoleOpen ? { height: consoleH } : undefined}>

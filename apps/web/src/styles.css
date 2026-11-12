@@ -479,7 +479,9 @@ a.wg-cell:hover { border-color: var(--line-strong); color: var(--text); }
   display: flex; align-items: center; gap: 8px; padding: 8px 12px;
   border-bottom: 1px solid var(--line); background: var(--surface);
 }
-.editor-bar .editor-reset { margin-left: auto; }
+.editor-bar .editor-wrap { margin-left: auto; gap: 6px; color: var(--muted); }
+.editor-bar .editor-wrap:hover { color: var(--text); }
+.editor-bar .editor-wrap[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary-text); }
 .draft-note { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .draft-note > span { display: inline-flex; align-items: center; gap: 4px; animation: fade 180ms ease-out; }
 .draft-note .icon { width: 13px; height: 13px; color: var(--ok); }
