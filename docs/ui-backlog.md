@@ -61,8 +61,8 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 
 ## Phase 8: Login and landing
 
-- [ ] **35. Login focus ring**: plain 2px ring instead of the offset shadow that looks misaligned in dark.
-- [ ] **36. One invite label** on the landing ("I have an invite" vs "I have an invite code").
+- [x] **35. Login focus ring**: plain 2px ring instead of the offset shadow that looks misaligned in dark.
+- [x] **36. One invite label** on the landing ("I have an invite" vs "I have an invite code").
 
 ## Phase 9: bigger features
 

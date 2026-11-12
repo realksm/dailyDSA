@@ -460,7 +460,7 @@ export default function Landing() {
               ) : (
                 <>
                   <Link to="/login" className="btn btn-primary btn-lg">Log in<Icon name="arrow" className="lp-icon lp-arrow" /></Link>
-                  <Link to="/signup" className="btn btn-lg">I have an invite code</Link>
+                  <Link to="/signup" className="btn btn-lg">I have an invite</Link>
                 </>
               )}
             </div>

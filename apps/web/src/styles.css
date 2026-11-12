@@ -373,9 +373,9 @@ body:has(.auth) { min-width: 0; }
   transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
 }
 .auth .afield-box input:hover { border-color: var(--text); }
-.auth .afield-box input:focus-visible { outline: 2px solid transparent; border-color: var(--text); box-shadow: 3px 3px 0 var(--primary); }
+.auth .afield-box input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-color: var(--focus); box-shadow: none; }
 .auth .afield-box input[aria-invalid="true"] { border-color: var(--bad); background: color-mix(in srgb, var(--bad-soft) 50%, var(--surface)); }
-.auth .afield-box input[aria-invalid="true"]:focus-visible { box-shadow: 3px 3px 0 var(--bad); }
+.auth .afield-box input[aria-invalid="true"]:focus-visible { outline-color: var(--bad); border-color: var(--bad); }
 .auth .afield-box input.mono { font-family: var(--mono); font-size: 15px; letter-spacing: 0.06em; }
 .auth .afield-box.afield-pw input { padding-right: 52px; }
 .afield-eye {
