@@ -19,15 +19,17 @@ type Props = {
   className?: string;
   disabled?: boolean;
   "aria-label"?: string;
+  /** Shown in the closed trigger instead of the chosen option's label (e.g. a short "Pinned"). */
+  display?: ReactNode;
 };
 
 const isGroup = (o: SelectOption | SelectGroup): o is SelectGroup => "options" in o;
 
-export function Select({ value, onChange, options, id, className, disabled, "aria-label": ariaLabel }: Props) {
+export function Select({ value, onChange, options, id, className, disabled, "aria-label": ariaLabel, display }: Props) {
   return (
     <RS.Root value={toRadix(value)} onValueChange={(v) => onChange(fromRadix(v))} disabled={disabled}>
       <RS.Trigger id={id} className={`sel${className ? ` ${className}` : ""}`} aria-label={ariaLabel}>
-        <span className="sel-value"><RS.Value /></span>
+        <span className="sel-value">{display === undefined ? <RS.Value /> : <RS.Value>{display}</RS.Value>}</span>
         <RS.Icon className="sel-chev"><Chevron /></RS.Icon>
       </RS.Trigger>
       <RS.Portal>

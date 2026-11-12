@@ -2,9 +2,10 @@
 // with pins, and which track runs which week. Routes and guards are in routes/admin.ts.
 import type pg from "pg";
 import type {
-  AdminUser, InviteCode, InviteState, Pool, ProblemKind, Role, ScheduleDay, StaffProblem, StaffTrack, TrackWeek,
+  AdminUser, BankDepth, InviteCode, InviteState, Pool, ProblemKind, Role, ScheduleDay, StaffProblem, StaffTrack, TrackWeek,
 } from "@dailydsa/shared";
-import { isWeekend } from "./ist.js";
+import { chooseDailyProblem } from "./daily.js";
+import { addDays, isWeekend } from "./ist.js";
 
 type Db = pg.Pool | pg.PoolClient;
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -144,6 +145,45 @@ export async function scheduleDays(db: Db, from: string, to: string): Promise<Sc
     problem: { slug: x.slug, title: x.title, pool: x.pool, pattern: pattern(x.pattern_slug, x.pattern_name) },
     pinnedBy: x.pinned_by !== null && x.pinned_by_name !== null ? { id: x.pinned_by, name: x.pinned_by_name } : null,
   }));
+}
+
+/**
+ * What the automatic pick would choose for each day from `from` to `to` that has no pick or pin yet:
+ * the real rule (chooseDailyProblem), run day by day inside a transaction that is rolled back, so
+ * each simulated pick counts as "shown" for the next day exactly as the real ones will. Ties are
+ * broken at random on the day, so where several problems tie this is one likely outcome.
+ */
+export async function previewPicks(db: Db, from: string, to: string): Promise<ScheduleDay[]> {
+  const pooled = !("release" in db);
+  const c = pooled ? await (db as pg.Pool).connect() : (db as pg.PoolClient);
+  const out: ScheduleDay[] = [];
+  try {
+    await c.query(pooled ? "BEGIN" : "SAVEPOINT preview_picks");
+    const taken = new Set((await c.query<{ day: string }>("SELECT day::text FROM daily_schedule WHERE day BETWEEN $1 AND $2", [from, to])).rows.map((r) => r.day));
+    for (let day = from; day <= to; day = addDays(day, 1)) {
+      if (taken.has(day)) continue;
+      const pick = await chooseDailyProblem(c, day);
+      if (!pick) break; // empty bank
+      await c.query("INSERT INTO daily_schedule (day, problem_id) VALUES ($1, $2)", [day, pick.problemId]);
+    }
+    const sim = (await scheduleDays(c, from, to)).filter((d) => !taken.has(d.day));
+    out.push(...sim);
+  } finally {
+    await c.query(pooled ? "ROLLBACK" : "ROLLBACK TO SAVEPOINT preview_picks").catch(() => {});
+    if (pooled) (c as pg.PoolClient).release();
+  }
+  return out;
+}
+
+/** Active daily problems per pool, and how many were never scheduled (future pins count): what's left before repeats. */
+export async function bankDepth(db: Db): Promise<BankDepth> {
+  const r = await db.query<{ pool: Pool; total: number; unseen: number }>(
+    `SELECT p.pool, count(*)::int AS total,
+            count(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM daily_schedule d WHERE d.problem_id = p.id))::int AS unseen
+       FROM problems p WHERE p.active AND p.kind = 'daily' AND p.pool IS NOT NULL GROUP BY p.pool`,
+  );
+  const get = (pool: Pool) => r.rows.find((x) => x.pool === pool) ?? { total: 0, unseen: 0 };
+  return { weekday: { total: get("weekday").total, unseen: get("weekday").unseen }, weekend: { total: get("weekend").total, unseen: get("weekend").unseen } };
 }
 
 export type PinResult = "ok" | "missing" | "not_daily" | "retired";

@@ -190,6 +190,11 @@ describe.skipIf(!dbUp)("admin API", () => {
       const sched = (await setter.agent.get(`/api/admin/schedule?from=${MON}&to=${addDays(MON, 6)}`)).body as Schedule;
       expect(sched).toMatchObject({ from: MON, to: addDays(MON, 6), today: MON, weeks: [] });
       expect(sched.days.map((d) => [d.day, d.problem.slug])).toEqual([[TUE, weekend.slug], [addDays(MON, 5), weekday.slug]]);
+      // The automatic picks to come: every day without a pick or pin, today included; nothing is stored.
+      expect(sched.preview.map((d) => d.day)).toEqual([MON, addDays(MON, 2), addDays(MON, 3), addDays(MON, 4), addDays(MON, 6)]);
+      expect(sched.preview.every((d) => d.pinnedBy === null && d.problem.slug === weekday.slug)).toBe(true); // the only weekday problem
+      expect((await db.query("SELECT 1 FROM daily_schedule WHERE day = $1", [MON])).rowCount).toBe(0);
+      expect(sched.bank).toEqual({ weekday: { total: 1, unseen: 0 }, weekend: { total: 1, unseen: 0 } }); // both pinned ahead
       expect((await setter.agent.get(`/api/admin/schedule?from=${TUE}&to=${MON}`)).status).toBe(400);
       expect((await setter.agent.get(`/api/admin/schedule?from=${MON}&to=${addDays(MON, 401)}`)).status).toBe(400);
 

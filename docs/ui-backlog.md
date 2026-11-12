@@ -54,10 +54,10 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 
 ## Phase 7: Admin schedule
 
-- [ ] **31. Preview the automatic pick** for future days instead of just "Automatic". `API`
-- [ ] **32. Warnings**: the same problem twice within 7 days (Trail Days Mon + Thu), and weekday-bank depth ("7 left"). `API`
-- [ ] **33. Pinned select shows a short label** ("Pinned ▾"); the title above it already names the problem.
-- [ ] **34. Hide the empty days before launch** (week of 2 Nov).
+- [x] **31. Preview the automatic pick** for future days instead of just "Automatic". `API`
+- [x] **32. Warnings**: the same problem twice within 7 days (Trail Days Mon + Thu), and weekday-bank depth ("7 left"). `API`
+- [x] **33. Pinned select shows a short label** ("Pinned ▾"); the title above it already names the problem.
+- [x] **34. Hide the empty days before launch** (week of 2 Nov).
 
 ## Phase 8: Login and landing
 

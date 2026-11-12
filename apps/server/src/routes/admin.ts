@@ -6,7 +6,7 @@ import type pg from "pg";
 import { z } from "zod";
 import { ROLES, type PasswordResetByAdmin, type Schedule } from "@dailydsa/shared";
 import {
-  adminUsers, deleteInvite, invites, pinDay, scheduleDays, scheduleWeek, staffProblems, staffTracks, trackWeeks,
+  adminUsers, bankDepth, deleteInvite, invites, pinDay, previewPicks, scheduleDays, scheduleWeek, staffProblems, staffTracks, trackWeeks,
   unpinDay, unscheduleWeek, updateInvite, updateUser,
 } from "../admin.js";
 import { me, requireRole } from "../auth.js";
@@ -122,7 +122,13 @@ export function adminRoutes({ pool, now }: { pool: pg.Pool; now: () => Date }): 
     const to = q.to ?? addDays(t, 56);
     if (to < from) throw badRequest("`to` is before `from`.");
     if (addDays(from, MAX_SCHEDULE_DAYS) < to) throw badRequest(`At most ${MAX_SCHEDULE_DAYS} days at a time.`);
-    const body: Schedule = { from, to, today: t, days: await scheduleDays(pool, from, to), weeks: await trackWeeks(pool, from, to) };
+    const body: Schedule = {
+      from, to, today: t,
+      days: await scheduleDays(pool, from, to),
+      weeks: await trackWeeks(pool, from, to),
+      preview: to >= t ? await previewPicks(pool, from > t ? from : t, to) : [],
+      bank: await bankDepth(pool),
+    };
     res.json(body);
   });
 

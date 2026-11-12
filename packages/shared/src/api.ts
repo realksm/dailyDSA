@@ -333,6 +333,18 @@ export interface Schedule {
   days: ScheduleDay[];
   /** Weeks overlapping [from, to]. */
   weeks: TrackWeek[];
+  /**
+   * Today and future days without a pick or pin: what the automatic pick would likely choose (the
+   * real rule, simulated day by day; random tie-breaks can still change it). `pinnedBy` is null.
+   */
+  preview: ScheduleDay[];
+  /** How deep the daily bank is: active problems per pool, and how many were never scheduled. */
+  bank: BankDepth;
+}
+
+export interface BankDepth {
+  weekday: { total: number; unseen: number };
+  weekend: { total: number; unseen: number };
 }
 
 // ───────────── tracks (PLAN §2) ─────────────

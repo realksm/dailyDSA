@@ -9,6 +9,7 @@ import { CopyButton, LoadError, Notice, SkeletonRows, useLoad, useTitle } from "
 import { useConfirm } from "../../components/Confirm";
 import { TabInk } from "../../components/TabInk";
 import { Select } from "../../components/Select";
+import { Icon } from "../../components/Icon";
 import { Link, useRouter } from "../../router";
 import { TracksTab } from "./Lessons";
 
@@ -72,20 +73,61 @@ function ScheduleTab({ isAdmin }: { isAdmin: boolean }) {
   if (!sched.data || !probs.data || !tracks.data) return <SkeletonRows n={10} />;
   const s = sched.data;
   const byDay = new Map(s.days.map((d) => [d.day, d]));
+  // An older server sends no preview / bank: the cells just say "Automatic" as before.
+  const preview = new Map((s.preview ?? []).map((d) => [d.day, d]));
   const weekOf = new Map(s.weeks.map((w) => [w.weekStart, w]));
   const pinnable = probs.data.filter((p) => p.kind === "daily" && p.active);
 
+  // The same problem twice within 7 days (picks, pins and likely automatic picks alike).
+  const shown = [...s.days, ...(s.preview ?? [])].sort((x, y) => x.day.localeCompare(y.day));
+  const near = new Map<string, string[]>(); // day -> other days within 7 days with the same problem
+  for (const x of shown) {
+    const others = shown.filter((y) => y !== x && y.problem.slug === x.problem.slug && Math.abs(Date.parse(y.day) - Date.parse(x.day)) < 7 * 86_400_000);
+    if (others.length) near.set(x.day, others.map((y) => y.day));
+  }
+  const repeats = shown.filter((x, i) => near.has(x.day) && !shown.slice(0, i).some((y) => near.get(y.day)?.includes(x.day)));
+
+  // Days before the first daily ever (before launch) are hidden; a week with nothing left is skipped.
+  const launch = s.days[0]?.day ?? (s.preview ?? [])[0]?.day ?? s.today;
+  const hidden = (day: string) => day < s.today && day < launch && !byDay.has(day);
   const firstMonday = addDays(s.from, -((new Date(`${s.from}T00:00:00Z`).getUTCDay() + 6) % 7));
   const mondays: string[] = [];
-  for (let m = firstMonday; m <= s.to; m = addDays(m, 7)) mondays.push(m);
+  for (let m = firstMonday; m <= s.to; m = addDays(m, 7)) {
+    if (Array.from({ length: 7 }, (_, i) => addDays(m, i)).some((d) => d >= s.from && d <= s.to && !hidden(d))) mondays.push(m);
+  }
+  const bank = s.bank;
+  const low = !!bank && bank.weekday.unseen < 5;
 
   return (
     <div className="stack">
       <p className="muted small">
         Past days and today are fixed. Pin a daily problem to a future day to replace its automatic pick
-        {isAdmin ? "; choose which track runs in each future week." : "."}
+        {isAdmin ? "; choose which track runs in each future week." : "."} Days without a pin show the likely automatic pick.
       </p>
       {a.error && <Notice>{a.error}</Notice>}
+      {(bank || repeats.length > 0) && (
+        <div className="sched-warn card" data-warn={low || repeats.length > 0 || undefined}>
+          {bank && (
+            <p className="small">
+              {low && <Icon name="warn" />}
+              <span><b>Weekday bank: {bank.weekday.unseen} of {bank.weekday.total} left</b> before problems start coming back
+              {" · "}weekend bank: {bank.weekend.unseen} of {bank.weekend.total} left.
+              {low && " Write more weekday problems soon."}</span>
+            </p>
+          )}
+          {repeats.length > 0 && (
+            <ul className="small">
+              {repeats.map((x) => (
+                <li key={x.day}>
+                  <Icon name="warn" />
+                  <span><b>{x.problem.title}</b> twice within 7 days: {[x.day, ...near.get(x.day)!].map(fmtDay).join(" and ")}
+                  {[x.day, ...near.get(x.day)!].every((d) => d > s.today) ? ". Pin something else on one of them." : ""}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       <div className="cal">
         {mondays.map((monday) => {
           const week = weekOf.get(monday);
@@ -113,8 +155,8 @@ function ScheduleTab({ isAdmin }: { isAdmin: boolean }) {
               <div className="cal-days">
                 {Array.from({ length: 7 }, (_, i) => {
                   const day = addDays(monday, i);
-                  if (day < s.from || day > s.to) return <div key={day} className="cal-day" data-out />;
-                  return <DayCell key={day} day={day} today={s.today} d={byDay.get(day)} pinnable={pinnable} a={a} />;
+                  if (day < s.from || day > s.to || hidden(day)) return <div key={day} className="cal-day" data-out />;
+                  return <DayCell key={day} day={day} today={s.today} d={byDay.get(day)} likely={preview.get(day)} repeat={near.get(day)} pinnable={pinnable} a={a} />;
                 })}
               </div>
             </section>
@@ -125,14 +167,15 @@ function ScheduleTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-function DayCell({ day, today, d, pinnable, a }: {
-  day: string; today: string; d: ScheduleDay | undefined; pinnable: StaffProblem[]; a: ReturnType<typeof useAction>;
+function DayCell({ day, today, d, likely, repeat, pinnable, a }: {
+  day: string; today: string; d: ScheduleDay | undefined; likely: ScheduleDay | undefined; repeat: string[] | undefined;
+  pinnable: StaffProblem[]; a: ReturnType<typeof useAction>;
 }) {
   const future = day > today;
   const weekend = [0, 6].includes(new Date(`${day}T00:00:00Z`).getUTCDay());
   const pools = weekend ? ["weekend", "weekday"] : ["weekday", "weekend"];
   return (
-    <div className="cal-day" data-today={day === today || undefined} data-past={day < today || undefined} data-weekend={weekend || undefined}>
+    <div className="cal-day" data-today={day === today || undefined} data-past={day < today || undefined} data-weekend={weekend || undefined} data-repeat={repeat ? "" : undefined}>
       <div className="cal-date">
         <span>{fmtDay(day).replace(",", "")}</span>
         {day === today ? <b>today</b> : <span>{weekend ? "weekend" : ""}</span>}
@@ -142,8 +185,18 @@ function DayCell({ day, today, d, pinnable, a }: {
           <Link to={`/p/${d.problem.slug}`}>{d.problem.title}</Link>
           <span className="muted">{[d.problem.pattern?.name, d.pinnedBy ? `pinned by ${d.pinnedBy.name}` : "auto"].filter(Boolean).join(" · ")}</span>
         </div>
+      ) : likely ? (
+        <div className="cal-prob cal-likely" title="The automatic pick, simulated with today's data. Ties are broken at random on the day, so it can still change.">
+          <span>{likely.problem.title}</span>
+          <span className="muted">{[likely.problem.pattern?.name, "likely"].filter(Boolean).join(" · ")}</span>
+        </div>
       ) : future ? null : (
         <div className="cal-prob"><span className="muted">No problem</span></div>
+      )}
+      {repeat && (
+        <span className="cal-repeat small" title={`Same problem on ${repeat.map(fmtDay).join(", ")}`}>
+          <Icon name="warn" />Also {repeat.map((x) => fmtDay(x).replace(",", "")).join(", ")}
+        </span>
       )}
       {future && (
         <div className="row" style={{ gap: 6, marginTop: "auto" }}>
@@ -151,6 +204,7 @@ function DayCell({ day, today, d, pinnable, a }: {
             className="cal-pin"
             aria-label={`Pin a problem on ${day}`}
             value={d?.pinnedBy ? d.problem.slug : ""}
+            display={d?.pinnedBy ? "Pinned" : "Automatic"}
             disabled={a.busy !== null}
             onChange={(v) => void a.act(day, () => (v ? api.admin.pin(day, v) : api.admin.unpin(day)))}
             options={[
