@@ -1,9 +1,9 @@
 // The problem page: statement + samples (or the Solutions tab) on the left; editor, custom input and
 // results on the right.
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { JAVA_MAIN_CLASS_MESSAGE, LANG_LABEL, LANGS, javaHasMainClass, type Lang, type ProblemView, type SubmissionKind, type SubmissionView } from "@dailydsa/shared";
 import { api, ApiErr, errorMessage } from "../api";
-import { fmtDay, fmtStamp } from "../format";
+import { fmtDay, fmtStamp, istDay } from "../format";
 import { CodeEditor } from "../components/LazyEditor";
 import { Markdown } from "../components/Markdown";
 import { SolutionsPanel } from "../components/Solutions";
@@ -492,6 +492,24 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   );
 }
 
+/** "Daily · Mon, 9 Nov · Thu, 12 Nov": each day links to Today (today's) or to its row in the archive. */
+function DailyDays({ days }: { days: string[] }) {
+  const today = istDay(new Date());
+  return (
+    <span className="badge badge-days">
+      Daily ·{" "}
+      {days.map((d, i) => (
+        <Fragment key={d}>
+          {i > 0 && <span aria-hidden> · </span>}
+          {d === today
+            ? <Link to="/" title="Today's problem">Today</Link>
+            : <Link to={`/archive?day=${d}`} title="Show this day in the archive">{fmtDay(d)}</Link>}
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
 function Statement({ p, onChange, justSolved, onUseSample }: {
   p: ProblemView; onChange: (v: ProblemView) => void; justSolved?: boolean; onUseSample?: (input: string) => void;
 }) {
@@ -520,7 +538,7 @@ function Statement({ p, onChange, justSolved, onUseSample }: {
         <StatusBadge status={p.status} />
         {p.track && <span className="badge">Ladder {p.track.position} of 5</span>}
         {p.pattern ? <span className={`badge badge-primary${justSolved && !p.track ? " badge-reveal" : ""}`}>{p.pattern.name}</span> : <span className="badge">Pattern hidden until solved</span>}
-        {p.dailyDays.length > 0 && <span className="badge">Daily · {p.dailyDays.map(fmtDay).join(", ")}</span>}
+        {p.dailyDays.length > 0 && <DailyDays days={p.dailyDays} />}
         {p.track && p.track.hints > 0 && (
           <button className="badge badge-btn" onClick={jumpToHints} aria-label={`Hints: ${p.track.hintsUsed} of ${p.track.hints} used. Go to hints`}>
             Hints <span className="num">{p.track.hintsUsed}/{p.track.hints}</span>

@@ -1,11 +1,12 @@
 // Every past daily problem, newest first (PLAN §1: they all stay open).
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DailyEntry } from "@dailydsa/shared";
 import { api, errorMessage } from "../api";
 import { istDay } from "../format";
 import { LoadError, Notice, SkeletonRows, useTitle } from "../components/ui";
 import { DayRow } from "./Today";
 import { TabInk } from "../components/TabInk";
+import { useRouter } from "../router";
 
 const PAGE = 60;
 type Filter = "all" | "open" | "solved";
@@ -18,6 +19,11 @@ export function Archive() {
   const [moreErr, setMoreErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  // ?day=YYYY-MM-DD (from a problem's "Daily · …" badge): load back to that day, scroll to it, mark it.
+  const { search } = useRouter();
+  const wanted = search.get("day");
+  const target = wanted && /^\d{4}-\d{2}-\d{2}$/.test(wanted) ? wanted : null;
+  const scrolled = useRef<string | null>(null);
 
   async function load(before?: string) {
     setBusy(true);
@@ -34,6 +40,16 @@ export function Archive() {
     }
   }
   useEffect(() => void load(), []);
+
+  useEffect(() => {
+    if (!target || busy || next === undefined || scrolled.current === target) return;
+    const oldest = days.at(-1)?.day;
+    if (!days.some((d) => d.day === target) && next && oldest && target < oldest) return void load(next);
+    scrolled.current = target; // found, or not in the archive at all: stop either way
+    const row = document.querySelector<HTMLElement>(`tr[data-day="${target}"]`);
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    row?.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
+  }, [target, days, next, busy]);
 
   if (error) return <main className="page"><LoadError error={error} retry={() => { setError(null); void load(); }} /></main>;
 
@@ -71,7 +87,7 @@ export function Archive() {
             <div className="empty"><p>{filter === "solved" ? "Nothing solved in the loaded days yet." : "You've solved every one of these. Nice."}</p></div>
           ) : (
             <table className="table">
-              <tbody>{shown.map((d) => <DayRow key={d.day} d={d} today={today} />)}</tbody>
+              <tbody>{shown.map((d) => <DayRow key={d.day} d={d} today={today} target={d.day === target} />)}</tbody>
             </table>
           )}
         </div>

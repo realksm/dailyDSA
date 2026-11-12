@@ -17,7 +17,7 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 - [x] **6. "Draft saved" note** next to the language picker when the local draft differs from the template / last sent code.
 - [x] **7. Word-wrap toggle** in the editor toolbar (remembered in localStorage); read-only views (lessons, solutions, submissions) wrap by default.
 - [x] **8. Reveal doesn't hide the result.** On a first Accepted, keep the test squares visible (grow the panel or put the squares above the reveal). Swap the duplicate "It was a … problem" line for stats: "Solved in 3 submits, no hints."
-- [ ] **9. Daily badge links to its day** ("Daily · Wed, 11 Nov" → that day / the week).
+- [x] **9. Daily badge links to its day** ("Daily · Wed, 11 Nov" → that day / the week).
 
 ## Phase 3: Today
 

@@ -320,9 +320,9 @@ function EmptyNote({ kind }: { kind: "none" | "midnight" | "later" | "locked" | 
   return <span className="wg-note wg-icon" title="Locked"><Icon name="lock" /><span className="sr-only">Locked</span></span>;
 }
 
-export function DayRow({ d, today }: { d: DailyEntry; today: string }) {
+export function DayRow({ d, today, target }: { d: DailyEntry; today: string; target?: boolean }) {
   return (
-    <tr>
+    <tr data-day={d.day} data-target={target || undefined}>
       <td className="nowrap" style={{ width: 150 }}>
         <span className="row" style={{ gap: 10 }}><StatusDot status={d.status} />{fmtDay(d.day)}</span>
       </td>

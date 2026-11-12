@@ -536,6 +536,11 @@ body[data-dragging] .split-x::after, body[data-dragging] .split-y::after { backg
 @media (prefers-reduced-motion: reduce) { .btn-cooling .cool-fill { animation: none; } }
 .badge-btn { border: 0; cursor: pointer; font-family: var(--font); transition: color 120ms ease-out, background-color 120ms ease-out; }
 .badge-btn:hover { color: var(--text); background: var(--line); }
+.badge-days a { color: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 2px; }
+.badge-days a:hover { color: var(--text); text-decoration-color: currentColor; }
+/* Archive row opened from a problem's "Daily · …" badge. */
+/* No fill: every tint in this palette is close to the pattern badges' lavender. */
+.table tr[data-target] td:first-child { box-shadow: inset 4px 0 0 var(--primary); font-weight: 700; color: var(--primary-text); }
 
 .prob-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 20px; }
 .limits { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-bottom: 20px; }
