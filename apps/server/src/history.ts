@@ -24,6 +24,7 @@ interface HistoryRow {
   run_count: number;
   last_at: Date | null;
   daily_days: string[];
+  note: string | null;
 }
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -40,7 +41,7 @@ export async function history(db: Db, o: { userId: number; today: string }): Pro
      SELECT p.slug, p.title, p.kind, pt.slug AS pattern_slug, pt.name AS pattern_name, tp.position,
             up.first_attempt_at, up.solved_at, up.solved_verdict_lang, up.solutions_unlocked_at,
             coalesce(up.hints_used, 0) AS hints_used, up.first_hint_at, coalesce(up.submit_count, 0) AS submit_count,
-            coalesce(t.runs, 0) AS run_count,
+            coalesce(t.runs, 0) AS run_count, up.note,
             greatest(t.last_at, up.solutions_unlocked_at, up.last_hint_at) AS last_at,
             coalesce((SELECT array_agg(d.day::text ORDER BY d.day) FROM daily_schedule d
                        WHERE d.problem_id = p.id AND d.day <= $2::date), '{}') AS daily_days
@@ -73,6 +74,7 @@ export async function history(db: Db, o: { userId: number; today: string }): Pro
       track: x.kind === "track" && x.position !== null ? { position: x.position } : null,
       dailyDays: x.daily_days,
       lastActivityAt: iso(x.last_at),
+      note: x.note,
     };
   });
 }

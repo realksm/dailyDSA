@@ -1222,3 +1222,23 @@ span.lesson-rung .icon { width: 14px; height: 14px; }
 .sched-warn p, .sched-warn li { display: flex; align-items: flex-start; gap: 6px; }
 .sched-warn .icon { color: var(--warn); margin-top: 2px; }
 .sched-warn ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Phase 9 (2026-11-12): private notes ── */
+.note-add {
+  display: flex; align-items: center; gap: 10px; width: 100%; margin: 4px 0 20px; padding: 10px 14px; text-align: left;
+  border: 1.5px dashed var(--line-strong); border-radius: var(--r-sm); background: transparent; color: var(--text);
+  font: inherit; font-size: 14px; cursor: pointer; transition: border-color 120ms ease-out, background-color 120ms ease-out;
+}
+.note-add:hover { border-color: var(--primary); background: var(--primary-soft); }
+.note-add .icon, .note-head .icon, .hist-note .icon { width: 16px; height: 16px; flex: none; }
+.note-box { margin: 4px 0 20px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.note-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.note-head h2 { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.note-head .copy-btn { margin-left: auto; }
+.note-body { white-space: pre-wrap; font-size: 14.5px; line-height: 1.55; margin: 0; }
+.note-text { width: 100%; min-height: 76px; resize: vertical; padding: 8px 10px; font: inherit; font-size: 14.5px; border-radius: 6px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--text); }
+.hist-note { display: inline-flex; align-items: center; gap: 5px; max-width: 360px; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-note .icon { color: var(--primary-text); }
+.pm-notes { list-style: none; margin: 6px 0 0; padding: 8px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.pm-notes li { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pm-note { font-size: 13px; font-style: italic; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }

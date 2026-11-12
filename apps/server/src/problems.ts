@@ -45,6 +45,7 @@ interface Row {
   revealed: string[];
   daily_days: string[];
   last_code: Partial<Record<Lang, string>>;
+  note: string | null;
 }
 
 /** Samples never change for a tests hash, so they are read from disk once per hash. */
@@ -74,7 +75,7 @@ export async function problemView(
             pt.slug AS pattern_slug, pt.name AS pattern_name,
             EXISTS (SELECT 1 FROM tracks t JOIN track_weeks w ON w.track_id = t.id
                      WHERE t.pattern_slug = p.pattern_slug AND w.week_start <= $2::date) AS track_open,
-            up.first_attempt_at, up.solved_at, up.solutions_unlocked_at, up.submit_count, up.hints_used,
+            up.first_attempt_at, up.solved_at, up.solutions_unlocked_at, up.submit_count, up.hints_used, up.note,
             tp.position,
             (SELECT count(*)::int FROM problem_hints h WHERE h.problem_id = p.id) AS hint_count,
             coalesce((SELECT array_agg(h.body_md ORDER BY h.level) FROM problem_hints h
@@ -117,5 +118,6 @@ export async function problemView(
     track: x.kind === "track" && x.position !== null ? { position: x.position, hints: x.hint_count, hintsUsed: x.hints_used ?? 0, revealed: x.revealed } : null,
     dailyDays: x.daily_days,
     lastCode: x.last_code,
+    note: x.note,
   };
 }

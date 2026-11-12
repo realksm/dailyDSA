@@ -116,6 +116,13 @@ export interface ProblemView {
   dailyDays: string[];
   /** The user's latest code per language (Run or Submit), so the editor reopens where they left off. */
   lastCode: Partial<Record<Lang, string>>;
+  /** The user's private note ("what gave it away"); only they see it. Written once solved. */
+  note: string | null;
+}
+
+/** PUT /api/problems/:slug/note — once solved (else 403 `not_solved`); empty or blank clears it. Max 2000 characters. */
+export interface NoteRequest {
+  note: string;
 }
 
 export type SubmissionKind = "run" | "submit";
@@ -240,6 +247,8 @@ export interface HistoryEntry {
   dailyDays: string[];
   /** Latest Run/Submit, unlock or hint. */
   lastActivityAt: string | null;
+  /** The user's private note on the problem, if any. */
+  note: string | null;
 }
 
 /** GET /api/history — most recent activity first. */

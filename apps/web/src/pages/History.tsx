@@ -4,6 +4,7 @@ import { LANG_LABEL, type HistoryEntry, type SubmissionKind, type SubmissionSumm
 import { api, errorMessage } from "../api";
 import { addDays, fmtDay, fmtKb, fmtMs, fmtStamp, istDay } from "../format";
 import { Heatmap } from "../components/Heatmap";
+import { Icon } from "../components/Icon";
 import { LoadError, Notice, SkeletonRows, StatusDot, useLoad, useTitle, VerdictBadge } from "../components/ui";
 import { Select } from "../components/Select";
 import { TabInk } from "../components/TabInk";
@@ -34,7 +35,7 @@ export function HistoryPage() {
   );
 }
 
-type Chip = "all" | "solved" | "open" | "after-solutions" | "hints";
+type Chip = "all" | "solved" | "open" | "after-solutions" | "hints" | "notes";
 
 function Problems() {
   const h = useLoad(() => api.history(), []);
@@ -59,6 +60,7 @@ function Problems() {
     open: (p) => p.status !== "solved",
     "after-solutions": (p) => p.solvedAfterSolutions,
     hints: (p) => p.hintsUsed > 0,
+    notes: (p) => !!p.note,
   };
   const chips: { key: Chip; label: string }[] = [
     { key: "all", label: "All" },
@@ -66,6 +68,7 @@ function Problems() {
     { key: "open", label: "Not solved" },
     { key: "after-solutions", label: "Solved after viewing solutions" },
     { key: "hints", label: "Used hints" },
+    { key: "notes", label: "With notes" },
   ];
   const shown = ps.filter(test[chip]);
   // Solves per IST day, for the heatmap; it starts at the first solve (at least ~half a year back).
@@ -134,11 +137,14 @@ function Problems() {
  * you can open appear even before you've tried them, and link to their lesson.
  */
 function PatternMap({ ps, tracks }: { ps: HistoryEntry[]; tracks: TrackSummary[] }) {
-  type Row = { slug: string; name: string; tried: number; solved: number; hints: number; afterSolutions: number; last: string | null };
+  type Row = {
+    slug: string; name: string; tried: number; solved: number; hints: number; afterSolutions: number; last: string | null;
+    notes: { slug: string; title: string; note: string; at: string }[];
+  };
   const rows = new Map<string, Row>();
   const row = (slug: string, name: string) => {
     let r = rows.get(slug);
-    if (!r) rows.set(slug, (r = { slug, name, tried: 0, solved: 0, hints: 0, afterSolutions: 0, last: null }));
+    if (!r) rows.set(slug, (r = { slug, name, tried: 0, solved: 0, hints: 0, afterSolutions: 0, last: null, notes: [] }));
     return r;
   };
   for (const t of tracks) row(t.pattern.slug, t.pattern.name);
@@ -150,6 +156,7 @@ function PatternMap({ ps, tracks }: { ps: HistoryEntry[]; tracks: TrackSummary[]
     r.hints += p.hintsUsed;
     if (p.solvedAfterSolutions) r.afterSolutions++;
     if (p.lastActivityAt && (!r.last || p.lastActivityAt > r.last)) r.last = p.lastActivityAt;
+    if (p.note) r.notes.push({ slug: p.problem.slug, title: p.problem.title, note: p.note, at: p.lastActivityAt ?? "" });
   }
   const list = [...rows.values()].sort((a, b) => b.solved - a.solved || b.tried - a.tried || a.name.localeCompare(b.name));
   if (list.length === 0) return null;
@@ -178,6 +185,17 @@ function PatternMap({ ps, tracks }: { ps: HistoryEntry[]; tracks: TrackSummary[]
                 r.last ? `last ${fmtDay(istDay(r.last))}` : null,
               ].filter(Boolean).join(" · ")}
             </span>
+            {r.notes.length > 0 && (
+              <ul className="pm-notes" aria-label={`Your notes on ${r.name}`}>
+                {r.notes.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 2).map((n) => (
+                  <li key={n.slug}>
+                    <span className="pm-note" title={n.note}>“{n.note}”</span>
+                    <Link to={`/p/${n.slug}`} className="small">{n.title}</Link>
+                  </li>
+                ))}
+                {r.notes.length > 2 && <li className="muted small">+{r.notes.length - 2} more notes</li>}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
@@ -202,6 +220,7 @@ function ProblemRow({ p }: { p: HistoryEntry }) {
           <StatusDot status={p.status} />
           <span className="stack-sm" style={{ gap: 2 }}>
             <Link to={`/p/${p.problem.slug}`}>{p.problem.title}</Link>
+            {p.note && <span className="hist-note" title={p.note}><Icon name="pen" />{p.note}</span>}
             <span className="row" style={{ gap: 6 }}>
               {p.pattern && <span className="badge badge-primary">{p.pattern.name}</span>}
               {p.solvedAfterSolutions && <span className="badge badge-warn">After solutions</span>}

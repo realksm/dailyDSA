@@ -549,6 +549,8 @@ function Statement({ p, onChange, justSolved, onUseSample }: {
         <span>Memory <b>{lim.memoryMb} MB</b></span>
       </div>
 
+      {p.status === "solved" && p.note !== undefined && <NoteBox p={p} onChange={onChange} />}
+
       <Markdown>{p.statementMd}</Markdown>
 
       {p.samples.length > 0 && (
@@ -600,6 +602,76 @@ function Statement({ p, onChange, justSolved, onUseSample }: {
   );
 }
 
+
+/**
+ * The private note on a solved problem: what gave the pattern away, a trap, anything to remember.
+ * Shown on History and its pattern map. Only the member sees it.
+ */
+function NoteBox({ p, onChange }: { p: ProblemView; onChange: (v: ProblemView) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(p.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const area = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (editing) area.current?.focus(); }, [editing]);
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      onChange(await api.saveNote(p.slug, text));
+      setEditing(false);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const cancel = () => { setText(p.note ?? ""); setEditing(false); setError(null); };
+
+  if (!editing && !p.note) {
+    return (
+      <button type="button" className="note-add" onClick={() => setEditing(true)}>
+        <Icon name="pen" />
+        <span><b>Add a note</b><span className="muted"> · what gave it away? Only you see it.</span></span>
+      </button>
+    );
+  }
+  return (
+    <section className="note-box" aria-labelledby="note-h">
+      <div className="note-head">
+        <h2 id="note-h"><Icon name="pen" />Your note</h2>
+        <span className="muted small">Only you see it</span>
+        {!editing && <button type="button" className="copy-btn" onClick={() => setEditing(true)}>Edit</button>}
+      </div>
+      {editing ? (
+        <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="stack-sm">
+          <textarea
+            ref={area}
+            className="note-text"
+            aria-labelledby="note-h"
+            rows={3}
+            maxLength={2000}
+            value={text}
+            placeholder="What gave it away? E.g. “sorted input and pairs → two pointers”, or a trap to remember."
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") cancel();
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void save(); }
+            }}
+          />
+          {error && <Notice>{error}</Notice>}
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn btn-sm btn-primary" disabled={busy}>{busy ? "Saving…" : "Save note"}</button>
+            <button type="button" className="btn btn-sm" onClick={cancel} disabled={busy}>Cancel</button>
+            <span className="muted small num" style={{ marginLeft: "auto" }}>{text.length}/2000</span>
+          </div>
+        </form>
+      ) : (
+        <p className="note-body">{p.note}</p>
+      )}
+    </section>
+  );
+}
 
 /** Progressive hints on ladder problems (PLAN §2): one at a time, recorded in history. */
 function Hints({ p, track, onChange }: { p: ProblemView; track: NonNullable<ProblemView["track"]>; onChange: (v: ProblemView) => void }) {

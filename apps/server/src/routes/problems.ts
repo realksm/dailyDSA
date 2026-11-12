@@ -18,6 +18,7 @@ const SolutionsQuery = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 const HintBody = z.object({ level: z.number().int().min(1).max(3) });
+const NoteBody = z.object({ note: z.string().max(2000) });
 
 export function problemRoutes({ pool, now, dataDir }: { pool: pg.Pool; now: () => Date; dataDir: string }): Router {
   const r = Router();
@@ -79,6 +80,24 @@ export function problemRoutes({ pool, now, dataDir }: { pool: pg.Pool; now: () =
     if (result === "no_hints") throw new HttpError(400, "no_hints", "This problem has no hints.");
     if (result === "no_such_hint") throw new HttpError(400, "no_such_hint", "This problem doesn't have that many hints.");
     if (result === "out_of_order") throw new HttpError(400, "hint_order", "Hints open in order: take the earlier ones first.");
+    res.json(await view(req, slug));
+  });
+
+  /**
+   * The member's private note on a problem they solved ("what gave it away"). Blank clears it.
+   * Answers the updated problem page.
+   */
+  r.put("/problems/:slug/note", async (req, res) => {
+    const slug = parse(Slug, req.params.slug);
+    const { note } = parse(NoteBody, req.body);
+    const a = await access(req, slug);
+    const text = note.trim() === "" ? null : note.replace(/\r\n/g, "\n").trimEnd();
+    const u = await pool.query(
+      `UPDATE user_problems SET note = $3, note_updated_at = now()
+        WHERE user_id = $1 AND problem_id = $2 AND solved_at IS NOT NULL`,
+      [me(req).id, a.id, text],
+    );
+    if (u.rowCount === 0) throw new HttpError(403, "not_solved", "Notes open once you've solved the problem.");
     res.json(await view(req, slug));
   });
 

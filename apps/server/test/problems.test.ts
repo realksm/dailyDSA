@@ -124,12 +124,20 @@ describe.skipIf(!dbUp)("GET /api/problems/:slug", () => {
 
       // A real attempt offers the Show solutions button; solving reveals the pattern.
       await db.query("INSERT INTO user_problems (user_id, problem_id, first_attempt_at, submit_count) VALUES ($1, $2, now(), 1)", [user.id, p.id]);
-      expect((await agent.get(`/api/problems/${p.slug}`)).body).toMatchObject({ status: "attempted", canUnlockSolutions: true, pattern: null });
+      expect((await agent.get(`/api/problems/${p.slug}`)).body).toMatchObject({ status: "attempted", canUnlockSolutions: true, pattern: null, note: null });
+      const note = (text: unknown) => agent.put(`/api/problems/${p.slug}/note`).send({ note: text });
+      expect((await note("sorted + pairs")).body.error.code).toBe("not_solved"); // notes open once solved
       await db.query("UPDATE user_problems SET solved_at = now() WHERE user_id = $1 AND problem_id = $2", [user.id, p.id]);
       expect((await agent.get(`/api/problems/${p.slug}`)).body).toMatchObject({
         status: "solved", solutionsUnlocked: true, canUnlockSolutions: false, pattern: { slug: "two-pointers", name: "Two pointers" },
         submits: 1, solvedAfterSolutions: false,
       });
+      // The private note: saved, shown back in history, cleared by a blank one.
+      expect((await note("Sorted input + pairs → two pointers.\r\n\n")).body.note).toBe("Sorted input + pairs → two pointers.");
+      const h = (await agent.get("/api/history")).body.problems.find((x: { problem: { slug: string } }) => x.problem.slug === p.slug);
+      expect(h.note).toBe("Sorted input + pairs → two pointers.");
+      expect((await note("x".repeat(2001))).status).toBe(400);
+      expect((await note("   ")).body.note).toBeNull();
 
       // Retired problems stay open from the archive.
       await db.query("UPDATE problems SET active = false WHERE id = $1", [p.id]);
