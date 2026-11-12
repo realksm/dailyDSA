@@ -6,6 +6,7 @@ import { loadConfig } from "./config.js";
 import { startDailyRollover } from "./daily.js";
 import { createMailer } from "./mailer.js";
 import { startStreakReminders } from "./reminders.js";
+import { startWeeklyRecaps } from "./recap.js";
 import { startJudgeWorker } from "./submissions.js";
 
 const config = loadConfig();
@@ -17,6 +18,7 @@ const mailer = createMailer(config);
 const app = createApp({ config, pool, mailer, onQueued: worker.kick });
 const stopRollover = startDailyRollover(pool, log);
 const stopReminders = startStreakReminders(pool, mailer, config, log);
+const stopRecaps = startWeeklyRecaps(pool, mailer, config, log);
 
 const server = app.listen(config.port, config.host, () => {
   console.log(`dailyDSA server on http://${config.host}:${config.port}`);
@@ -28,6 +30,7 @@ function shutdown(signal: string) {
   stopping = true;
   stopRollover();
   stopReminders();
+  stopRecaps();
   console.log(`${signal}: shutting down`);
   // Let the submission being judged finish; if that takes too long, boot requeues it.
   server.close(() => void worker.stop().then(() => pool.end()).finally(() => process.exit(0)));

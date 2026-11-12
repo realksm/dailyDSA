@@ -67,4 +67,4 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 ## Phase 9: bigger features
 
 - [x] **37. Private notes per problem** ("what gave it away"), editable on the problem page after a solve, shown on History and in the pattern map. `API` (migration)
-- [ ] **38. Weekly recap** on Monday: last week's track, the group's solve rate, your strongest / weakest pattern. On Today and in an email. `API`
+- [x] **38. Weekly recap** on Monday: last week's track, the group's solve rate, your strongest / weakest pattern. On Today and in an email. `API`

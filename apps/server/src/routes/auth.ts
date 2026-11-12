@@ -34,15 +34,17 @@ const ForgotBody = z.object({ email });
 /** Any subset; fields left out keep their value. */
 const SettingsBody = z.object({
   remindStreak: z.boolean().optional(),
+  weeklyRecap: z.boolean().optional(),
   defaultLang: z.enum(LANGS).nullable().optional(),
   editorFontSize: z.number().int().min(11).max(22).nullable().optional(),
   theme: z.enum(["auto", "light", "dark"]).optional(),
 }).strict();
 
-type SettingsRow = { remind_streak: boolean; default_lang: MeSettings["defaultLang"]; editor_font_size: number | null; theme: MeSettings["theme"] };
-const SETTINGS_COLS = "remind_streak, default_lang, editor_font_size, theme";
+type SettingsRow = { remind_streak: boolean; weekly_recap: boolean; default_lang: MeSettings["defaultLang"]; editor_font_size: number | null; theme: MeSettings["theme"] };
+const SETTINGS_COLS = "remind_streak, weekly_recap, default_lang, editor_font_size, theme";
 const toSettings = (r: SettingsRow): MeSettings => ({
   remindStreak: r.remind_streak,
+  weeklyRecap: r.weekly_recap,
   defaultLang: r.default_lang,
   editorFontSize: r.editor_font_size,
   theme: r.theme,
@@ -138,10 +140,12 @@ export function authRoutes({ pool, config, mailer, logError }: AuthDeps): Router
          remind_streak    = CASE WHEN $2 THEN $3 ELSE remind_streak END,
          default_lang     = CASE WHEN $4 THEN $5 ELSE default_lang END,
          editor_font_size = CASE WHEN $6 THEN $7::smallint ELSE editor_font_size END,
-         theme            = CASE WHEN $8 THEN $9 ELSE theme END
+         theme            = CASE WHEN $8 THEN $9 ELSE theme END,
+         weekly_recap     = CASE WHEN $10 THEN $11 ELSE weekly_recap END
        WHERE id = $1 RETURNING ${SETTINGS_COLS}`,
       [me(req).id, b.remindStreak !== undefined, b.remindStreak ?? null, b.defaultLang !== undefined, b.defaultLang ?? null,
-        b.editorFontSize !== undefined, b.editorFontSize ?? null, b.theme !== undefined, b.theme ?? null],
+        b.editorFontSize !== undefined, b.editorFontSize ?? null, b.theme !== undefined, b.theme ?? null,
+        b.weeklyRecap !== undefined, b.weeklyRecap ?? null],
     );
     res.json(toSettings(q.rows[0]!));
   });

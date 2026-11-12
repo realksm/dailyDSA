@@ -40,6 +40,8 @@ export interface DailyEntry {
 export interface MeSettings {
   /** The streak-saver email at 21:00 IST when today's daily is still open. */
   remindStreak: boolean;
+  /** The weekly recap email, Monday 08:00 IST. */
+  weeklyRecap: boolean;
   /** The language the editor opens in; null = the last one used in this browser. */
   defaultLang: Lang | null;
   /** Editor font size in px (11–22); null = the default, 14. */
@@ -56,6 +58,24 @@ export interface MeStreak {
   todayDone: boolean;
   /** ISO timestamp of the next IST midnight, when the streak may change without a solve. */
   nextRolloverAt: string;
+}
+
+/** GET /api/me/recap?week= — a week in review (default: last week). Today shows it on Mondays. */
+export interface WeeklyRecap {
+  /** Monday of the week looked back on. */
+  week: string;
+  /** The track that ran that week and how many of its ladder problems the member has solved. */
+  track: { slug: string; title: string; solved: number; ladder: number } | null;
+  /** The member's daily problems that week, and how many were solved on their own day. */
+  daily: { days: number; solvedOnTime: number };
+  /** The group: (member, daily) pairs of that week, and how many of them are solved. */
+  group: { members: number; solved: number; possible: number };
+  /**
+   * Best and weakest pattern so far, by solved / tried, where a solve after hints or the solutions
+   * (`helped`) counts half. Both null below 2 patterns, or when every pattern scores the same.
+   */
+  strongest: { slug: string; name: string; solved: number; tried: number; helped: number } | null;
+  weakest: { slug: string; name: string; solved: number; tried: number; helped: number } | null;
 }
 
 /** GET /api/daily/today */

@@ -9,6 +9,7 @@ import { Markdown } from "../components/Markdown";
 import { LoadError, Skeleton, StatusBadge, StatusDot, useLoad, useTitle } from "../components/ui";
 import { dowOf, ladderNext } from "../ladder";
 import { Link } from "../router";
+import { store } from "../store";
 
 export function Today() {
   useTitle("Today");
@@ -53,6 +54,8 @@ export function Today() {
           {t && archive.data ? <Stats days={days} today={t.day} joinedOn={t.joinedOn} /> : <><Skeleton h={48} /><Skeleton h={96} /></>}
         </aside>
       </div>
+
+      {t && dowOf(t.day) === 0 && <Recap today={t.day} />}
 
       {t && archive.data && tracks.data && <Week days={days} today={t.day} track={running} />}
     </main>
@@ -318,6 +321,57 @@ function Week({ days, today, track }: { days: DailyEntry[]; today: string; track
           </div>
         )}
       </div>
+    </section>
+  );
+}
+
+/**
+ * Monday's look back at last week: its track, your dailies, the group, your strongest and weakest
+ * pattern. Hidden once dismissed (per week, in this browser); the same recap goes out by email.
+ */
+function Recap({ today }: { today: string }) {
+  const week = addDays(today, -7);
+  const key = "dsa.recap.dismissed";
+  const [gone, setGone] = useState(() => store.get(key) === week);
+  const r = useLoad(() => (gone ? Promise.resolve(null) : api.recap(week).catch(() => null)), [week, gone]);
+  if (gone || !r.data) return null;
+  const x = r.data;
+  const pct = x.group.possible > 0 ? Math.round((100 * x.group.solved) / x.group.possible) : null;
+  const dismiss = () => { store.set(key, week); setGone(true); };
+  return (
+    <section className="card recap" aria-labelledby="recap-h">
+      <div className="recap-head">
+        <div>
+          <h2 id="recap-h">Last week</h2>
+          <span className="muted small">{fmtDay(week)} – {fmtDay(addDays(week, 6))}</span>
+        </div>
+        <button type="button" className="copy-btn" onClick={dismiss} aria-label="Hide last week's recap">Hide</button>
+      </div>
+      <dl className="recap-grid">
+        <div>
+          <dt>Track</dt>
+          {x.track ? (
+            <dd><Link to={`/tracks/${x.track.slug}`}>{x.track.title}</Link><span className="num"> · {x.track.solved}/{x.track.ladder} ladder</span></dd>
+          ) : <dd className="muted">No track ran</dd>}
+        </div>
+        <div>
+          <dt>Your dailies</dt>
+          <dd><span className="num"><b>{x.daily.solvedOnTime}</b> of {x.daily.days}</span> <span className="muted">solved on the day</span></dd>
+        </div>
+        <div>
+          <dt>The group</dt>
+          <dd>{pct === null ? <span className="muted">No dailies</span> : <><b className="num">{pct}%</b> <span className="muted">of the dailies solved · {x.group.members} members</span></>}</dd>
+        </div>
+        <div>
+          <dt>Patterns so far</dt>
+          {x.strongest && x.weakest ? (
+            <dd>
+              Strongest: <b>{x.strongest.name}</b> <span className="muted num">({x.strongest.solved}/{x.strongest.tried})</span>
+              <br />Practise: <Link to={`/tracks/${x.weakest.slug}`}>{x.weakest.name}</Link> <span className="muted num">({x.weakest.solved}/{x.weakest.tried}{x.weakest.helped ? `, ${x.weakest.helped} with help` : ""})</span>
+            </dd>
+          ) : <dd className="muted">Nothing to compare yet: solve problems of two patterns</dd>}
+        </div>
+      </dl>
     </section>
   );
 }

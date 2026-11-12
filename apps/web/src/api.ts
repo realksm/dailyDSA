@@ -3,7 +3,7 @@
 import type {
   AdminUser, DailyArchive, DailyEntry, DailyToday, History, InviteCode, Lang, Me, MeSettings, MeStreak, PasswordResetByAdmin,
   ProblemView, Role, Schedule, Solutions, ScheduleDay, StaffProblem, StaffTrack, SubmissionKind, SubmissionList,
-  SubmissionQueued, SubmissionView, TrackLibrary, TrackView, TrackWeek,
+  SubmissionQueued, SubmissionView, TrackLibrary, TrackView, TrackWeek, WeeklyRecap,
 } from "@dailydsa/shared";
 
 export class ApiErr extends Error {
@@ -73,6 +73,7 @@ export const api = {
   settings: () => call<MeSettings>("GET", "/me/settings"),
   saveSettings: (s: Partial<MeSettings>) => call<MeSettings>("PUT", "/me/settings", s),
   streak: () => call<MeStreak>("GET", "/me/streak"),
+  recap: (week?: string) => call<WeeklyRecap>("GET", `/me/recap${q({ week })}`),
 
   // daily
   today: () => call<DailyToday>("GET", "/daily/today"),

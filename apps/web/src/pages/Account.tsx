@@ -68,18 +68,18 @@ export function Account() {
   );
 }
 
-/** The streak-saver email (server: reminders.ts). Saves on change, no separate button. */
+/** The emails: streak saver (reminders.ts) and weekly recap (recap.ts). Each saves on change. */
 function Reminders() {
   const settings = useLoad(() => api.settings(), []);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<unknown>(null);
-  const on = settings.data?.remindStreak;
-  const toggle = async () => {
-    if (on === undefined) return;
+  const s = settings.data;
+  const toggle = async (k: "remindStreak" | "weeklyRecap") => {
+    if (!s) return;
     setBusy(true);
     setErr(null);
     try {
-      const next = await api.saveSettings({ remindStreak: !on });
+      const next = await api.saveSettings({ [k]: !s[k] });
       settings.setData(() => next);
     } catch (e) {
       setErr(e);
@@ -89,15 +89,26 @@ function Reminders() {
   };
   return (
     <section className="card card-pad">
-      <h2 style={{ marginBottom: 4 }}>Streak reminder</h2>
-      <p className="muted small" style={{ marginBottom: 16 }}>
-        One email at 9 pm IST on days you have a streak going and today's problem is still open. Never more than one a day.
-      </p>
-      {settings.error ? <Notice>{errorMessage(settings.error)}</Notice> : on === undefined ? <Skeleton h={24} w={220} /> : (
-        <label className="check-row">
-          <input type="checkbox" checked={on} disabled={busy} onChange={() => void toggle()} />
-          <span>Email me before my streak breaks</span>
-        </label>
+      <h2 style={{ marginBottom: 16 }}>Emails</h2>
+      {settings.error ? <Notice>{errorMessage(settings.error)}</Notice> : !s ? <Skeleton h={24} w={220} /> : (
+        <div className="stack" style={{ gap: 16 }}>
+          <label className="check-row check-row-top">
+            <input type="checkbox" checked={s.remindStreak} disabled={busy} onChange={() => void toggle("remindStreak")} />
+            <span>
+              Email me before my streak breaks
+              <span className="muted small check-hint">At 9 pm IST on days you have a streak going and today's problem is still open. Never more than one a day.</span>
+            </span>
+          </label>
+          {s.weeklyRecap !== undefined && (
+            <label className="check-row check-row-top">
+              <input type="checkbox" checked={s.weeklyRecap} disabled={busy} onChange={() => void toggle("weeklyRecap")} />
+              <span>
+                Send me a weekly recap
+                <span className="muted small check-hint">Monday at 8 am IST: last week's track, your dailies, the group's solve rate, and your strongest and weakest pattern.</span>
+              </span>
+            </label>
+          )}
+        </div>
       )}
       {err ? <div style={{ marginTop: 12 }}><Notice>{errorMessage(err)}</Notice></div> : null}
     </section>

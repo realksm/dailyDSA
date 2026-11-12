@@ -2,18 +2,21 @@
 import { Router } from "express";
 import type pg from "pg";
 import { z } from "zod";
-import { statementHook, type DailyArchive, type DailyToday, type MeStreak } from "@dailydsa/shared";
+import { statementHook, type DailyArchive, type DailyToday, type MeStreak, type WeeklyRecap } from "@dailydsa/shared";
 import { me, requireUser } from "../auth.js";
 import { catchUpDaily, dailyEntries, dailyPulse, ensureDailyPick } from "../daily.js";
 import { HttpError, notFound, parse } from "../errors.js";
-import { isDay, istDate, nextIstMidnight } from "../ist.js";
+import { isDay, isoWeekday, istDate, nextIstMidnight } from "../ist.js";
 import { currentStreak } from "../reminders.js";
+import { lastWeek, weeklyRecap } from "../recap.js";
 
 const day = z.string().refine(isDay, "Use a YYYY-MM-DD date.");
 const ArchiveQuery = z.object({
   before: day.optional(),
   limit: z.coerce.number().int().min(1).max(366).default(100),
 });
+
+const RecapQuery = z.object({ week: day.optional() });
 
 const noDaily = () => new HttpError(404, "no_daily", "There is no daily problem yet. Check back soon.");
 
@@ -70,6 +73,17 @@ export function dailyRoutes({ pool, now }: { pool: pg.Pool; now: () => Date }): 
     const t = now();
     const s = await currentStreak(pool, me(req).id, istDate(t));
     const body: MeStreak = { ...s, nextRolloverAt: nextIstMidnight(t).toISOString() };
+    res.json(body);
+  });
+
+  /** The weekly recap (Today shows it on Mondays). ?week=<a Monday>, default: last week. */
+  r.get("/me/recap", requireUser, async (req, res) => {
+    const q = parse(RecapQuery, req.query);
+    const today = istDate(now());
+    const week = q.week ?? lastWeek(today);
+    if (isoWeekday(week) !== 1) throw new HttpError(400, "not_monday", "`week` must be a Monday.");
+    if (week > lastWeek(today)) throw new HttpError(400, "not_over", "Only weeks that are over have a recap.");
+    const body: WeeklyRecap = await weeklyRecap(pool, me(req).id, week);
     res.json(body);
   });
 
