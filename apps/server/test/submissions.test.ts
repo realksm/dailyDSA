@@ -104,7 +104,7 @@ describe.skipIf(!dbUp)("Run/Submit queue API", () => {
       expect(run.body).toEqual({ id: expect.any(Number), status: "queued" });
       const view = (await agent.get(`/api/submissions/${run.body.id}`)).body as SubmissionView;
       expect(view).toMatchObject({
-        id: run.body.id, problem: { slug: p.slug, title: "Sum it" }, kind: "run", lang: "py", code: PY_OK,
+        id: run.body.id, problem: { slug: p.slug, title: "Sum it", anyValidAnswer: false }, kind: "run", lang: "py", code: PY_OK,
         status: "queued", queuePosition: 1, verdict: null, result: null, finishedAt: null,
       });
 

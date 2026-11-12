@@ -32,10 +32,10 @@ export async function enqueue(
 /** A submission as its owner sees it (admins see everyone's); undefined = 404. */
 export async function submissionView(db: Db, id: number, viewer: { id: number; isAdmin: boolean }): Promise<SubmissionView | undefined> {
   const r = await db.query<{
-    id: string; slug: string; title: string; kind: SubmissionKind; lang: Lang; code: string; status: SubmissionStatus;
+    id: string; slug: string; title: string; has_checker: boolean; kind: SubmissionKind; lang: Lang; code: string; status: SubmissionStatus;
     queue_position: number | null; verdict: Verdict | null; result: JudgeResult | null; created_at: Date; finished_at: Date | null;
   }>(
-    `SELECT s.id, p.slug, p.title, s.kind, s.lang, s.code, s.status, s.verdict, s.result, s.created_at, s.finished_at,
+    `SELECT s.id, p.slug, p.title, p.checker_py IS NOT NULL AS has_checker, s.kind, s.lang, s.code, s.status, s.verdict, s.result, s.created_at, s.finished_at,
             CASE WHEN s.status <> 'done' THEN
               (SELECT count(*)::int FROM submissions q WHERE q.status <> 'done' AND q.id <= s.id) END AS queue_position
        FROM submissions s JOIN problems p ON p.id = s.problem_id
@@ -46,7 +46,7 @@ export async function submissionView(db: Db, id: number, viewer: { id: number; i
   if (!x) return undefined;
   return {
     id: Number(x.id),
-    problem: { slug: x.slug, title: x.title },
+    problem: { slug: x.slug, title: x.title, anyValidAnswer: x.has_checker },
     kind: x.kind,
     lang: x.lang,
     code: x.code,

@@ -184,7 +184,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
         setCooldownUntil(Date.now() + COOLDOWN_MS);
         setJustSolved(false);
         setSub({
-          id: q.id, problem: { slug: p.slug, title: p.title }, kind, lang, code: src, status: "queued",
+          id: q.id, problem: { slug: p.slug, title: p.title, anyValidAnswer: p.anyValidAnswer }, kind, lang, code: src, status: "queued",
           queuePosition: null, verdict: null, result: null, createdAt: new Date().toISOString(), finishedAt: null,
         });
         setTab("result");

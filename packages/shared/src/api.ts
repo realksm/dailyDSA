@@ -116,7 +116,8 @@ export interface SubmissionQueued {
 /** GET /api/submissions/:id */
 export interface SubmissionView {
   id: number;
-  problem: { slug: string; title: string };
+  /** anyValidAnswer: a checker grades the output, so a diff against Expected would mislead. */
+  problem: { slug: string; title: string; anyValidAnswer: boolean };
   kind: SubmissionKind;
   lang: Lang;
   code: string;

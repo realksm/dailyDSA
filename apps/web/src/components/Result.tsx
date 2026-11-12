@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { VERDICT_LABEL, type SubmissionView, type TestResult } from "@dailydsa/shared";
 import { fmtKb, fmtMs, verdictTone } from "../format";
+import { DiffSummary, OutputDiff } from "./OutputDiff";
 import { CopyButton, Spinner, VerdictBadge } from "./ui";
 
 export function ResultView({ sub, sampleCount }: { sub: SubmissionView; sampleCount?: number }) {
@@ -72,6 +73,7 @@ export function ResultView({ sub, sampleCount }: { sub: SubmissionView; sampleCo
             t={t}
             label={t.custom ? "Your input" : sub.kind === "run" ? `Sample ${t.index + 1}` : `Test ${t.index + 1}`}
             hiddenNote={sub.kind === "submit" && sampleCount !== undefined && t.index >= sampleCount && t.input !== undefined}
+            anyValidAnswer={!!sub.problem.anyValidAnswer}
             // Open the first failing visible test, or the custom one, straight away.
             open={(t === failed && t.input !== undefined) || (!failed && !!t.custom)}
           />
@@ -81,10 +83,12 @@ export function ResultView({ sub, sampleCount }: { sub: SubmissionView; sampleCo
   );
 }
 
-function TestRow({ t, label, open: initial, hiddenNote }: { t: TestResult; label: string; open: boolean; hiddenNote: boolean }) {
+function TestRow({ t, label, open: initial, hiddenNote, anyValidAnswer }: { t: TestResult; label: string; open: boolean; hiddenNote: boolean; anyValidAnswer: boolean }) {
   const [open, setOpen] = useState(initial);
   const hasBody = t.input !== undefined || t.output !== undefined || !!t.stderr;
   const verdict = t.custom && t.verdict === "AC" ? "ran cleanly" : null;
+  // A wrong answer gets the line-by-line diff, unless a checker grades it (then Expected is just one valid answer).
+  const diff = t.verdict === "WA" && !anyValidAnswer && t.output !== undefined && t.expected !== undefined;
   return (
     <div className="test">
       <button type="button" onClick={() => setOpen(!open)} disabled={!hasBody} aria-expanded={hasBody ? open : undefined}>
@@ -95,12 +99,18 @@ function TestRow({ t, label, open: initial, hiddenNote }: { t: TestResult; label
       </button>
       {open && hasBody && (
         <div className="test-body">
+          {diff && <DiffSummary output={t.output!} expected={t.expected!} />}
           {hiddenNote && <p className="muted small">A hidden test. Only the first failing one shows its data.</p>}
           {t.input !== undefined && <IO title="Input" text={t.input} />}
-          <div className="pair">
-            {t.output !== undefined && <IO title="Your output" text={t.output || "(no output)"} />}
-            {t.expected !== undefined && <IO title="Expected" text={t.expected} />}
-          </div>
+          {diff ? <OutputDiff output={t.output!} expected={t.expected!} /> : (
+            <div className="pair">
+              {t.output !== undefined && <IO title="Your output" text={t.output || "(no output)"} />}
+              {t.expected !== undefined && <IO title={anyValidAnswer ? "One valid answer" : "Expected"} text={t.expected} />}
+            </div>
+          )}
+          {anyValidAnswer && t.verdict === "WA" && t.expected !== undefined && (
+            <p className="muted small">Any valid answer is accepted here; this is one of them. The checker found a problem with yours.</p>
+          )}
           {t.stderr && <IO title="stderr" text={t.stderr} />}
         </div>
       )}
