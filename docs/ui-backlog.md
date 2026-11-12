@@ -30,11 +30,11 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 
 ## Phase 4: Tracks and lessons
 
-- [ ] **16. Upcoming tracks say "Opens Mon 16 Nov"** instead of "0/5 solved".
-- [ ] **17. Bigger diagrams on track rows** (same scale as the featured card; the mono label readable).
-- [ ] **18. Sticky lesson contents** in the right column under the ladder (How to spot it, Why it works, Shapes, Worked example, Mistakes), marking the current section on scroll.
-- [ ] **19. "See it work" step-through:** left/right arrow keys, bigger and higher-contrast arrows, the caption announced (`aria-live="polite"`).
-- [ ] **20. Shapes link to their ladder problem** in each lesson (lesson markdown + renderer; all 4 lessons).
+- [x] **16. Upcoming tracks say "Opens Mon 16 Nov"** instead of "0/5 solved".
+- [x] **17. Bigger diagrams on track rows** (same scale as the featured card; the mono label readable).
+- [x] **18. Sticky lesson contents** in the right column under the ladder (How to spot it, Why it works, Shapes, Worked example, Mistakes), marking the current section on scroll.
+- [x] **19. "See it work" step-through:** left/right arrow keys, bigger and higher-contrast arrows, the caption announced (`aria-live="polite"`).
+- [x] **20. Shapes link to their ladder problem** in each lesson (lesson markdown + renderer; all 4 lessons).
 
 ## Phase 5: History and Archive
 

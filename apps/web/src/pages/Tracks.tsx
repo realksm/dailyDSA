@@ -1,11 +1,12 @@
 // The Tracks library and the lesson page (PLAN §2): one pattern a week, a lesson on Monday and a
 // ladder of five problems that opens one a day. After its week a track stays open in full here.
+import { useEffect, useState } from "react";
 import type { LadderStep, TrackSummary, TrackView } from "@dailydsa/shared";
 import { api } from "../api";
 import { isStaff, useMe } from "../auth";
 import { addDays, fmtDay } from "../format";
 import { Icon } from "../components/Icon";
-import { Lesson } from "../components/Lesson";
+import { Lesson, lessonHeadings } from "../components/Lesson";
 import { Markdown } from "../components/Markdown";
 import { hasDiagram, PatternDiagram } from "../components/PatternDiagram";
 import { LoadError, Skeleton, SkeletonRows, StatusDot, useLoad, useTitle } from "../components/ui";
@@ -86,7 +87,15 @@ function TrackTimeline({ tracks, today, staff }: { tracks: TrackSummary[]; today
                   <div className="track-row-text">
                     <h3>{t.title}</h3>
                     {t.spotIt[0] && <div className="track-spot"><Markdown>{t.spotIt[0]}</Markdown></div>}
-                    <span className="small num track-row-count"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved{!t.hasLesson ? " · lesson coming" : ""}</span></span>
+                    {lastPast(t, today) ? (
+                      <span className="small num track-row-count"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved{!t.hasLesson ? " · lesson coming" : ""}</span></span>
+                    ) : (
+                      <span className="small track-row-count track-row-opens">
+                        <Icon name={nextWeek(t, today) ? "clock" : "lock"} />
+                        {nextWeek(t, today) ? `Opens ${fmtDay(nextWeek(t, today)!)}` : "Not scheduled"}
+                        {!t.hasLesson && <span className="muted"> · lesson coming</span>}
+                      </span>
+                    )}
                   </div>
                   <MiniLadder ladder={t.ladder} />
                 </Link>
@@ -209,7 +218,7 @@ function Track({ t }: { t: TrackView }) {
             </section>
           )}
           {t.hasLesson ? (
-            <Lesson md={t.lessonMd} />
+            <Lesson md={t.lessonMd} ladder={t.ladder} />
           ) : (
             <div className="card empty" style={{ marginTop: 24 }}>
               <h3>The lesson is on its way</h3>
@@ -232,6 +241,7 @@ function Track({ t }: { t: TrackView }) {
                 : "Problems get harder as you go. Once open, they stay open."}
             </p>
           </div>
+          {t.hasLesson && <LessonToc md={t.lessonMd} />}
         </aside>
       </div>
     </main>
@@ -256,8 +266,58 @@ function Step({ s, staff }: { s: LadderStep; staff: boolean }) {
     </>
   );
   return (
-    <li data-locked={!s.open || undefined}>
+    <li id={`ladder-${s.position}`} data-locked={!s.open || undefined}>
       {s.problem ? <Link to={`/p/${s.problem.slug}`}>{body}</Link> : <div>{body}</div>}
     </li>
+  );
+}
+
+/**
+ * The lesson's sections, in the sticky right column under the ladder. The section being read is
+ * marked: the last heading above a line a third of the way down the window.
+ */
+function LessonToc({ md }: { md: string }) {
+  const heads = lessonHeadings(md);
+  const [current, setCurrent] = useState<string | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const line = innerHeight / 3;
+      let cur: string | null = null;
+      for (const h of heads) {
+        const el = document.getElementById(h.id);
+        if (el && el.getBoundingClientRect().top <= line) cur = h.id;
+      }
+      // At the very bottom the last short section may never reach the line.
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2 && heads.length) cur = heads.at(-1)!.id;
+      setCurrent(cur);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", onScroll);
+    return () => { removeEventListener("scroll", onScroll); removeEventListener("resize", onScroll); cancelAnimationFrame(raf); };
+  }, [md]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (heads.length < 2) return null;
+  const go = (id: string) => (e: React.MouseEvent) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    history.replaceState(history.state, "", `#${id}`);
+  };
+  return (
+    <nav className="card lesson-toc" aria-label="Lesson contents">
+      <h2>In this lesson</h2>
+      <ol>
+        {heads.map((h) => (
+          <li key={h.id} data-level={h.level}>
+            <a href={`#${h.id}`} onClick={go(h.id)} aria-current={h.id === current ? "location" : undefined}>{h.text}</a>
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }

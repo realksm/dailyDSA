@@ -212,26 +212,43 @@ export function PatternDiagram({ pattern, mode = "loop", className }: { pattern:
   if (!d) return null;
   const s = d.frames[i];
   const caption = d.caption(s, i);
+  const go = (n: number) => { setPlaying(false); setI(Math.max(0, Math.min(last, n))); };
+  // Steps mode: ← / → step (also from the buttons, which keep focus), Home / End jump, Space plays.
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const to = { ArrowLeft: i - 1, ArrowRight: i + 1, Home: 0, End: last }[e.key];
+    if (to !== undefined) { e.preventDefault(); go(to); }
+    else if (e.key === " " && e.target === e.currentTarget) { e.preventDefault(); togglePlay(); }
+  };
+  const togglePlay = () => { if (i === last) setI(0); setPlaying((p) => !p || i === last); };
 
   return (
-    <figure ref={ref} className={`pd${className ? ` ${className}` : ""}`} data-mode={mode}>
+    <figure
+      ref={ref}
+      className={`pd${className ? ` ${className}` : ""}`}
+      data-mode={mode}
+      {...(mode === "steps" ? { tabIndex: 0, onKeyDown: onKey, "aria-roledescription": "step-through", "aria-label": `${d.summary} Use the left and right arrow keys to step.` } : {})}
+    >
       <svg viewBox={`0 0 ${d.w} ${d.h}`} role="img" aria-label={d.summary}>
         {d.draw(s, i)}
       </svg>
       {mode === "steps" ? (
         <figcaption className="pd-steps">
-          <p className="pd-cap" aria-live="polite">{caption}</p>
+          <p className="pd-cap" aria-live="polite" aria-atomic="true">
+            <span className="sr-only">Step {i + 1} of {last + 1}: </span>{caption}
+          </p>
           <div className="pd-ctrl">
-            <button type="button" className="icon-btn" onClick={() => { setPlaying(false); setI((n) => Math.max(0, n - 1)); }} disabled={i === 0} aria-label="Previous step">
-              <svg viewBox="0 0 16 16" aria-hidden><path d="M10 3.5L5.5 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <button type="button" className="pd-arrow" onClick={() => go(i - 1)} disabled={i === 0} aria-label="Previous step" title="Previous step (←)">
+              <svg viewBox="0 0 16 16" aria-hidden><path d="M10 3.5L5.5 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
-            <button type="button" className="btn btn-sm pd-play" onClick={() => { if (i === last) setI(0); setPlaying((p) => !p || i === last); }}>
+            <button type="button" className="btn btn-sm pd-play" onClick={togglePlay}>
               {playing && i !== last ? "Pause" : i === last ? "Replay" : "Play"}
             </button>
-            <button type="button" className="icon-btn" onClick={() => { setPlaying(false); setI((n) => Math.min(last, n + 1)); }} disabled={i === last} aria-label="Next step">
-              <svg viewBox="0 0 16 16" aria-hidden><path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <button type="button" className="pd-arrow" onClick={() => go(i + 1)} disabled={i === last} aria-label="Next step" title="Next step (→)">
+              <svg viewBox="0 0 16 16" aria-hidden><path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
-            <span className="pd-count num" aria-label={`Step ${i + 1} of ${last + 1}`}>{i + 1}/{last + 1}</span>
+            <span className="pd-keys" aria-hidden><kbd>←</kbd> <kbd>→</kbd> to step</span>
+            <span className="pd-count num" aria-hidden>{i + 1}/{last + 1}</span>
           </div>
         </figcaption>
       ) : (

@@ -15,7 +15,7 @@ Not this pattern: if all values are positive and the question is the longest or 
 
 Define $P_0 = 0$ and $P_i = a_1 + \ldots + a_i$. Then
 $$a_l + \ldots + a_r = P_r - P_{l-1}.$$
-One pass builds $P$; every range total afterwards is one subtraction.
+One pass builds $P$; every range total afterwards is one subtraction. On the ladder: [Ladder 1](#ladder-1).
 
 The real power is that this turns a question about a **pair of indices** $(l, r)$ into a question about **two prefix values**. Walk $r$ from left to right and ask what you need from the prefixes before it, kept in a hash map:
 
@@ -26,11 +26,11 @@ The real power is that this turns a question about a **pair of indices** $(l, r)
 | be as long as possible | (same condition) | the **first** index of each value |
 | be as short as possible | (same condition) | the **latest** index of each value |
 
-Each step is a lookup plus an insert, so the whole thing is $O(n)$ instead of $O(n^2)$, and it works with negative numbers, where a sliding window fails.
+Each step is a lookup plus an insert, so the whole thing is $O(n)$ instead of $O(n^2)$, and it works with negative numbers, where a sliding window fails. On the ladder: [Ladder 3](#ladder-3) (remainders), [Ladder 5](#ladder-5) (first index).
 
-**The reverse: difference arrays.** For updates, store $D_i = a_i - a_{i-1}$ instead of $a$. Adding $v$ to $a_l..a_r$ changes only two entries: $D_l \mathrel{+}= v$ and $D_{r+1} \mathrel{-}= v$. A prefix sum over $D$ at the end rebuilds $a$. $q$ updates cost $O(n + q)$ instead of $O(nq)$.
+**The reverse: difference arrays.** For updates, store $D_i = a_i - a_{i-1}$ instead of $a$. Adding $v$ to $a_l..a_r$ changes only two entries: $D_l \mathrel{+}= v$ and $D_{r+1} \mathrel{-}= v$. A prefix sum over $D$ at the end rebuilds $a$. $q$ updates cost $O(n + q)$ instead of $O(nq)$. On the ladder: [Ladder 2](#ladder-2).
 
-**In 2D**, $S_{i,j}$ is the total of the rectangle from the top-left corner to $(i, j)$. Inclusion–exclusion builds it, $S_{i,j} = t_{i,j} + S_{i-1,j} + S_{i,j-1} - S_{i-1,j-1}$, and answers a rectangle with four lookups.
+**In 2D**, $S_{i,j}$ is the total of the rectangle from the top-left corner to $(i, j)$. Inclusion–exclusion builds it, $S_{i,j} = t_{i,j} + S_{i-1,j} + S_{i,j-1} - S_{i-1,j-1}$, and answers a rectangle with four lookups. On the ladder: [Ladder 4](#ladder-4).
 
 ### Worked example
 

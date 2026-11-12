@@ -18,8 +18,8 @@ The question to ask at every step is: *which pointer is now useless?* After sort
 
 The same idea comes in three shapes:
 
-1. **Opposite ends** of one sorted array, moving inwards: pair sums, pairing greedily, palindromes.
-2. **Two sequences in step**: one pointer per sorted list; move the one whose current value can't match anything later in the other list. This is the inner loop of merge sort.
+1. **Opposite ends** of one sorted array, moving inwards: pair sums, pairing greedily, palindromes. On the ladder: [Ladder 1](#ladder-1), [Ladder 3](#ladder-3), [Ladder 5](#ladder-5).
+2. **Two sequences in step**: one pointer per sorted list; move the one whose current value can't match anything later in the other list. This is the inner loop of merge sort. On the ladder: [Ladder 2](#ladder-2), [Ladder 4](#ladder-4).
 3. **Read / write in one array** (slow and fast pointer): `r` reads every element, `w` marks where the next kept element goes, e.g. removing duplicates from a sorted array in place.
 
 When counting, a single check can count many pairs at once. If $(l, r)$ fits and the array is sorted, then $l$ fits with every index from $l + 1$ to $r$, so there are $r - l$ pairs in one step.

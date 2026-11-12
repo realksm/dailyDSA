@@ -18,15 +18,15 @@ To make that work, keep a small **state** of the window that can be updated in $
 
 The window comes in three shapes:
 
-1. **Fixed size $k$**: add `a[r]`, remove `a[r - k]`, look at the window once `r >= k - 1`.
-2. **Longest valid window**: for each `r`, add `a[r]`, then move `l` right *while* the window is invalid. What remains is the longest valid window ending at `r`. This needs "valid windows stay valid when shrunk".
-3. **Shortest valid window**: for each `r`, add `a[r]`, then *while* the window is valid, record it and move `l` right. This needs "valid windows stay valid when grown".
+1. **Fixed size $k$**: add `a[r]`, remove `a[r - k]`, look at the window once `r >= k - 1`. On the ladder: [Ladder 1](#ladder-1).
+2. **Longest valid window**: for each `r`, add `a[r]`, then move `l` right *while* the window is invalid. What remains is the longest valid window ending at `r`. This needs "valid windows stay valid when shrunk". On the ladder: [Ladder 2](#ladder-2), [Ladder 3](#ladder-3).
+3. **Shortest valid window**: for each `r`, add `a[r]`, then *while* the window is valid, record it and move `l` right. This needs "valid windows stay valid when grown". On the ladder: [Ladder 4](#ladder-4).
 
 Why is moving `l` right never a mistake? In shape 2, if $[l, r]$ is invalid, then $[l, r']$ is invalid for every $r' > r$ too (it contains $[l, r]$). So `l` can never be the start of a later answer, and dropping it loses nothing. Shape 3 has the mirror argument.
 
 **Counting.** In shape 2, every start from `l` to `r` gives a valid window ending at `r`, so add `r - l + 1` per step. "Exactly $K$" conditions are usually not monotone, but $\text{exactly}(K) = \text{atMost}(K) - \text{atMost}(K - 1)$ is.
 
-**Max or min of the window.** Keep a deque of indices whose values are decreasing (for the max). When `r` enters, pop from the back every index whose value is $\le$ `a[r]` (it can never be the max again), and push `r`. The front is the max; drop it once its index falls below `l`.
+**Max or min of the window.** Keep a deque of indices whose values are decreasing (for the max). When `r` enters, pop from the back every index whose value is $\le$ `a[r]` (it can never be the max again), and push `r`. The front is the max; drop it once its index falls below `l`. On the ladder: [Ladder 5](#ladder-5).
 
 ### Worked example
 

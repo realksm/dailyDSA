@@ -28,10 +28,10 @@ Stop when `lo == hi`; that is the answer. Start with a range you can *prove* hol
 
 The check itself is where the problem is. Common shapes:
 
-1. **Is this resource enough?** Add up what the capacity or time `x` gives you (trips, widgets) and compare with what is needed.
-2. **Can the limit be met?** Fill greedily: put things into the current group until the limit would break, then start a new one; count the groups. Taking the earliest spot that fits never hurts.
-3. **$k$-th smallest:** `ok(x)` = "at least $k$ values are $\le x$". Count them without listing them, often with two pointers or a sliding window.
-4. **Change what you look at.** Sometimes the check gets easy only after rewriting the data for this one `x`, e.g. marking every value as $+1$ ($\ge x$) or $-1$ ($< x$) and looking at sums.
+1. **Is this resource enough?** Add up what the capacity or time `x` gives you (trips, widgets) and compare with what is needed. On the ladder: [Ladder 1](#ladder-1), [Ladder 3](#ladder-3).
+2. **Can the limit be met?** Fill greedily: put things into the current group until the limit would break, then start a new one; count the groups. Taking the earliest spot that fits never hurts. On the ladder: [Ladder 2](#ladder-2).
+3. **$k$-th smallest:** `ok(x)` = "at least $k$ values are $\le x$". Count them without listing them, often with two pointers or a sliding window. On the ladder: [Ladder 4](#ladder-4).
+4. **Change what you look at.** Sometimes the check gets easy only after rewriting the data for this one `x`, e.g. marking every value as $+1$ ($\ge x$) or $-1$ ($< x$) and looking at sums. On the ladder: [Ladder 5](#ladder-5).
 
 ### Worked example
 
