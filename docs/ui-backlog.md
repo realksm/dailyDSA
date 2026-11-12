@@ -47,10 +47,10 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 
 ## Phase 6: Submission and Account
 
-- [ ] **27. "Load into editor"** on a submission: opens the problem with that code in its language (asks before overwriting a draft).
-- [ ] **28. "Compare with previous"** on a submission: diff against the user's previous submission of the same problem.
-- [ ] **29. Account preferences**: default language (used by the editor), editor font size, theme. Saved on the server so they follow the user. `API` (`/api/me/settings`)
-- [ ] **30. Top-bar name looks clickable** (icon or chevron), goes to Account.
+- [x] **27. "Load into editor"** on a submission: opens the problem with that code in its language (asks before overwriting a draft).
+- [x] **28. "Compare with previous"** on a submission: diff against the user's previous submission of the same problem.
+- [x] **29. Account preferences**: default language (used by the editor), editor font size, theme. Saved on the server so they follow the user. `API` (`/api/me/settings`)
+- [x] **30. Top-bar name looks clickable** (icon or chevron), goes to Account.
 
 ## Phase 7: Admin schedule
 

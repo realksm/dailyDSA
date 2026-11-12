@@ -4,17 +4,18 @@ import * as monaco from "monaco-editor/editor/editor.main.js";
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
 import { useEffect, useRef, useState } from "react";
 import type { Lang } from "@dailydsa/shared";
+import { DEFAULT_FONT, usePrefs } from "../prefs";
 
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 loader.config({ monaco });
 
-const MONACO_LANG: Record<Lang, string> = { cpp: "cpp", java: "java", py: "python" };
+export const MONACO_LANG: Record<Lang, string> = { cpp: "cpp", java: "java", py: "python" };
 
 /**
  * One Monaco theme built from the page's CSS tokens, so the editor sits on the same surface and
  * uses the same mono font as the rest of the page. Rebuilt when the OS colour scheme changes.
  */
-function useEditorTheme() {
+export function useEditorTheme() {
   const build = () => {
     const css = getComputedStyle(document.documentElement);
     const v = (name: string) => css.getPropertyValue(name).trim();
@@ -71,13 +72,19 @@ interface Props {
   onToggleWrap?: () => void;
 }
 
-/** Read-only viewers: smaller type and a narrow gutter, so code reads like a figure, not an IDE. */
-const VIEW = { fontSize: 13, lineHeight: 20, pad: 10 };
-const EDIT = { fontSize: 14, lineHeight: 21, pad: 12 };
+/**
+ * Sizes from the editor font size preference (default 14). Read-only viewers: a size smaller and a
+ * narrow gutter, so code reads like a figure, not an IDE.
+ */
+function metrics(size: number, readOnly: boolean | undefined) {
+  const fontSize = readOnly ? size - 1 : size;
+  return { fontSize, lineHeight: Math.round(fontSize * 1.5), pad: readOnly ? 10 : 12 };
+}
 
 export function CodeEditor({ lang, value, onChange, onRun, onSubmit, readOnly, height = "100%", autoHeight, wordWrap = !!readOnly, onToggleWrap }: Props) {
   const font = useEditorTheme();
-  const m = readOnly ? VIEW : EDIT;
+  const { prefs } = usePrefs();
+  const m = metrics(prefs.editorFontSize ?? DEFAULT_FONT, readOnly);
   const [fitH, setFitH] = useState(() => value.split("\n").length * m.lineHeight + 2 * m.pad);
   // Keybindings are registered once; keep the latest callbacks in refs.
   const run = useRef(onRun);

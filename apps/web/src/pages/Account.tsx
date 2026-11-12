@@ -1,6 +1,10 @@
-// Your account: who you are, the streak-saver email, and changing the password (logs out your other devices).
+// Your account: who you are, preferences (follow you to every browser), the streak-saver email, and
+// changing the password (logs out your other devices).
 import { useState } from "react";
+import { LANG_LABEL, LANGS } from "@dailydsa/shared";
 import { api, ApiErr, errorMessage } from "../api";
+import { DEFAULT_FONT, usePrefs, type Prefs } from "../prefs";
+import { Select } from "../components/Select";
 import { useAuth, useMe } from "../auth";
 import { Field, Notice, Skeleton, useLoad, useTitle } from "../components/ui";
 
@@ -44,7 +48,9 @@ export function Account() {
         <button className="btn" onClick={() => void logout()}>Log out</button>
       </div>
 
-      <Reminders />
+      <Preferences />
+
+      <div style={{ marginTop: 24 }}><Reminders /></div>
 
       <section className="card card-pad" style={{ marginTop: 24 }}>
         <h2 style={{ marginBottom: 4 }}>Change password</h2>
@@ -94,6 +100,74 @@ function Reminders() {
         </label>
       )}
       {err ? <div style={{ marginTop: 12 }}><Notice>{errorMessage(err)}</Notice></div> : null}
+    </section>
+  );
+}
+
+const FONT_SIZES = [12, 13, 14, 15, 16, 18, 20];
+
+/** Default language, editor font size, theme. Each saves when changed; the theme also applies at once. */
+function Preferences() {
+  const { prefs, save } = usePrefs();
+  const [err, setErr] = useState<unknown>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const set = async (p: Partial<Prefs>, what: string) => {
+    setErr(null);
+    setSaved(null);
+    try {
+      await save(p);
+      setSaved(what);
+    } catch (e) {
+      setErr(e);
+    }
+  };
+  const size = prefs.editorFontSize ?? DEFAULT_FONT;
+  return (
+    <section className="card card-pad" aria-labelledby="prefs-h">
+      <h2 id="prefs-h" style={{ marginBottom: 4 }}>Preferences</h2>
+      <p className="muted small" style={{ marginBottom: 20 }}>Saved with your account, so they follow you to every browser.</p>
+      <div className="prefs">
+        <label className="pref" htmlFor="pref-lang">
+          <span className="pref-k">Default language</span>
+          <span className="pref-hint muted small">The editor opens in it.</span>
+        </label>
+        <Select
+          id="pref-lang"
+          value={prefs.defaultLang ?? ""}
+          onChange={(v) => void set({ defaultLang: v ? (v as Prefs["defaultLang"]) : null }, "Default language")}
+          options={[{ value: "", label: "The last one I used" }, ...LANGS.map((l) => ({ value: l, label: LANG_LABEL[l] }))]}
+        />
+
+        <label className="pref" htmlFor="pref-font">
+          <span className="pref-k">Editor font size</span>
+          <span className="pref-hint muted small">Code viewers use one size smaller.</span>
+        </label>
+        <div className="row" style={{ gap: 12 }}>
+          <Select
+            id="pref-font"
+            value={String(size)}
+            onChange={(v) => void set({ editorFontSize: Number(v) === DEFAULT_FONT ? null : Number(v) }, "Font size")}
+            options={FONT_SIZES.map((n) => ({ value: String(n), label: `${n} px${n === DEFAULT_FONT ? " (default)" : ""}` }))}
+          />
+          <code className="pref-sample" style={{ fontSize: size }} aria-hidden>for (int i = 0; i &lt; n; i++)</code>
+        </div>
+
+        <span className="pref" id="pref-theme">
+          <span className="pref-k">Theme</span>
+          <span className="pref-hint muted small">Also the button in the top bar.</span>
+        </span>
+        <div className="seg" role="radiogroup" aria-labelledby="pref-theme">
+          {(["auto", "light", "dark"] as const).map((t) => (
+            <button key={t} type="button" role="radio" aria-checked={prefs.theme === t} className="seg-btn"
+              onClick={() => void set({ theme: t }, "Theme")}>
+              {t === "auto" ? "System" : t === "light" ? "Light" : "Dark"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div aria-live="polite" style={{ marginTop: 16 }}>
+        {err ? <Notice>{errorMessage(err)}</Notice> : saved ? <p className="small muted">{saved} saved.</p> : null}
+      </div>
     </section>
   );
 }

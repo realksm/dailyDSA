@@ -36,10 +36,16 @@ export interface DailyEntry {
   review: { lastShownOn: string } | null;
 }
 
-/** GET / PUT /api/me/settings */
+/** GET / PUT /api/me/settings (PUT takes any subset of the fields). Saved on the server, so they follow the member. */
 export interface MeSettings {
   /** The streak-saver email at 21:00 IST when today's daily is still open. */
   remindStreak: boolean;
+  /** The language the editor opens in; null = the last one used in this browser. */
+  defaultLang: Lang | null;
+  /** Editor font size in px (11–22); null = the default, 14. */
+  editorFontSize: number | null;
+  /** "auto" follows the OS; null = never chosen on the server (the browser's own choice stands). */
+  theme: "auto" | "light" | "dark" | null;
 }
 
 /** GET /api/me/streak: the streak chip in the top bar. Same rule as Today's streak card. */

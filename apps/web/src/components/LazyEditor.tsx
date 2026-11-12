@@ -10,3 +10,13 @@ export function CodeEditor(props: ComponentProps<typeof Inner>) {
     </Suspense>
   );
 }
+
+const InnerDiff = lazy(() => import("./CodeDiff").then((m) => ({ default: m.CodeDiff })));
+
+export function CodeDiff(props: ComponentProps<typeof InnerDiff>) {
+  return (
+    <Suspense fallback={<span className="muted small" style={{ display: "block", padding: 16 }}>Loading the comparison…</span>}>
+      <InnerDiff {...props} />
+    </Suspense>
+  );
+}

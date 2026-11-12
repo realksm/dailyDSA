@@ -2,7 +2,7 @@
 import { Router, type Request } from "express";
 import type pg from "pg";
 import { z } from "zod";
-import type { MeSettings } from "@dailydsa/shared";
+import { LANGS, type MeSettings } from "@dailydsa/shared";
 import { destroySession, me, regenerateSession, requireUser } from "../auth.js";
 import type { Config } from "../config.js";
 import { HttpError, parse, tooManyRequests } from "../errors.js";
@@ -31,7 +31,22 @@ const SignupBody = z.object({
 const LoginBody = z.object({ email, password: z.string().min(1).max(MAX_PASSWORD_LENGTH) });
 const ChangePasswordBody = z.object({ currentPassword: z.string().min(1).max(MAX_PASSWORD_LENGTH), newPassword: password });
 const ForgotBody = z.object({ email });
-const SettingsBody = z.object({ remindStreak: z.boolean() });
+/** Any subset; fields left out keep their value. */
+const SettingsBody = z.object({
+  remindStreak: z.boolean().optional(),
+  defaultLang: z.enum(LANGS).nullable().optional(),
+  editorFontSize: z.number().int().min(11).max(22).nullable().optional(),
+  theme: z.enum(["auto", "light", "dark"]).optional(),
+}).strict();
+
+type SettingsRow = { remind_streak: boolean; default_lang: MeSettings["defaultLang"]; editor_font_size: number | null; theme: MeSettings["theme"] };
+const SETTINGS_COLS = "remind_streak, default_lang, editor_font_size, theme";
+const toSettings = (r: SettingsRow): MeSettings => ({
+  remindStreak: r.remind_streak,
+  defaultLang: r.default_lang,
+  editorFontSize: r.editor_font_size,
+  theme: r.theme,
+});
 const ResetBody = z.object({ token: z.string().min(20).max(200), password });
 
 const MIN = 60_000;
@@ -110,18 +125,25 @@ export function authRoutes({ pool, config, mailer, logError }: AuthDeps): Router
     res.json({ ok: true });
   });
 
-  /** Per-member settings: just the streak-saver email for now (reminders.ts). */
+  /** Per-member settings: the streak-saver email (reminders.ts) and the Account page's preferences. */
   r.get("/me/settings", requireUser, async (req, res) => {
-    const q = await pool.query<{ remind_streak: boolean }>("SELECT remind_streak FROM users WHERE id = $1", [me(req).id]);
-    const body: MeSettings = { remindStreak: q.rows[0]?.remind_streak ?? true };
-    res.json(body);
+    const q = await pool.query<SettingsRow>(`SELECT ${SETTINGS_COLS} FROM users WHERE id = $1`, [me(req).id]);
+    res.json(toSettings(q.rows[0]!));
   });
 
   r.put("/me/settings", requireUser, async (req, res) => {
     const b = parse(SettingsBody, req.body);
-    await pool.query("UPDATE users SET remind_streak = $2 WHERE id = $1", [me(req).id, b.remindStreak]);
-    const body: MeSettings = { remindStreak: b.remindStreak };
-    res.json(body);
+    const q = await pool.query<SettingsRow>(
+      `UPDATE users SET
+         remind_streak    = CASE WHEN $2 THEN $3 ELSE remind_streak END,
+         default_lang     = CASE WHEN $4 THEN $5 ELSE default_lang END,
+         editor_font_size = CASE WHEN $6 THEN $7::smallint ELSE editor_font_size END,
+         theme            = CASE WHEN $8 THEN $9 ELSE theme END
+       WHERE id = $1 RETURNING ${SETTINGS_COLS}`,
+      [me(req).id, b.remindStreak !== undefined, b.remindStreak ?? null, b.defaultLang !== undefined, b.defaultLang ?? null,
+        b.editorFontSize !== undefined, b.editorFontSize ?? null, b.theme !== undefined, b.theme ?? null],
+    );
+    res.json(toSettings(q.rows[0]!));
   });
 
   // Always answers the same way, whether or not the email has an account (no enumeration).

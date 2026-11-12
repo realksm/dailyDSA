@@ -126,10 +126,17 @@ describe.skipIf(!dbUp)("auth (needs db + migrations)", () => {
     expect((await request(app).get("/api/me/settings")).status).toBe(401);
     const agent = request.agent(app);
     await agent.post("/api/auth/login").send({ email: e, password: PW });
-    expect((await agent.get("/api/me/settings")).body).toEqual({ remindStreak: true });
-    expect((await agent.put("/api/me/settings").send({ remindStreak: false })).body).toEqual({ remindStreak: false });
-    expect((await agent.get("/api/me/settings")).body).toEqual({ remindStreak: false });
-    expect((await agent.put("/api/me/settings").send({ remindStreak: "no" })).status).toBe(400);
+    const defaults = { remindStreak: true, defaultLang: null, editorFontSize: null, theme: null };
+    expect((await agent.get("/api/me/settings")).body).toEqual(defaults);
+    expect((await agent.put("/api/me/settings").send({ remindStreak: false })).body).toEqual({ ...defaults, remindStreak: false });
+    // Any subset; the rest keeps its value.
+    const prefs = { defaultLang: "java", editorFontSize: 16, theme: "dark" };
+    expect((await agent.put("/api/me/settings").send(prefs)).body).toEqual({ remindStreak: false, ...prefs });
+    expect((await agent.put("/api/me/settings").send({ defaultLang: null })).body).toEqual({ remindStreak: false, ...prefs, defaultLang: null });
+    expect((await agent.get("/api/me/settings")).body).toEqual({ remindStreak: false, ...prefs, defaultLang: null });
+    for (const bad of [{ remindStreak: "no" }, { defaultLang: "rust" }, { editorFontSize: 40 }, { theme: "blue" }, { other: 1 }]) {
+      expect((await agent.put("/api/me/settings").send(bad)).status).toBe(400);
+    }
     // The streak chip: nothing solved yet.
     expect((await request(app).get("/api/me/streak")).status).toBe(401);
     const s = await agent.get("/api/me/streak");

@@ -11,7 +11,9 @@ import { ResultView } from "../components/Result";
 import { SolvedReveal } from "../components/SolvedReveal";
 import { Icon } from "../components/Icon";
 import { CopyButton, LoadError, Notice, Skeleton, StatusBadge, useLoad, useTitle, VerdictBadge } from "../components/ui";
-import { Link } from "../router";
+import { Link, useRouter } from "../router";
+import { draftKey, store } from "../store";
+import { usePrefs } from "../prefs";
 import { useConfirm } from "../components/Confirm";
 import { TabInk } from "../components/TabInk";
 import { Select } from "../components/Select";
@@ -21,17 +23,6 @@ import { useStreak } from "../streak";
 const COOLDOWN_MS = 5000;
 const POLL_MS = 1000;
 
-// Browser storage is a convenience only (unsent drafts, last language); everything works without it.
-const store = {
-  get(k: string): string | null {
-    try { return localStorage.getItem(k); } catch { return null; }
-  },
-  /** False when the browser refused (storage off, quota full). */
-  set(k: string, v: string | null): boolean {
-    try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); return true; } catch { return false; }
-  },
-};
-const draftKey = (slug: string, lang: Lang) => `dsa.draft.${slug}.${lang}`;
 
 const clampNum = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
 /** The modifier shown on the Run/Submit buttons (Monaco maps CtrlCmd to ⌘ on a Mac). */
@@ -107,9 +98,15 @@ function DraftNote({ dirty, stored, everSent }: { dirty: boolean; stored: boolea
 function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; replace: (v: ProblemView) => void }) {
   const [leftTab, setLeftTab] = useState<"statement" | "solutions">("statement");
   const ask = useConfirm();
+  const { prefs } = usePrefs();
+  const { search } = useRouter();
+  // ?lang= (a submission's "Load into editor"), else the Account page's default language, else the
+  // last one used in this browser, else C++.
   const [lang, setLangState] = useState<Lang>(() => {
-    const l = store.get("dsa.lang");
-    return (LANGS as readonly string[]).includes(l ?? "") ? (l as Lang) : "cpp";
+    const isLang = (l: string | null): l is Lang => (LANGS as readonly string[]).includes(l ?? "");
+    const asked = search.get("lang");
+    const last = store.get("dsa.lang");
+    return isLang(asked) ? asked : prefs.defaultLang ?? (isLang(last) ? last : "cpp");
   });
   // Per language: the local draft, else the last code sent, else the template.
   const [code, setCode] = useState<Record<Lang, string>>(() => {

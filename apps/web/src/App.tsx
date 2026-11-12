@@ -3,8 +3,9 @@ import { isStaff, useAuth, useMe, wasSignedOut } from "./auth";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BrandMark, Spinner } from "./components/ui";
 import { Icon } from "./components/Icon";
-import { readTheme, saveTheme, type ThemePref } from "./theme";
+import type { ThemePref } from "./theme";
 import { StreakChip, StreakProvider } from "./streak";
+import { PrefsProvider, usePrefs } from "./prefs";
 import { Link, match, NavLink, useRouter } from "./router";
 import { Account } from "./pages/Account";
 import { Admin } from "./pages/admin/Admin";
@@ -65,12 +66,14 @@ export function App() {
   }
 
   return (
-    <StreakProvider>
-      <TopBar />
-      <ErrorBoundary resetKey={path}>
-        <Routes />
-      </ErrorBoundary>
-    </StreakProvider>
+    <PrefsProvider>
+      <StreakProvider>
+        <TopBar />
+        <ErrorBoundary resetKey={path}>
+          <Routes />
+        </ErrorBoundary>
+      </StreakProvider>
+    </PrefsProvider>
   );
 }
 
@@ -125,7 +128,11 @@ function TopBar() {
       <div className="who">
         <StreakChip />
         <ThemeButton />
-        <Link to="/account" title={me.email}>{me.name}</Link>
+        <Link to="/account" className="who-me" title={`${me.email}: your account and preferences`}>
+          <Icon name="user" />
+          <span className="who-name">{me.name}</span>
+          <Icon name="chevron" className="icon who-chev" />
+        </Link>
         <button
           className="logout"
           disabled={leaving}
@@ -147,15 +154,16 @@ function TopBar() {
 const NEXT_THEME: Record<ThemePref, ThemePref> = { auto: "light", light: "dark", dark: "auto" };
 const THEME_LABEL: Record<ThemePref, string> = { auto: "Theme follows your system", light: "Light theme", dark: "Dark theme" };
 
-/** Cycles system → light → dark. The icon shows the current choice. */
+/** Cycles system → light → dark. The icon shows the current choice; it's saved with the account. */
 function ThemeButton() {
-  const [t, setT] = useState<ThemePref>(readTheme);
+  const { prefs, save } = usePrefs();
+  const t: ThemePref = prefs.theme;
   const next = NEXT_THEME[t];
   return (
     <button
       type="button"
       className="icon-btn theme-btn"
-      onClick={() => { saveTheme(next); setT(next); }}
+      onClick={() => void save({ theme: next }).catch(() => {})}
       aria-label={`${THEME_LABEL[t]}. Switch to ${next === "auto" ? "the system theme" : `the ${next} theme`}`}
       title={THEME_LABEL[t]}
     >

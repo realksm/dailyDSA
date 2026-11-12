@@ -71,7 +71,7 @@ export const api = {
   changePassword: (currentPassword: string, newPassword: string) =>
     call<{ ok: true }>("POST", "/me/password", { currentPassword, newPassword }),
   settings: () => call<MeSettings>("GET", "/me/settings"),
-  saveSettings: (s: MeSettings) => call<MeSettings>("PUT", "/me/settings", s),
+  saveSettings: (s: Partial<MeSettings>) => call<MeSettings>("PUT", "/me/settings", s),
   streak: () => call<MeStreak>("GET", "/me/streak"),
 
   // daily
