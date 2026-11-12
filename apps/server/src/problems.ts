@@ -109,6 +109,8 @@ export async function problemView(
     limits: { timeMs: x.time_limits, memoryMb: x.memory_mb, outputMb: x.output_mb },
     status: x.solved_at ? "solved" : x.first_attempt_at || (x.submit_count ?? 0) > 0 ? "attempted" : "new",
     solvedAt: x.solved_at ? x.solved_at.toISOString() : null,
+    submits: x.submit_count ?? 0,
+    solvedAfterSolutions: x.solved_at !== null && x.solutions_unlocked_at !== null && x.solutions_unlocked_at < x.solved_at,
     solutionsUnlocked: unlocked,
     canUnlockSolutions: !unlocked && x.first_attempt_at !== null,
     pattern: showPattern && x.pattern_slug && x.pattern_name ? { slug: x.pattern_slug, name: x.pattern_name, trackOpen: x.track_open } : null,

@@ -8,6 +8,17 @@ import { Icon } from "./Icon";
 import { hasDiagram, PatternDiagram } from "./PatternDiagram";
 import { Link } from "../router";
 
+/**
+ * How the solve went, as the second half of "Solved. …": "On the first submit, no hints." Hints only
+ * exist on ladder problems, so a daily leaves them out.
+ */
+export function solveStats(p: Pick<ProblemView, "submits" | "track" | "solvedAfterSolutions">): string {
+  const parts = [p.submits <= 1 ? "On the first submit" : `In ${p.submits} submits`];
+  if (p.track) parts.push(p.track.hintsUsed === 0 ? "no hints" : p.track.hintsUsed === 1 ? "1 hint" : `${p.track.hintsUsed} hints`);
+  if (p.solvedAfterSolutions) parts.push("after opening the solutions");
+  return parts.join(", ") + ".";
+}
+
 export function SolvedReveal({ p, onSolutions }: { p: ProblemView; onSolutions?: () => void }) {
   const today = istDay(new Date().toISOString());
   const todaysDaily = p.dailyDays.includes(today);
@@ -46,7 +57,9 @@ export function SolvedReveal({ p, onSolutions }: { p: ProblemView; onSolutions?:
         {todaysDaily && (
           <p className="reveal-day"><span className="reveal-sq" aria-hidden />Today's square is filled. The streak holds.</p>
         )}
-        {!p.track && pattern && <p className="muted small">It was a {pattern.name.toLowerCase()} problem.</p>}
+        {/* The counts come with the refresh after the verdict (status turns "solved"); until then they're a step behind. */}
+        {/* An older server sends no counts: then the line is left out. */}
+        {p.status === "solved" && typeof p.submits === "number" && <p className="reveal-stats">{solveStats(p)}</p>}
         <div className="reveal-actions">
           {p.track && pattern ? (
             <Link to={`/tracks/${pattern.slug}`} className="btn btn-primary">Back to the ladder</Link>

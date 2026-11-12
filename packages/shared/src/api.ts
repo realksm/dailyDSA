@@ -81,6 +81,10 @@ export interface ProblemView {
   limits: { timeMs: TimeLimits; memoryMb: number; outputMb: number };
   status: SolveStatus;
   solvedAt: string | null;
+  /** Submits judged so far (IE excluded, so CE counts). Right after the first Accepted: the submits it took. */
+  submits: number;
+  /** Solved, but only after opening the solutions. */
+  solvedAfterSolutions: boolean;
   solutionsUnlocked: boolean;
   /** "Show solutions" button: after a real (non-CE) attempt, until unlocked. */
   canUnlockSolutions: boolean;

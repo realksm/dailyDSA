@@ -910,7 +910,7 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 /* ── the solve reveal (components/SolvedReveal.tsx) ── */
 .reveal {
   display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 20px; align-items: center;
-  margin-bottom: 16px; padding: 14px; border: 2px solid var(--edge); border-radius: var(--r);
+  margin-top: 14px; padding: 14px; border: 2px solid var(--edge); border-radius: var(--r);
   background: var(--surface); box-shadow: 3px 3px 0 var(--ink);
   animation: reveal-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -937,6 +937,7 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .reveal-rungs i[data-new] { background: var(--accent); animation: sq-pop 520ms 200ms cubic-bezier(0.3, 1.5, 0.5, 1) both; }
 .reveal-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .reveal-text h3 { font: 800 30px/1 var(--display); letter-spacing: -0.04em; color: var(--ok); }
+.reveal-stats { color: var(--muted); font-size: 14px; }
 .reveal-day { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .reveal-sq { width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px solid var(--c-ink); background: var(--accent); animation: sq-pop 520ms 450ms cubic-bezier(0.3, 1.5, 0.5, 1) both; }
 @keyframes sq-pop { from { transform: scale(0.2); opacity: 0; } }

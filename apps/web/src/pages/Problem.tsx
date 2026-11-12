@@ -1,6 +1,6 @@
 // The problem page: statement + samples (or the Solutions tab) on the left; editor, custom input and
 // results on the right.
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { JAVA_MAIN_CLASS_MESSAGE, LANG_LABEL, LANGS, javaHasMainClass, type Lang, type ProblemView, type SubmissionKind, type SubmissionView } from "@dailydsa/shared";
 import { api, ApiErr, errorMessage } from "../api";
 import { fmtDay, fmtStamp } from "../format";
@@ -140,6 +140,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   const [consoleH, setConsoleH] = useState(() => clampNum(Number(store.get("dsa.split.console")) || 280, 140, 640));
   const solveRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLElement>(null);
+  const consoleBodyRef = useRef<HTMLDivElement>(null);
 
   const openTab = (t: "input" | "result") => {
     if (consoleOpen && tab === t) setConsoleOpen(false);
@@ -276,6 +277,29 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
     [pending, coolingDown, code, lang, customInput, p.slug, p.title],
   );
 
+  /** The tallest the bottom panel can be: the editor keeps its 180 px minimum under the editor bar. */
+  const consoleMax = () => {
+    const right = rightRef.current;
+    const bar = right?.querySelector(".editor-bar");
+    return right ? right.getBoundingClientRect().height - (bar?.getBoundingClientRect().height ?? 0) - 180 : 640;
+  };
+
+  // A first Accepted adds the reveal under the result: grow the panel so both fit (this once; the saved
+  // size stays). Runs again when the refresh brings the pattern and its diagram.
+  useLayoutEffect(() => {
+    const body = consoleBodyRef.current;
+    const reveal = body?.querySelector(".reveal");
+    if (!justSolved || !body || !reveal) return;
+    // Measured from the reveal's own edge: scrollHeight also counts the card's 3D-flipped face.
+    const over = reveal.getBoundingClientRect().bottom + parseFloat(getComputedStyle(body).paddingBottom) - body.getBoundingClientRect().bottom;
+    // A target from the measured height, not h + over: this can run again before the new size is laid out.
+    const panel = body.closest(".console");
+    if (over > 0 && panel) {
+      const want = clampNum(panel.getBoundingClientRect().height + over, 140, consoleMax());
+      setConsoleH((h) => Math.max(h, want));
+    }
+  }, [justSolved, p, sub]);
+
   const busyLabel = sending ? "Sending…" : pending ? (sub?.status === "running" ? "Judging…" : "Queued…") : null;
 
   // Drag handles. Pointer capture keeps the drag going over Monaco; sizes are saved on release.
@@ -289,7 +313,8 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   const dragConsole = (e: ReactPointerEvent<HTMLDivElement>) => {
     const box = rightRef.current?.getBoundingClientRect();
     if (!box) return;
-    startDrag(e, (_x, y) => setConsoleH(clampNum(box.bottom - y, 140, box.height - 180)), () =>
+    const max = consoleMax();
+    startDrag(e, (_x, y) => setConsoleH(clampNum(box.bottom - y, 140, max)), () =>
       setConsoleH((v) => (store.set("dsa.split.console", String(Math.round(v))), v)),
       "y",
     );
@@ -309,7 +334,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
     if (!d) return;
     e.preventDefault();
     setConsoleH((v) => {
-      const n = clampNum(v + d, 140, 640);
+      const n = clampNum(v + d, 140, consoleMax());
       store.set("dsa.split.console", String(n));
       return n;
     });
@@ -429,7 +454,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
               })}
             </div>
           </div>
-          {consoleOpen && <div className="console-body">
+          {consoleOpen && <div className="console-body" ref={consoleBodyRef}>
             {error && <div style={{ marginBottom: 12 }}><Notice>{error}</Notice></div>}
             <div key={tab} className="tab-panel" style={{ height: tab === "input" ? "100%" : undefined }}>
             {tab === "input" ? (
@@ -447,13 +472,14 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
               </div>
             ) : sub ? (
               <>
-                {justSolved && <SolvedReveal p={p} {...(leftTab !== "solutions" ? { onSolutions: () => setLeftTab("solutions") } : {})} />}
+                {/* The result stays on top: the test squares are the proof, the reveal follows them. */}
                 <ResultView key={sub.id} sub={sub} sampleCount={p.samples.length} />
                 {sub.status === "done" && (
                   <p className="small" style={{ marginTop: 12 }}>
                     <Link to={`/submissions/${sub.id}`}>Open this {sub.kind === "run" ? "run" : "submission"}</Link>
                   </p>
                 )}
+                {justSolved && <SolvedReveal p={p} {...(leftTab !== "solutions" ? { onSolutions: () => setLeftTab("solutions") } : {})} />}
               </>
             ) : (
               <p className="muted small">Run or Submit to see results here.</p>

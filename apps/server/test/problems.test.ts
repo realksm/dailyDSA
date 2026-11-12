@@ -114,7 +114,7 @@ describe.skipIf(!dbUp)("GET /api/problems/:slug", () => {
         samples: [{ input: "3\n1 2 3\n", output: "6\n" }, { input: "1\n5\n", output: "5\n" }],
         anyValidAnswer: true,
         limits: { timeMs: { cpp: 500, java: 700, py: 900 }, memoryMb: 256, outputMb: 64 },
-        status: "new", solvedAt: null, solutionsUnlocked: false, canUnlockSolutions: false,
+        status: "new", solvedAt: null, submits: 0, solvedAfterSolutions: false, solutionsUnlocked: false, canUnlockSolutions: false,
         pattern: null, // hidden until solved or unlocked, even on the track's weekend
         track: null, dailyDays: [addDays(MON, 5)],
       });
@@ -128,6 +128,7 @@ describe.skipIf(!dbUp)("GET /api/problems/:slug", () => {
       await db.query("UPDATE user_problems SET solved_at = now() WHERE user_id = $1 AND problem_id = $2", [user.id, p.id]);
       expect((await agent.get(`/api/problems/${p.slug}`)).body).toMatchObject({
         status: "solved", solutionsUnlocked: true, canUnlockSolutions: false, pattern: { slug: "two-pointers", name: "Two pointers" },
+        submits: 1, solvedAfterSolutions: false,
       });
 
       // Retired problems stay open from the archive.
@@ -148,6 +149,9 @@ describe.skipIf(!dbUp)("GET /api/problems/:slug", () => {
       expect((await agent.get(`/api/problems/${p.slug}`)).body).toMatchObject({
         status: "attempted", solutionsUnlocked: true, canUnlockSolutions: false, pattern: { slug: "two-pointers" }, anyValidAnswer: false,
       });
+      // Solving after that counts as solved after the solutions.
+      await db.query("UPDATE user_problems SET solved_at = now() + interval '1 minute', submit_count = 2 WHERE user_id = $1 AND problem_id = $2", [user.id, p.id]);
+      expect((await agent.get(`/api/problems/${p.slug}`)).body).toMatchObject({ status: "solved", submits: 2, solvedAfterSolutions: true });
     }));
 
   it("opens a track problem on its ladder day and keeps it open after the week", () =>
