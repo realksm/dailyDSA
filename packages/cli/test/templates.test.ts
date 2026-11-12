@@ -114,6 +114,90 @@ for j in range(n):
     waiting.append(j)
 return to`,
   },
+  // string input after an int[]
+  "river-crossing": {
+    cpp: `const long long MOD = 1000000007;
+vector<long long> ways(n + 1, 0);
+ways[0] = 1;
+long long total = 0;
+for (int p = 0; p <= n; p++)
+    for (int d : strides) {
+        long long q = (long long)p + d;
+        if (q > n) total = (total + ways[p]) % MOD;
+        else if (s[q - 1] == 'o') ways[q] = (ways[q] + ways[p]) % MOD;
+    }
+return (int)total;`,
+    java: `final long MOD = 1000000007L;
+long[] ways = new long[n + 1];
+ways[0] = 1;
+long total = 0;
+for (int p = 0; p <= n; p++)
+    for (int d : strides) {
+        long q = (long) p + d;
+        if (q > n) total = (total + ways[p]) % MOD;
+        else if (s.charAt((int) q - 1) == 'o') ways[(int) q] = (ways[(int) q] + ways[p]) % MOD;
+    }
+return (int) total;`,
+    py: `MOD = 1000000007
+ways = [0] * (n + 1)
+ways[0] = 1
+total = 0
+for p in range(n + 1):
+    if ways[p]:
+        for d in strides:
+            q = p + d
+            if q > n:
+                total += ways[p]
+            elif s[q - 1] == "o":
+                ways[q] = (ways[q] + ways[p]) % MOD
+return total % MOD`,
+  },
+  // string[] input (grid rows)
+  "warehouse-route": {
+    cpp: `vector<int> dist(r * c, -1);
+vector<int> q;
+for (int i = 0; i < r * c; i++) if (grid[i / c][i % c] == 'S') { dist[i] = 0; q.push_back(i); }
+for (size_t h = 0; h < q.size(); h++) {
+    int y = q[h] / c, x = q[h] % c;
+    if (grid[y][x] == 'E') return dist[q[h]];
+    int ny[] = {y - 1, y + 1, y, y}, nx[] = {x, x, x - 1, x + 1};
+    for (int d = 0; d < 4; d++)
+        if (ny[d] >= 0 && ny[d] < r && nx[d] >= 0 && nx[d] < c && grid[ny[d]][nx[d]] != '#' && dist[ny[d] * c + nx[d]] < 0) {
+            dist[ny[d] * c + nx[d]] = dist[q[h]] + 1;
+            q.push_back(ny[d] * c + nx[d]);
+        }
+}
+return -1;`,
+    java: `int[] dist = new int[r * c], q = new int[r * c];
+Arrays.fill(dist, -1);
+int head = 0, tail = 0;
+for (int i = 0; i < r * c; i++) if (grid[i / c].charAt(i % c) == 'S') { dist[i] = 0; q[tail++] = i; }
+while (head < tail) {
+    int cur = q[head++], y = cur / c, x = cur % c;
+    if (grid[y].charAt(x) == 'E') return dist[cur];
+    int[] ny = {y - 1, y + 1, y, y}, nx = {x, x, x - 1, x + 1};
+    for (int d = 0; d < 4; d++)
+        if (ny[d] >= 0 && ny[d] < r && nx[d] >= 0 && nx[d] < c && grid[ny[d]].charAt(nx[d]) != '#' && dist[ny[d] * c + nx[d]] < 0) {
+            dist[ny[d] * c + nx[d]] = dist[cur] + 1;
+            q[tail++] = ny[d] * c + nx[d];
+        }
+}
+return -1;`,
+    py: `start = next((y, row.index("S")) for y, row in enumerate(grid) if "S" in row)
+seen = {start}
+layer, steps = [start], 0
+while layer:
+    nxt = []
+    for y, x in layer:
+        if grid[y][x] == "E":
+            return steps
+        for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+            if 0 <= ny < r and 0 <= nx < c and grid[ny][nx] != "#" and (ny, nx) not in seen:
+                seen.add((ny, nx))
+                nxt.append((ny, nx))
+    layer, steps = nxt, steps + 1
+return -1`,
+  },
 };
 
 const gj = new GoJudge();

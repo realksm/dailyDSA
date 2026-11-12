@@ -1,0 +1,13 @@
+title: Warehouse Route
+kind: daily
+pool: weekday
+pattern: bfs-dfs   # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: r, type: int }
+    - { name: c, type: int }
+    - { name: grid, type: "string[]", length: r }
+  returns: int

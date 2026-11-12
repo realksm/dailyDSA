@@ -1,0 +1,14 @@
+title: River Crossing
+kind: daily
+pool: weekday
+pattern: dp-1d   # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: m, type: int }
+    - { name: strides, type: "int[]", length: m }
+    - { name: s, type: string }
+  returns: int

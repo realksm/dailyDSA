@@ -1,0 +1,14 @@
+title: Leaderboard Top
+kind: daily
+pool: weekday
+pattern: heaps-top-k   # hidden until solved
+memory_mb: 256
+samples: 2
+tests: 14
+input:
+  vars:
+    - { name: n, type: int }
+    - { name: k, type: int }
+    - { name: score, type: "int[]", length: n }
+  returns: "long[]"
+  join: spaces
