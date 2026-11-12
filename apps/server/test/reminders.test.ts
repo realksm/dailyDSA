@@ -6,7 +6,7 @@ import { createPool } from "@dailydsa/db";
 import { loadConfig } from "../src/config.js";
 import { addDays } from "../src/ist.js";
 import { memoryMailer } from "../src/mailer.js";
-import { dueReminders, msToNextReminder, reminderMail, sendReminders, streakBefore } from "../src/reminders.js";
+import { currentStreak, dueReminders, msToNextReminder, reminderMail, sendReminders, streakBefore } from "../src/reminders.js";
 import { createUser } from "../src/users.js";
 
 describe("reminder timing", () => {
@@ -81,6 +81,10 @@ describe.skipIf(!dbUp)("streak reminders (needs db + migrations)", () => {
 
       expect(await streakBefore(db, two.id, TODAY)).toBe(2);
       expect(await streakBefore(db, late.id, TODAY)).toBe(0);
+      // The top-bar chip: today counts once it's solved; a late solve never does.
+      expect(await currentStreak(db, two.id, TODAY)).toEqual({ days: 2, todayDone: false });
+      expect(await currentStreak(db, done.id, TODAY)).toEqual({ days: 2, todayDone: true });
+      expect(await currentStreak(db, late.id, TODAY)).toEqual({ days: 0, todayDone: false });
       const due = (await dueReminders(db, TODAY)).filter((r) => r.email.endsWith(`${stamp}@remind-test.local`));
       expect(due.map((r) => [r.name, r.streak])).toEqual([["two", 2]]);
       expect(due[0]!.problem.slug).toMatch(/^zz-remind-test-/);

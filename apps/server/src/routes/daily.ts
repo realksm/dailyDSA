@@ -2,11 +2,12 @@
 import { Router } from "express";
 import type pg from "pg";
 import { z } from "zod";
-import type { DailyArchive, DailyToday } from "@dailydsa/shared";
+import type { DailyArchive, DailyToday, MeStreak } from "@dailydsa/shared";
 import { me, requireUser } from "../auth.js";
 import { catchUpDaily, dailyEntries, dailyPulse, ensureDailyPick } from "../daily.js";
 import { HttpError, notFound, parse } from "../errors.js";
 import { isDay, istDate, nextIstMidnight } from "../ist.js";
+import { currentStreak } from "../reminders.js";
 
 const day = z.string().refine(isDay, "Use a YYYY-MM-DD date.");
 const ArchiveQuery = z.object({
@@ -51,6 +52,14 @@ export function dailyRoutes({ pool, now }: { pool: pg.Pool; now: () => Date }): 
     const [entry] = await dailyEntries(pool, { userId: me(req).id, today: istDate(now()), day: d });
     if (!entry) throw notFound("No daily problem on that day.");
     res.json(entry);
+  });
+
+  /** The streak chip in the top bar: small, so every page can ask after an Accepted. */
+  r.get("/me/streak", requireUser, async (req, res) => {
+    const t = now();
+    const s = await currentStreak(pool, me(req).id, istDate(t));
+    const body: MeStreak = { ...s, nextRolloverAt: nextIstMidnight(t).toISOString() };
+    res.json(body);
   });
 
   return r;

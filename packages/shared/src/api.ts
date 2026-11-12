@@ -42,6 +42,16 @@ export interface MeSettings {
   remindStreak: boolean;
 }
 
+/** GET /api/me/streak: the streak chip in the top bar. Same rule as Today's streak card. */
+export interface MeStreak {
+  /** Days in a row whose daily was solved by the end of that IST day, ending today (or yesterday while today's is open). */
+  days: number;
+  /** Today's daily is solved (today's square is filled). */
+  todayDone: boolean;
+  /** ISO timestamp of the next IST midnight, when the streak may change without a solve. */
+  nextRolloverAt: string;
+}
+
 /** GET /api/daily/today */
 export interface DailyToday extends DailyEntry {
   /** ISO timestamp of the next IST midnight, for a countdown. */

@@ -2,6 +2,7 @@
 // time) but hasn't solved today's gets one short reminder with a link to the problem. Opt-out per
 // member (users.remind_streak, Account page); at most one per member and day (streak_reminders).
 import type pg from "pg";
+import type { DailyEntry } from "@dailydsa/shared";
 import type { Config } from "./config.js";
 import { dailyEntries, ensureDailyPick } from "./daily.js";
 import { addDays, istDate, nextIstMidnight } from "./ist.js";
@@ -12,18 +13,34 @@ type Db = pg.Pool | pg.PoolClient;
 /** Minutes after IST midnight the reminder goes out (21:00 IST). */
 export const REMIND_AT_MINUTES = 21 * 60;
 
-/** Days in a row solved on time, counting back from yesterday (today is still open). */
-export async function streakBefore(db: Db, userId: number, today: string): Promise<number> {
-  const days = await dailyEntries(db, { userId, today: addDays(today, -1), limit: 400 });
+/** Longest run of days solved on time in `days` (newest first), starting at `from` and going back. */
+function onTimeRun(days: DailyEntry[], from: string): number {
   let n = 0;
-  let want = addDays(today, -1);
+  let want = from;
   for (const d of days) {
+    if (d.day > want) continue;
     if (d.day !== want) break;
     if (!d.solvedAt || istDate(new Date(d.solvedAt)) > d.day) break;
     n++;
     want = addDays(want, -1);
   }
   return n;
+}
+
+/** Days in a row solved on time, counting back from yesterday (today is still open). */
+export async function streakBefore(db: Db, userId: number, today: string): Promise<number> {
+  const days = await dailyEntries(db, { userId, today: addDays(today, -1), limit: 400 });
+  return onTimeRun(days, addDays(today, -1));
+}
+
+/**
+ * The streak right now (top-bar chip): ends today once today's daily is solved on time, else
+ * yesterday. Same rule as the web app's dailyStreak() on Today.
+ */
+export async function currentStreak(db: Db, userId: number, today: string): Promise<{ days: number; todayDone: boolean }> {
+  const days = await dailyEntries(db, { userId, today, limit: 401 });
+  const todayDone = onTimeRun(days, today) > 0;
+  return { days: onTimeRun(days, todayDone ? today : addDays(today, -1)), todayDone };
 }
 
 export interface Reminder {

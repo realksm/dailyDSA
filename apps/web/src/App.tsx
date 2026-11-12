@@ -4,6 +4,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BrandMark, Spinner } from "./components/ui";
 import { Icon } from "./components/Icon";
 import { readTheme, saveTheme, type ThemePref } from "./theme";
+import { StreakChip, StreakProvider } from "./streak";
 import { Link, match, NavLink, useRouter } from "./router";
 import { Account } from "./pages/Account";
 import { Admin } from "./pages/admin/Admin";
@@ -64,12 +65,12 @@ export function App() {
   }
 
   return (
-    <>
+    <StreakProvider>
       <TopBar />
       <ErrorBoundary resetKey={path}>
         <Routes />
       </ErrorBoundary>
-    </>
+    </StreakProvider>
   );
 }
 
@@ -122,6 +123,7 @@ function TopBar() {
       </nav>
       <div className="spacer" />
       <div className="who">
+        <StreakChip />
         <ThemeButton />
         <Link to="/account" title={me.email}>{me.name}</Link>
         <button

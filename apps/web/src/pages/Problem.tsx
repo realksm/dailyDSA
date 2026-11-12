@@ -14,6 +14,7 @@ import { CopyButton, LoadError, Notice, Skeleton, StatusBadge, useLoad, useTitle
 import { Link } from "../router";
 import { useConfirm } from "../components/Confirm";
 import { Select } from "../components/Select";
+import { useStreak } from "../streak";
 
 /** Matches the server's one Run/Submit per 5 s. */
 const COOLDOWN_MS = 5000;
@@ -91,6 +92,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [, tick] = useState(0);
   const [justSolved, setJustSolved] = useState(false);
+  const { refresh: refreshStreak } = useStreak();
   // Layout: the statement/editor split and the bottom panel. Remembered per browser.
   const [leftPct, setLeftPct] = useState(() => clampNum(Number(store.get("dsa.split.left")) || 42, 28, 62));
   const [consoleOpen, setConsoleOpen] = useState(false);
@@ -150,6 +152,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
           if (v.kind === "submit") {
             if (v.verdict === "AC" && p.status !== "solved") setJustSolved(true);
             refresh(); // status, solved time, pattern reveal
+            if (v.verdict === "AC") refreshStreak(); // the top-bar chip
           }
           return;
         }
@@ -164,7 +167,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
       stop = true;
       clearTimeout(timer);
     };
-  }, [subId, subDone, p.status, refresh]);
+  }, [subId, subDone, p.status, refresh, refreshStreak]);
 
   const pending = sending !== null || (sub !== null && sub.status !== "done");
   const coolingDown = cooldownUntil > Date.now();

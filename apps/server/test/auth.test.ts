@@ -130,6 +130,11 @@ describe.skipIf(!dbUp)("auth (needs db + migrations)", () => {
     expect((await agent.put("/api/me/settings").send({ remindStreak: false })).body).toEqual({ remindStreak: false });
     expect((await agent.get("/api/me/settings")).body).toEqual({ remindStreak: false });
     expect((await agent.put("/api/me/settings").send({ remindStreak: "no" })).status).toBe(400);
+    // The streak chip: nothing solved yet.
+    expect((await request(app).get("/api/me/streak")).status).toBe(401);
+    const s = await agent.get("/api/me/streak");
+    expect(s.body).toMatchObject({ days: 0, todayDone: false });
+    expect(Date.parse(s.body.nextRolloverAt)).toBeGreaterThan(Date.now());
   });
 
   it("changes the password and logs out other devices only", async () => {

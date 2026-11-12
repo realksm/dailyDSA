@@ -8,7 +8,7 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 
 - [x] **1. Output diff on Wrong Answer.** `components/Result.tsx` TestRow: compare "Your output" with "Expected" line by line, mark the first differing line/token, add a summary ("differs at line 37, token 2"). Works for long outputs (scroll to the first diff). Checker problems (`exact-gap`): no diff, since any valid answer passes.
 - [x] **2. Action button on this week's track card.** `pages/Tracks.tsx`: primary button "Continue: Ladder n · Title" (or "Read the lesson" before rung 1, "Ladder done" when 5/5). Mark the next open rung in the mini ladder so it differs from the other unsolved rungs.
-- [ ] **3. Streak chip in the top bar.** `App.tsx`: lime square + number on every page (problem page included), links to Today. `API` if the streak isn't on `/api/me` yet; updates after an Accepted without a reload.
+- [x] **3. Streak chip in the top bar.** `App.tsx`: lime square + number on every page (problem page included), links to Today. `API` if the streak isn't on `/api/me` yet; updates after an Accepted without a reload.
 - [ ] **4. Cooldown you can see.** `pages/Problem.tsx:315`: replace "Wait a few seconds…" with the seconds left inside Run/Submit ("Submit · 4s") or a draining fill; the buttons shouldn't look broken.
 
 ## Phase 2: problem page
