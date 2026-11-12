@@ -123,6 +123,32 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
     setCode((c) => ({ ...c, [lang]: v }));
     store.set(draftKey(p.slug, lang), v === p.templates[lang] ? null : v);
   };
+  // "Use as custom input" on a sample: fill the box, open its tab, focus it (once the tab has rendered).
+  const customRef = useRef<HTMLTextAreaElement>(null);
+  const focusCustom = useRef(false);
+  const takeSample = async (input: string) => {
+    const ownText = customInput.trim() !== "" && customInput !== input && !p.samples.some((s) => s.input === customInput);
+    if (ownText) {
+      const ok = await ask({
+        title: "Replace your custom input?",
+        body: "The custom input box has text of your own. It's replaced with this sample.",
+        confirmLabel: "Replace",
+      });
+      if (!ok) return;
+    }
+    setCustomInput(input);
+    setTab("input");
+    setConsoleOpen(true);
+    focusCustom.current = true;
+  };
+  useEffect(() => {
+    if (!focusCustom.current || !consoleOpen || tab !== "input") return;
+    focusCustom.current = false;
+    customRef.current?.focus();
+    customRef.current?.setSelectionRange(0, 0);
+    customRef.current?.scrollTo({ top: 0 });
+  });
+
   const resetCode = async () => {
     const ok = await ask({
       title: "Reset to the template?",
@@ -264,7 +290,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
         </div>
         <div className="solve-left-inner">
           <p className="phone-note"><Icon name="laptop" /><span>Read it here, solve it on a laptop: the editor needs a bigger screen.</span></p>
-          {leftTab === "statement" ? <Statement p={p} onChange={replace} justSolved={justSolved} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
+          {leftTab === "statement" ? <Statement p={p} onChange={replace} justSolved={justSolved} onUseSample={(s) => void takeSample(s)} /> : <SolutionsPanel p={p} lang={lang} onUnlocked={replace} />}
         </div>
       </section>
 
@@ -352,6 +378,7 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
               <div className="stack-sm" style={{ height: "100%" }}>
                 <label className="sr-only" htmlFor="custom">Custom input</label>
                 <textarea
+                  ref={customRef}
                   id="custom"
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
@@ -380,7 +407,9 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
   );
 }
 
-function Statement({ p, onChange, justSolved }: { p: ProblemView; onChange: (v: ProblemView) => void; justSolved?: boolean }) {
+function Statement({ p, onChange, justSolved, onUseSample }: {
+  p: ProblemView; onChange: (v: ProblemView) => void; justSolved?: boolean; onUseSample?: (input: string) => void;
+}) {
   const lim = p.limits;
   const sameTime = LANGS.every((l) => lim.timeMs[l] === lim.timeMs[LANGS[0]]);
   const jumpToHints = () => {
@@ -429,7 +458,18 @@ function Statement({ p, onChange, justSolved }: { p: ProblemView; onChange: (v: 
           {p.samples.map((s, i) => (
             <div className="sample" key={i}>
               <div>
-                <h4><span>Input {p.samples.length > 1 ? i + 1 : ""}</span><CopyButton text={s.input} /></h4>
+                <h4>
+                  <span>Input {p.samples.length > 1 ? i + 1 : ""}</span>
+                  <span className="sample-actions">
+                    {onUseSample && (
+                      <button type="button" className="copy-btn" onClick={() => onUseSample(s.input)} title="Put this input in the Custom input box to edit and Run it"
+                        aria-label={`Use input${p.samples.length > 1 ? ` ${i + 1}` : ""} as custom input`}>
+                        Use as input
+                      </button>
+                    )}
+                    <CopyButton text={s.input} />
+                  </span>
+                </h4>
                 <pre className="io">{s.input}</pre>
               </div>
               <div>

@@ -13,7 +13,7 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 
 ## Phase 2: problem page
 
-- [ ] **5. "Use as custom input" on each sample.** Fills the custom input and opens that tab.
+- [x] **5. "Use as custom input" on each sample.** Fills the custom input and opens that tab.
 - [ ] **6. "Draft saved" note** next to the language picker when the local draft differs from the template / last sent code.
 - [ ] **7. Word-wrap toggle** in the editor toolbar (remembered in localStorage); read-only views (lessons, solutions, submissions) wrap by default.
 - [ ] **8. Reveal doesn't hide the result.** On a first Accepted, keep the test squares visible (grow the panel or put the squares above the reveal). Swap the duplicate "It was a … problem" line for stats: "Solved in 3 submits, no hints."
