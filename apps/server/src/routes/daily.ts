@@ -2,7 +2,7 @@
 import { Router } from "express";
 import type pg from "pg";
 import { z } from "zod";
-import type { DailyArchive, DailyToday, MeStreak } from "@dailydsa/shared";
+import { statementHook, type DailyArchive, type DailyToday, type MeStreak } from "@dailydsa/shared";
 import { me, requireUser } from "../auth.js";
 import { catchUpDaily, dailyEntries, dailyPulse, ensureDailyPick } from "../daily.js";
 import { HttpError, notFound, parse } from "../errors.js";
@@ -31,7 +31,18 @@ export function dailyRoutes({ pool, now }: { pool: pg.Pool; now: () => Date }): 
     if (!pick) throw noDaily();
     const [entry] = await dailyEntries(pool, { userId: me(req).id, today, day: today });
     if (!entry) throw noDaily();
-    const body: DailyToday = { ...entry, nextRolloverAt: nextIstMidnight(t).toISOString(), pulse: await dailyPulse(pool, pick.problemId) };
+    const extra = await pool.query<{ statement_md: string; joined: Date }>(
+      "SELECT p.statement_md, u.created_at AS joined FROM problems p, users u WHERE p.id = $1 AND u.id = $2",
+      [pick.problemId, me(req).id],
+    );
+    const x = extra.rows[0]!;
+    const body: DailyToday = {
+      ...entry,
+      nextRolloverAt: nextIstMidnight(t).toISOString(),
+      pulse: await dailyPulse(pool, pick.problemId, me(req).id),
+      hook: statementHook(x.statement_md),
+      joinedOn: istDate(x.joined),
+    };
     res.json(body);
   });
 

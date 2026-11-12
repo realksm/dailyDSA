@@ -962,6 +962,15 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .pulse-bar { width: 180px; height: 10px; border-radius: 5px; background: var(--sunk); border: 1px solid var(--line-strong); overflow: hidden; }
 .pulse-bar i { display: block; height: 100%; background: var(--accent); }
 .pulse b { font-weight: 600; }
+.today-hook { max-width: 62ch; margin-top: -6px; }
+.today-hook .md { font-size: 16px; line-height: 1.55; color: var(--muted); }
+.d30[data-review] { box-shadow: inset 0 0 0 3px var(--surface); }
+.d30[data-review][data-today] { box-shadow: inset 0 0 0 3px var(--surface), 0 0 0 2px var(--accent-soft), 0 0 0 4px var(--ink); }
+.d30-key { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.d30-key li { display: inline-flex; align-items: center; gap: 5px; }
+.d30-key .d30 { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.d30-key .d30[data-today] { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--ink); }
+.d30-key .d30[data-review] { box-shadow: inset 0 0 0 2.5px var(--surface); }
 .wg-icon { display: inline-flex; align-items: center; gap: 5px; }
 .wg-icon .icon { width: 15px; height: 15px; }
 

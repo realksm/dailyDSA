@@ -34,6 +34,10 @@ export function fmtStamp(iso: string): string {
 
 export const fmtNum = (n: number) => numFmt.format(n);
 
+const timeFmt = new Intl.DateTimeFormat("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: IST });
+/** "14:32" (IST). */
+export const fmtTime = (iso: string) => timeFmt.format(new Date(iso));
+
 export function fmtMs(ms: number): string {
   return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`;
 }

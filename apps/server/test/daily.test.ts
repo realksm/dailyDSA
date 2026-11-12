@@ -205,7 +205,8 @@ describe.skipIf(!dbUp)("daily pick (needs db + migrations)", () => {
 
       const a = await problem(db);
       const today = await agent.get("/api/daily/today");
-      expect(today.body).toMatchObject({ day: MON, status: "new", nextRolloverAt: "2030-01-07T18:30:00.000Z" });
+      expect(today.body).toMatchObject({ day: MON, status: "new", nextRolloverAt: "2030-01-07T18:30:00.000Z", hook: null, joinedOn: istDate(new Date()) });
+      expect(today.body.pulse.solvers).toEqual([]);
 
       for (let i = 1; i <= 3; i++) {
         clock = new Date(clock.getTime() + 86_400_000);
@@ -242,6 +243,9 @@ describe.skipIf(!dbUp)("daily pick (needs db + migrations)", () => {
       const gone = await createUser(db, { email: `pc${stamp}@daily-test.local`, name: "C", password: "whatever123", role: "solver" });
       await db.query("UPDATE users SET disabled = true WHERE id = $1", [gone.id]);
       await db.query("INSERT INTO user_problems (user_id, problem_id, solved_at) VALUES ($1, $3, now()), ($2, $3, now())", [solver.id, gone.id, p]);
-      expect(await dailyPulse(db, p)).toEqual({ solved: before.solved + 1, members: before.members + 2 });
+      const after = await dailyPulse(db, p, solver.id);
+      expect(after).toMatchObject({ solved: before.solved + 1, members: before.members + 2 });
+      expect(after.solvers.at(-1)).toMatchObject({ name: "A", you: true });
+      expect(after.solvers.some((s) => s.name === "C")).toBe(false); // disabled members don't count
     }));
 });

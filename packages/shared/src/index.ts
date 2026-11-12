@@ -4,3 +4,4 @@ export * from "./problem.js";
 export * from "./template.js";
 export * from "./api.js";
 export * from "./lesson.js";
+export * from "./statement.js";

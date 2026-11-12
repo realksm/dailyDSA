@@ -21,12 +21,12 @@ Work top to bottom, one step at a time. Tick the box and add a line to PROGRESS.
 
 ## Phase 3: Today
 
-- [ ] **10. One badge for a repeat.** "New" + "Review · last shown Mon" → "Back for review (first seen Mon)".
-- [ ] **11. 30-day grid starts at join** (or shows a "joined" marker) and gets the solved / missed / review / today legend like the login panel.
-- [ ] **12. No duplicate ladder link.** Today's ladder cell is the link; drop the "Ladder 4: …" button or make the cell quieter.
-- [ ] **13. Drop "Recent days"**; the week grid covers it. Keep a "Full archive →" link.
-- [ ] **14. One-line hook on the problem card** (first sentence of the statement). `API` (`DailyToday` field).
-- [ ] **15. Group pulse names on hover**: who solved, at what time. Text only, no initials or avatars. `API` (names in `pulse`).
+- [x] **10. One badge for a repeat.** "New" + "Review · last shown Mon" → "Back for review (first seen Mon)".
+- [x] **11. 30-day grid starts at join** (or shows a "joined" marker) and gets the solved / missed / review / today legend like the login panel.
+- [x] **12. No duplicate ladder link.** Today's ladder cell is the link; drop the "Ladder 4: …" button or make the cell quieter.
+- [x] **13. Drop "Recent days"**; the week grid covers it. Keep a "Full archive →" link.
+- [x] **14. One-line hook on the problem card** (first sentence of the statement). `API` (`DailyToday` field).
+- [x] **15. Group pulse names on hover**: who solved, at what time. Text only, no initials or avatars. `API` (names in `pulse`).
 
 ## Phase 4: Tracks and lessons
 

@@ -1,7 +1,7 @@
 // The daily problem (PLAN §1): one stored pick per IST date, made lazily on the first request
 // of the day and by a timer at IST midnight, never recomputed.
 import type pg from "pg";
-import type { DailyEntry } from "@dailydsa/shared";
+import type { DailyEntry, DailyToday } from "@dailydsa/shared";
 import { isWeekend, istDate, nextIstMidnight, weekStart } from "./ist.js";
 
 type Db = pg.Pool | pg.PoolClient;
@@ -159,19 +159,30 @@ export async function dailyEntries(
 }
 
 /**
- * The group's pulse for a daily problem: active (not disabled) members, and how many of them have
- * solved it (the same "solved" each of them sees on their own Today card). Counts only, no names.
+ * The group's pulse for a daily problem: active (not disabled) members, how many of them have
+ * solved it (the same "solved" each of them sees on their own Today card) and who, earliest first.
+ * `viewerId` marks the caller's own entry. The group is invite-only, so names are shown to members.
  */
-export async function dailyPulse(db: Db, problemId: number): Promise<{ solved: number; members: number }> {
-  const r = await db.query<{ solved: number; members: number }>(
-    `SELECT count(up.solved_at)::int AS solved, count(*)::int AS members
+export async function dailyPulse(db: Db, problemId: number, viewerId?: number): Promise<DailyPulse> {
+  const r = await db.query<{ members: number; solvers: { name: string; solvedAt: string; id: number }[] | null }>(
+    `SELECT count(*)::int AS members,
+            json_agg(json_build_object('id', u.id, 'name', u.name, 'solvedAt', up.solved_at) ORDER BY up.solved_at, u.id)
+              FILTER (WHERE up.solved_at IS NOT NULL) AS solvers
        FROM users u
        LEFT JOIN user_problems up ON up.user_id = u.id AND up.problem_id = $1
       WHERE NOT u.disabled`,
     [problemId],
   );
-  return r.rows[0]!;
+  const row = r.rows[0]!;
+  const solvers = (row.solvers ?? []).map((s) => ({
+    name: s.name,
+    solvedAt: new Date(s.solvedAt).toISOString(),
+    you: s.id === viewerId,
+  }));
+  return { solved: solvers.length, members: row.members, solvers };
 }
+
+export type DailyPulse = Required<DailyToday["pulse"]>;
 
 /**
  * Catches up (fills missed days, then today) now and again just after every IST midnight, so the

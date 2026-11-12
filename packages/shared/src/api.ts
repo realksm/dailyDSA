@@ -56,8 +56,15 @@ export interface MeStreak {
 export interface DailyToday extends DailyEntry {
   /** ISO timestamp of the next IST midnight, for a countdown. */
   nextRolloverAt: string;
-  /** The group today: how many active members have solved today's problem, out of how many. */
-  pulse: { solved: number; members: number };
+  /**
+   * The group today: how many active members have solved today's problem, out of how many, and
+   * who (earliest first; `you` = the caller). `solvers` is missing from servers before 2026-11-12.
+   */
+  pulse: { solved: number; members: number; solvers?: { name: string; solvedAt: string; you: boolean }[] };
+  /** The statement's first sentence (Markdown, may hold $maths$), for a one-line hook. */
+  hook: string | null;
+  /** IST day the caller's account was made: the 30-day grid starts there. */
+  joinedOn: string;
 }
 
 /** GET /api/daily?before=&limit= — newest first; pass `nextBefore` as `before` for the next page. */
