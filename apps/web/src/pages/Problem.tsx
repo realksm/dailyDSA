@@ -80,21 +80,24 @@ export function ProblemPage({ slug }: { slug: string }) {
   return <Solve p={view.data} refresh={view.reload} replace={(v) => view.setData(() => v)} />;
 }
 
-/** Next to the language picker: says the code on screen is a draft kept in this browser, not yet sent. */
+/**
+ * Next to the language picker: what the code on screen is, for that language. Always says something,
+ * so switching to a language with no edits doesn't look like saving stopped.
+ */
 function DraftNote({ dirty, stored, everSent }: { dirty: boolean; stored: boolean; everSent: boolean }) {
   const away = everSent ? "your last Run or Submit" : "the template";
+  const [cls, text, title] = dirty
+    ? stored
+      ? ["draft-saved", "Draft saved", `Kept in this browser only and differs from ${away}. Run or Submit to keep it with your account.`]
+      : ["draft-unsaved", "Draft not saved", "This browser won't store it (site data is blocked or full). Run or Submit to keep it."]
+    : everSent
+      ? ["draft-clean", "Same as your last Run/Submit", "Nothing new to save: this is the code you last sent in this language."]
+      : ["draft-clean", "Starting template", "No edits yet. Edits are saved in this browser as you type."];
   return (
     <span className="draft-note" role="status">
-      {dirty && stored && (
-        <span className="draft-saved" title={`Kept in this browser only and differs from ${away}. Run or Submit to keep it with your account.`}>
-          <Icon name="check" />Draft saved
-        </span>
-      )}
-      {dirty && !stored && (
-        <span className="draft-unsaved" title="This browser won't store it (site data is blocked or full). Run or Submit to keep it.">
-          Draft not saved
-        </span>
-      )}
+      <span key={text} className={cls} title={title}>
+        {cls === "draft-saved" && <Icon name="check" />}{text}
+      </span>
     </span>
   );
 }
@@ -340,7 +343,12 @@ function Solve({ p, refresh, replace }: { p: ProblemView; refresh: () => void; r
           onKeyDown={nudgeLeft}
         />
         <div className="editor-bar">
-          <Select id="lang" aria-label="Language" value={lang} onChange={(v) => setLang(v as Lang)} options={LANGS.map((l) => ({ value: l, label: LANG_LABEL[l] }))} />
+          <Select id="lang" aria-label="Language" value={lang} onChange={(v) => setLang(v as Lang)} options={LANGS.map((l) => ({
+              value: l,
+              // Drafts are per language: flag the other languages that hold one (the note covers this one).
+              label: l !== lang && code[l] !== base(l) ? <>{LANG_LABEL[l]}<span className="sel-draft"> · draft</span></> : LANG_LABEL[l],
+            }))}
+          />
           <DraftNote dirty={code[lang] !== base(lang)} stored={draftStored} everSent={sent[lang] !== undefined} />
           <button className="btn btn-ghost btn-sm editor-reset" onClick={() => void resetCode()} disabled={code[lang] === p.templates[lang]}>Reset to template</button>
         </div>

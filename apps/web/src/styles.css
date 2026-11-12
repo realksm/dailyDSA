@@ -484,6 +484,7 @@ a.wg-cell:hover { border-color: var(--line-strong); color: var(--text); }
 .draft-note > span { display: inline-flex; align-items: center; gap: 4px; animation: fade 180ms ease-out; }
 .draft-note .icon { width: 13px; height: 13px; color: var(--ok); }
 .draft-unsaved { color: var(--warn); }
+.sel-draft { color: var(--muted); font-weight: 400; font-size: 12px; }
 .editor-bar .sel { min-height: 30px; padding-top: 4px; padding-bottom: 4px; font-size: 13px; min-width: 104px; }
 .editor-host { min-height: 0; position: relative; background: var(--surface); }
 .console { position: relative; border-top: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
