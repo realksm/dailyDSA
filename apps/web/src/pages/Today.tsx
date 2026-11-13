@@ -193,11 +193,28 @@ function Stats({ days, today, joinedOn }: { days: DailyEntry[]; today: string; j
   const cells = Array.from({ length: 30 }, (_, i) => addDays(from, i)).filter((d) => d >= start);
   const shown = cells.filter((d) => byDay.has(d));
   const solved = shown.filter((d) => byDay.get(d)!.status === "solved").length;
+  const goal = MILESTONES.find((m) => m > streak);
+  // The key lists only the looks that are on the grid right now (a new member's grid has two or three).
+  const looks = new Set<string>();
+  for (const day of cells) {
+    const d = byDay.get(day);
+    if (!d) continue;
+    looks.add(cellState(d, day, today));
+    if (!!d.review && (!joinedOn || d.review.lastShownOn >= joinedOn)) looks.add("review");
+  }
+  const key = [
+    { k: "solved", label: "Solved", el: <i className="d30" data-s="solved" /> },
+    { k: "late", label: "Late", el: <i className="d30" data-s="late" /> },
+    { k: "attempted", label: "Tried", el: <i className="d30" data-s="attempted" /> },
+    { k: "missed", label: "Missed", el: <i className="d30" data-s="missed" /> },
+    { k: "review", label: "Review", el: <i className="d30" data-s="solved" data-review="" /> },
+  ].filter((x) => looks.has(x.k));
   return (
     <>
       <div className="stat">
         <div className="k">Streak</div>
         <div className="v">{streak}<small>{streak === 1 ? "day" : "days"}</small></div>
+        {goal && <div className="small streak-goal">Next milestone: <b className="num">{goal}</b> days · <span className="num">{goal - streak}</span> to go</div>}
       </div>
       <div className="stack-sm">
         <div className="row between">
@@ -208,9 +225,9 @@ function Stats({ days, today, joinedOn }: { days: DailyEntry[]; today: string; j
           {cells.map((day) => {
             const d = byDay.get(day);
             if (!d) return <span key={day} className="d30" data-s="none" title={`${fmtDay(day)} · no problem`} />;
-            const s = d.status === "solved" ? (d.solvedAt && istDay(d.solvedAt) > day ? "late" : "solved") : day < today ? (d.status === "attempted" ? "attempted" : "missed") : d.status;
+            const s = cellState(d, day, today);
             const review = !!d.review && (!joinedOn || d.review.lastShownOn >= joinedOn);
-            const what = { solved: "solved", late: "solved later", attempted: "attempted", missed: "missed", new: "open" }[s] + (review ? ", review" : "");
+            const what = { solved: "solved", late: "solved later", attempted: "tried", missed: "missed", new: "open" }[s] + (review ? ", review" : "");
             return (
               <Link
                 key={day}
@@ -225,20 +242,27 @@ function Stats({ days, today, joinedOn }: { days: DailyEntry[]; today: string; j
             );
           })}
         </div>
-        <ul className="d30-key" aria-hidden>
-          <li><i className="d30" data-s="solved" />Solved</li>
-          <li><i className="d30" data-s="late" />Late</li>
-          <li><i className="d30" data-s="missed" />Missed</li>
-          <li><i className="d30" data-s="solved" data-review="" />Review</li>
-          <li><i className="d30" data-s="new" data-today="" />Today</li>
-        </ul>
+        {key.length > 1 && (
+          <ul className="d30-key" aria-hidden>
+            {key.map((x) => <li key={x.k}>{x.el}{x.label}</li>)}
+          </ul>
+        )}
       </div>
-      <div className="stack-sm" style={{ gap: 6 }}>
+      <div className="stack-sm today-side-foot" style={{ gap: 6 }}>
         <p className="muted small">Solve by midnight IST to keep the streak.</p>
         <Link to="/archive" className="small">Full archive →</Link>
       </div>
     </>
   );
+}
+
+const MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
+
+/** How a day square looks: solved on the day, solved later, tried, missed, or (today) as it stands. */
+function cellState(d: DailyEntry, day: string, today: string): "solved" | "late" | "attempted" | "missed" | "new" {
+  if (d.status === "solved") return d.solvedAt && istDay(d.solvedAt) > day ? "late" : "solved";
+  if (day < today) return d.status === "attempted" ? "attempted" : "missed";
+  return d.status;
 }
 
 /**
@@ -354,6 +378,7 @@ function WeekBand({ track, today, monday, daily, weekendDays }: {
   const unread = lessonUnread(track);
   const weekend = dowOf(today) >= 5;
   const ladderDone = track.ladder.length > 0 && track.solved >= track.ladder.length;
+  const unsolved = track.ladder.filter((s) => s.open && s.problem && s.status !== "solved").map((s) => s.position);
   // On a weekend the server says whether today's problem really is of this pattern (a pin may not be).
   const weekendNote = !weekend ? "Saturday's and Sunday's dailies use it" : daily.weekTrack === false ? "Today's is review: another pattern" : "Today's daily uses it";
   const steps: { title: ReactNode; sub: string; state: "todo" | "doing" | "done" | "none"; to?: string }[] = [
@@ -365,13 +390,14 @@ function WeekBand({ track, today, monday, daily, weekendDays }: {
     },
     {
       title: <>Ladder <span className="num">{track.solved}/{track.ladder.length}</span></>,
-      sub: "One rung opens each weekday",
+      sub: ladderDone ? "All solved" : unsolved.length ? `Not solved yet: ${unsolved.join(", ")}` : "One rung opens each weekday",
       state: ladderDone ? "done" : track.solved > 0 ? "doing" : "todo",
     },
     // Done once Sunday's daily (and Saturday's, if there was one) is solved.
     { title: "Weekend", sub: weekendNote, state: weekendDays[1]?.status === "solved" && (!weekendDays[0] || weekendDays[0].status === "solved") ? "done" : "todo" },
   ];
-  const nextStep = steps.findIndex((s) => s.state === "todo" || s.state === "doing");
+  // The ringed step is the one the button leads to, so the two never point different ways.
+  const nextStep = action.kind === "lesson" ? 0 : action.kind === "rung" ? 1 : steps[2]!.state !== "done" ? 2 : -1;
   return (
     <div className="week-band">
       <div className="week-band-text">

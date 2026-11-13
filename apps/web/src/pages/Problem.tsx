@@ -533,7 +533,7 @@ function Statement({ p, onChange, justSolved, onUseSample }: {
       <h1>{p.title}</h1>
       <div className="prob-meta">
         <StatusBadge status={p.status} />
-        {p.track && <span className="badge">Ladder {p.track.position} of 5</span>}
+        {p.track && <span className="badge">Ladder {p.track.position}</span>}
         {p.pattern ? <span className={`badge badge-primary${justSolved && !p.track ? " badge-reveal" : ""}`}>{p.pattern.name}</span> : <span className="badge">Pattern hidden until solved</span>}
         {p.dailyDays.length > 0 && <DailyDays days={p.dailyDays} />}
         {p.track && p.track.hints > 0 && (

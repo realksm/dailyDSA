@@ -14,6 +14,8 @@ export function Heatmap({ counts, from, today }: { counts: Map<string, number>; 
   const total = [...counts.entries()].filter(([d]) => d >= start && d <= today).reduce((n, [, c]) => n + c, 0);
   const active = [...counts.entries()].filter(([d, c]) => c > 0 && d >= start && d <= today).length;
   const level = (c: number) => (c <= 0 ? 0 : c === 1 ? 1 : c === 2 ? 2 : 3);
+  // A short record gets bigger squares, so a new member's few weeks don't sit in a corner of the card.
+  const size = weeks.length <= 16 ? 22 : weeks.length <= 36 ? 16 : 13;
   // Open scrolled to the newest weeks when the record is wider than the card.
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -22,9 +24,9 @@ export function Heatmap({ counts, from, today }: { counts: Map<string, number>; 
   }, [weeks.length]);
 
   return (
-    <figure className="heatmap" aria-label={`Solved problems per day since ${fmtDay(start)}: ${total} solves on ${active} days`}>
+    <figure className="heatmap" style={{ "--hm": `${size}px` } as React.CSSProperties} aria-label={`Solved problems per day since ${fmtDay(start)}: ${total} solves on ${active} days`}>
       <div className="hm-scroll" ref={scroller}>
-        <div className="hm-grid" style={{ gridTemplateColumns: `28px repeat(${weeks.length}, 13px)` }} aria-hidden>
+        <div className="hm-grid" style={{ gridTemplateColumns: `28px repeat(${weeks.length}, var(--hm))` }} aria-hidden>
           <span />
           {weeks.map((w, i) => {
             const m = Number(w[0]!.slice(5, 7)) - 1;

@@ -84,14 +84,20 @@ export function Field({ label, hint, error, id, ...input }: FieldProps) {
   );
 }
 
-export function StatusDot({ status }: { status: SolveStatus }) {
-  const label = status === "solved" ? "Solved" : status === "attempted" ? "Attempted" : "Not attempted";
-  return <span className="status-dot" data-s={status} title={label} aria-label={label} role="img" />;
+/**
+ * The one status mark (2026-11-13): a small square, filled lime when solved, half filled when tried
+ * (a run, a submit or a hint), hollow when not touched yet. Day squares, ladder numbers and the week's
+ * steps use the same three looks. `tried`: count something the status doesn't, e.g. a hint taken.
+ */
+export function StatusDot({ status, tried }: { status: SolveStatus; tried?: boolean }) {
+  const s = status === "new" && tried ? "attempted" : status;
+  const label = s === "solved" ? "Solved" : s === "attempted" ? "Tried" : "Not tried yet";
+  return <span className="status-dot" data-s={s} title={label} aria-label={label} role="img" />;
 }
 
 export function StatusBadge({ status }: { status: SolveStatus }) {
-  if (status === "solved") return <span className="badge badge-ok"><span className="dot" />Solved</span>;
-  if (status === "attempted") return <span className="badge badge-warn"><span className="dot" />Attempted</span>;
+  if (status === "solved") return <span className="badge badge-ok"><span className="status-dot" data-s="solved" aria-hidden />Solved</span>;
+  if (status === "attempted") return <span className="badge"><span className="status-dot" data-s="attempted" aria-hidden />Tried</span>;
   return <span className="badge">New</span>;
 }
 

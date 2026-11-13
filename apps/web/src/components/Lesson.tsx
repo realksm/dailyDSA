@@ -35,14 +35,16 @@ export function lessonHeadings(md: string): { id: string; text: string; level: 2
 
 /**
  * `ladder`: lets `[Ladder 3](#ladder-3)` in the Markdown link to that ladder problem ("Ladder 3 ·
- * Title") while it's open, or say when it opens while it's locked.
+ * Title") while it's open, or say when it opens while it's locked. `linkLadder` false (phones): name the
+ * rung without linking to the problem.
  */
-export function Lesson({ md, ladder }: { md: string; ladder?: LadderStep[] }) {
+export function Lesson({ md, ladder, linkLadder = true }: { md: string; ladder?: LadderStep[]; linkLadder?: boolean }) {
   const link = (href: string): ReactNode | undefined => {
     const m = /^#ladder-(\d+)$/.exec(href);
     if (!m || !ladder) return undefined;
     const s = ladder.find((x) => x.position === Number(m[1]));
     if (!s) return <span className="lesson-rung" data-locked>Ladder {m[1]}</span>;
+    if (s.problem && !linkLadder) return <span className="lesson-rung" data-open>Ladder {s.position} · {s.problem.title}</span>;
     if (s.problem) {
       return (
         <Link to={`/p/${s.problem.slug}`} className="lesson-rung" data-locked={!s.open || undefined}>

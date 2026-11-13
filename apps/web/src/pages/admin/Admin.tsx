@@ -250,7 +250,7 @@ function ProblemsTab() {
                     <span className="muted small mono">{p.slug}{!p.active && " · retired"}</span>
                   </span>
                 </td>
-                <td className="small">{p.kind === "track" ? `Ladder #${p.track?.position ?? "?"}` : `Daily · ${p.pool}`}</td>
+                <td className="small">{p.kind === "track" ? `Ladder ${p.track?.position ?? "?"}` : `Daily · ${p.pool}`}</td>
                 <td className="small">{p.pattern?.name ?? "—"}</td>
                 <td className="r num">{p.kind === "daily" ? p.timesShown : "—"}</td>
                 <td className="small muted">{p.lastShownOn ? fmtDay(p.lastShownOn) : "—"}</td>

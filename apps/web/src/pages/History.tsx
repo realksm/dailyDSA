@@ -40,6 +40,8 @@ type Chip = "all" | "solved" | "open" | "after-solutions" | "hints" | "notes";
 function Problems() {
   const h = useLoad(() => api.history(), []);
   const tracks = useLoad(() => api.tracks(), []);
+  // The heatmap starts in the month you joined (Today's card has the date).
+  const joined = useLoad(() => api.today().then((t) => t.joinedOn ?? null, () => null), []);
   const [chip, setChip] = useState<Chip>("all");
   if (h.error) return <LoadError error={h.error} retry={h.reload} />;
   if (!h.data) return <SkeletonRows n={6} />;
@@ -71,20 +73,19 @@ function Problems() {
     { key: "notes", label: "With notes" },
   ];
   const shown = ps.filter(test[chip]);
-  // Solves per IST day, for the heatmap; it starts at the first solve (at least ~half a year back).
+  // Solves per IST day, for the heatmap: from the first of the month you joined (or your first solve, if earlier).
   const counts = new Map<string, number>();
   for (const p of solved) if (p.solvedAt) counts.set(istDay(p.solvedAt), (counts.get(istDay(p.solvedAt)) ?? 0) + 1);
   const today = tracks.data?.today ?? istDay(new Date());
   const firstSolve = [...counts.keys()].sort()[0];
-  const halfYear = addDays(today, -7 * 25);
-  const from = firstSolve && firstSolve < halfYear ? firstSolve : halfYear;
+  const joinMonth = joined.data ? `${joined.data.slice(0, 8)}01` : addDays(today, -7 * 25);
+  const from = firstSolve && firstSolve < joinMonth ? firstSolve : joinMonth;
 
   return (
     <div className="stack" style={{ gap: 24 }}>
-      <div className="row" style={{ gap: 16 }}>
-        <Stat k="Solved" v={solved.length} sub={`of ${ps.length} tried`} />
-        <Stat k="Daily solved" v={solved.filter((p) => p.problem.kind === "daily").length} />
-        <Stat k="Ladder solved" v={solved.filter((p) => p.problem.kind === "track").length} />
+      <div className="row" style={{ gap: 16, alignItems: "stretch" }}>
+        <Stat k="Solved" v={solved.length} sub={`of ${ps.length} tried`}
+          split={`${solved.filter((p) => p.problem.kind === "daily").length} daily · ${solved.filter((p) => p.problem.kind === "track").length} ladder`} />
         <Stat k="Submits" v={submits} sub={solved.length ? `${(submits / Math.max(solved.length, 1)).toFixed(1)} per solve` : undefined} />
       </div>
       <section className="card history-heat" aria-labelledby="heat-h">
@@ -203,11 +204,12 @@ function PatternMap({ ps, tracks }: { ps: HistoryEntry[]; tracks: TrackSummary[]
   );
 }
 
-function Stat({ k, v, sub }: { k: string; v: number; sub?: string | undefined }) {
+function Stat({ k, v, sub, split }: { k: string; v: number; sub?: string | undefined; split?: string }) {
   return (
     <div className="card stat" style={{ padding: "16px 20px", flex: 1 }}>
       <div className="k">{k}</div>
       <div className="v">{v}{sub && <small>{sub}</small>}</div>
+      {split && <div className="small muted" style={{ marginTop: 8 }}>{split}</div>}
     </div>
   );
 }
@@ -217,7 +219,7 @@ function ProblemRow({ p }: { p: HistoryEntry }) {
     <tr>
       <td>
         <span className="row" style={{ gap: 10 }}>
-          <StatusDot status={p.status} />
+          <StatusDot status={p.status} tried={p.hintsUsed > 0} />
           <span className="stack-sm" style={{ gap: 2 }}>
             <Link to={`/p/${p.problem.slug}`}>{p.problem.title}</Link>
             {p.note && <span className="hist-note" title={p.note}><Icon name="pen" />{p.note}</span>}
@@ -234,7 +236,7 @@ function ProblemRow({ p }: { p: HistoryEntry }) {
         </span>
       </td>
       <td className="small muted nowrap">
-        {p.track ? `Ladder #${p.track.position}` : p.dailyDays.length ? (
+        {p.track ? `Ladder ${p.track.position}` : p.dailyDays.length ? (
           <span title={p.dailyDays.length > 1 ? p.dailyDays.map(fmtDay).join("\n") : undefined}>
             {fmtDay(p.dailyDays.at(-1)!)}
             {p.dailyDays.length > 1 && <span className="shown-more"> +{p.dailyDays.length - 1} more</span>}

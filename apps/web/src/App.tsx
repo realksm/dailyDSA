@@ -1,17 +1,19 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { isStaff, useAuth, useMe, wasSignedOut } from "./auth";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { BrandMark, Spinner } from "./components/ui";
+import { BrandMark, Spinner, useTitle } from "./components/ui";
 import { Icon } from "./components/Icon";
 import type { ThemePref } from "./theme";
 import { StreakChip, StreakProvider } from "./streak";
 import { PrefsProvider, usePrefs } from "./prefs";
+import { usePhone } from "./phone";
 import { Link, match, NavLink, useRouter } from "./router";
 import { Account } from "./pages/Account";
 import { Admin } from "./pages/admin/Admin";
 import { Archive } from "./pages/Archive";
 import { ForgotPassword, Login, ResetPassword, Signup } from "./pages/AuthPages";
 import { HistoryPage } from "./pages/History";
+import { LaptopOnly, PhoneToday } from "./pages/PhoneHome";
 import { ProblemPage } from "./pages/Problem";
 import { SubmissionPage } from "./pages/Submission";
 import { Today } from "./pages/Today";
@@ -85,7 +87,16 @@ export function safeNext(next: string | null): string {
 function Routes(): ReactNode {
   const { path } = useRouter();
   const me = useMe();
+  const phone = usePhone();
   let m: Record<string, string> | null;
+  // Phones: this week's progress, the lessons and the account. Everything else needs a laptop.
+  if (phone) {
+    if (match("/", path) || match("/tracks", path)) return <PhoneToday />;
+    if ((m = match("/tracks/:pattern", path))) return <TrackPage key={m.pattern} pattern={m.pattern!} phone />;
+    if (match("/account", path)) return <Account />;
+    if (path.startsWith("/p/") || ["/archive", "/history", "/admin"].some((p) => path === p || path.startsWith(`${p}/`)) || path.startsWith("/submissions/")) return <LaptopOnly />;
+    return <NotFound />;
+  }
   if (match("/", path)) return <Today />;
   if (match("/archive", path)) return <Archive />;
   if ((m = match("/p/:slug", path))) return <ProblemPage key={m.slug} slug={m.slug!} />;
@@ -95,14 +106,20 @@ function Routes(): ReactNode {
   if ((m = match("/submissions/:id", path)) && /^\d+$/.test(m.id!)) return <SubmissionPage id={Number(m.id)} />;
   if (match("/account", path)) return <Account />;
   if (isStaff(me) && (path === "/admin" || path.startsWith("/admin/"))) return <Admin />;
+  return <NotFound />;
+}
+
+function NotFound() {
+  useTitle("Page not found");
   return (
-    <main className="page">
-      <div className="empty">
-        <h3>Page not found</h3>
-        <p>
-          There's nothing at this address. <Link to="/">Go to today's problem</Link>.
-        </p>
+    <main className="page fluid">
+      <div className="page-head">
+        <div>
+          <h1>Page not found</h1>
+          <p>There's nothing at this address. It may have been a typo, or a link to a page that moved.</p>
+        </div>
       </div>
+      <Link to="/" className="btn btn-primary">Go to Today</Link>
     </main>
   );
 }
@@ -111,6 +128,26 @@ function TopBar() {
   const me = useMe();
   const { logout } = useAuth();
   const [leaving, setLeaving] = useState(false);
+  const phone = usePhone();
+  if (phone) {
+    // Phones: no nav (Today holds the lessons); the account icon leads to settings and Log out.
+    return (
+      <header className="topbar topbar-phone">
+        <Link to="/" className="brand" aria-label="dailyDSA home">
+          <BrandMark />
+          <span>daily<b>DSA</b></span>
+        </Link>
+        <div className="spacer" />
+        <div className="who">
+          <StreakChip />
+          <ThemeButton />
+          <NavLink to="/account" className="icon-btn" aria-label={`Your account (${me.name})`} title="Your account">
+            <Icon name="user" />
+          </NavLink>
+        </div>
+      </header>
+    );
+  }
   return (
     <header className="topbar">
       <Link to="/" className="brand" aria-label="dailyDSA home">

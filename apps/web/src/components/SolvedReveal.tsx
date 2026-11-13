@@ -31,7 +31,7 @@ export function SolvedReveal({ p, onSolutions }: { p: ProblemView; onSolutions?:
       {p.track ? (
         <div className="reveal-card" data-flipped>
           <div className="reveal-face reveal-back">
-            <span className="reveal-k">Ladder {p.track.position} of 5</span>
+            <span className="reveal-k">Ladder {p.track.position}</span>
             {/* Only this rung is known here (the others may or may not be solved), so only it is marked. */}
             <span className="reveal-rungs" aria-label={`Rung ${p.track.position} of 5 done`}>
               {[1, 2, 3, 4, 5].map((n) => <i key={n} data-new={n === p.track!.position || undefined} />)}

@@ -34,7 +34,9 @@ export function trackAction(t: TrackSummary, today: string): TrackAction {
   const started = t.ladder.some((s) => s.status !== "new");
   if (!started && lessonUnread(t)) return { kind: "lesson", label: "Read the lesson", to: `/tracks/${t.pattern.slug}`, next: n };
   if (n?.problem) {
-    const verb = started ? "Continue" : "Start";
+    // Today's rung says so, so "Continue" never skips earlier rungs that are still open.
+    const dow = dowOf(today);
+    const verb = dow < 5 && n.position === dow + 1 ? "Today's rung" : started ? "Continue" : "Start";
     return { kind: "rung", label: `${verb}: Ladder ${n.position} · ${n.problem.title}`, to: `/p/${n.problem.slug}`, next: n };
   }
   const locked = t.ladder.find((s) => !s.open);

@@ -503,7 +503,7 @@ export default function Landing() {
                 <span className="lp-day-name">{d.day}</span>
                 <ul>
                   {d.lead && <li>{d.lead}</li>}
-                  {d.ladder && <li className="lp-day-ladder">Ladder #{d.ladder} opens</li>}
+                  {d.ladder && <li className="lp-day-ladder">Ladder {d.ladder} opens</li>}
                   {d.items.map((item, i) => <li key={i}>{item}</li>)}
                 </ul>
                 {d.ladder ? (

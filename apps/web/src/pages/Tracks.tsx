@@ -166,8 +166,9 @@ function MiniLadder({ ladder, next }: { ladder: LadderStep[]; next?: number }) {
   return (
     <ol className="mini-ladder">
       {ladder.map((s) => {
-        const state = s.open ? s.status : "locked";
-        const what = { solved: "solved", attempted: "attempted", new: "open", locked: "locked" }[state];
+        // A hint taken counts as tried, like a run or a submit.
+        const state = !s.open ? "locked" : s.status === "new" && s.hintsUsed > 0 ? "attempted" : s.status;
+        const what = { solved: "solved", attempted: "tried", new: "open", locked: "locked" }[state];
         const isNext = s.position === next;
         return (
           <li key={s.position} data-s={state} data-next={isNext || undefined}>
@@ -182,7 +183,8 @@ function MiniLadder({ ladder, next }: { ladder: LadderStep[]; next?: number }) {
   );
 }
 
-export function TrackPage({ pattern }: { pattern: string }) {
+/** `phone`: the lesson only; the ladder is shown read-only (solving needs a laptop). */
+export function TrackPage({ pattern, phone }: { pattern: string; phone?: boolean }) {
   const t = useLoad(() => api.track(pattern), [pattern]);
   useTitle(t.data?.title ?? "Track");
   if (t.error) return <main className="page fluid"><LoadError error={t.error} retry={t.reload} /></main>;
@@ -193,10 +195,10 @@ export function TrackPage({ pattern }: { pattern: string }) {
       </main>
     );
   }
-  return <Track t={t.data} />;
+  return <Track t={t.data} phone={!!phone} />;
 }
 
-function Track({ t }: { t: TrackView }) {
+function Track({ t, phone }: { t: TrackView; phone: boolean }) {
   const staff = isStaff(useMe());
   // Opening the lesson counts as reading it: Today and the library stop sending people here first.
   useEffect(() => {
@@ -207,7 +209,7 @@ function Track({ t }: { t: TrackView }) {
       <div className="track-layout">
         <article className="track-main">
           <div className="eyebrow">
-            <Link to="/tracks">Tracks</Link>
+            {phone ? <Link to="/">Lessons</Link> : <Link to="/tracks">Tracks</Link>}
             <span aria-hidden>/</span>
             <span>{trackWhen(t, t.today)}</span>
           </div>
@@ -222,7 +224,7 @@ function Track({ t }: { t: TrackView }) {
             </section>
           )}
           {t.hasLesson ? (
-            <Lesson md={t.lessonMd} ladder={t.ladder} />
+            <Lesson md={t.lessonMd} ladder={t.ladder} linkLadder={!phone} />
           ) : (
             <div className="card empty" style={{ marginTop: 24 }}>
               <h3>The lesson is on its way</h3>
@@ -237,10 +239,10 @@ function Track({ t }: { t: TrackView }) {
               <span className="num small"><b>{t.solved}</b><span className="muted">/{t.ladder.length} solved</span></span>
             </div>
             <ol>
-              {t.ladder.map((s) => <Step key={s.position} s={s} staff={staff} />)}
+              {t.ladder.map((s) => <Step key={s.position} s={s} staff={staff} link={!phone} />)}
             </ol>
             <p className="muted small">
-              {t.runningWeek
+              {phone ? "Solve these on a laptop: the editor needs a bigger screen." : t.runningWeek
                 ? `One problem opens each day, Monday to Friday (${fmtDay(t.runningWeek)} – ${fmtDay(addDays(t.runningWeek, 4))}). Catch up at the weekend.`
                 : "Problems get harder as you go. Once open, they stay open."}
             </p>
@@ -252,7 +254,7 @@ function Track({ t }: { t: TrackView }) {
   );
 }
 
-function Step({ s, staff }: { s: LadderStep; staff: boolean }) {
+function Step({ s, staff, link }: { s: LadderStep; staff: boolean; link: boolean }) {
   // Meta sits on its own line under the title, so long titles never push it into an awkward wrap.
   const meta = (
     <span className="ladder-meta">
@@ -265,13 +267,13 @@ function Step({ s, staff }: { s: LadderStep; staff: boolean }) {
     <>
       <span className="ladder-n num">{s.position}</span>
       <span className="ladder-t">{s.problem ? s.problem.title : <span className="muted">Locked</span>}</span>
-      {s.open && <StatusDot status={s.status} />}
+      {s.open && <StatusDot status={s.status} tried={s.hintsUsed > 0} />}
       {meta}
     </>
   );
   return (
     <li id={`ladder-${s.position}`} data-locked={!s.open || undefined}>
-      {s.problem ? <Link to={`/p/${s.problem.slug}`}>{body}</Link> : <div>{body}</div>}
+      {s.problem && link ? <Link to={`/p/${s.problem.slug}`}>{body}</Link> : <div>{body}</div>}
     </li>
   );
 }

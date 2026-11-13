@@ -72,16 +72,17 @@ export function createApp(deps: AppDeps): express.Express {
   api.use(notFoundHandler);
 
   app.use("/api", api);
-  if (fs.existsSync(path.join(config.webDir, "index.html"))) app.use(webApp(config.webDir));
+  if (fs.existsSync(path.join(config.webDir, "index.html"))) app.use(webApp(config.webDir, config.appUrl));
   app.use(errorHandler(logError));
   return app;
 }
 
 /**
  * The built web app: hashed assets cached forever, every other GET answers index.html so the
- * client-side router can take over. /api never gets here (its router ends with a 404).
+ * client-side router can take over. /api never gets here (its router ends with a 404). Link previews
+ * need absolute URLs, so the share image's path in index.html gets APP_URL in front of it.
  */
-function webApp(dir: string): Router {
+function webApp(dir: string, appUrl: string): Router {
   const r = express.Router();
   const index = path.join(dir, "index.html");
   const pageHeaders = (res: express.Response) => {
@@ -97,7 +98,7 @@ function webApp(dir: string): Router {
   r.use((req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
     pageHeaders(res);
-    res.sendFile(index);
+    res.type("html").send(fs.readFileSync(index, "utf8").replaceAll('content="/og.png"', `content="${appUrl}/og.png"`));
   });
   return r;
 }

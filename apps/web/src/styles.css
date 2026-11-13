@@ -261,9 +261,13 @@ select { padding-right: 28px; }
 .badge-primary { background: var(--primary-soft); color: var(--primary-text); }
 .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-.status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; border: 1.5px solid var(--line-strong); }
-.status-dot[data-s="solved"] { background: var(--ok); border-color: var(--ok); }
-.status-dot[data-s="attempted"] { background: var(--warn-soft); border-color: var(--warn); }
+/* The one status mark (2026-11-13): solved = a lime square, tried = half lime, not tried = hollow. The 30-day
+   squares, ladder numbers and the week's steps below use the same three looks. */
+.status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; border: 1.5px solid var(--line-strong); background: var(--surface); }
+.status-dot[data-s="solved"] { background: var(--accent); border-color: var(--edge); }
+.status-dot[data-s="attempted"] { background: linear-gradient(to top, var(--accent) 50%, var(--surface) 50%); border-color: var(--edge); }
+.status-dot[data-s="none"] { background: transparent; border-style: dashed; }
+.badge .status-dot { width: 9px; height: 9px; }
 
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .table th {
@@ -437,7 +441,7 @@ a.d30:hover { border-color: var(--text); }
 .d30[data-s="none"] { background: transparent; border-color: var(--line); }
 .d30[data-s="solved"] { background: var(--ok); }
 .d30[data-s="late"] { background: var(--ok-soft); border-color: var(--ok); }
-.d30[data-s="attempted"] { background: var(--warn-soft); border-color: var(--warn); }
+.d30[data-s="attempted"] { background: linear-gradient(to top, var(--accent) 50%, var(--surface) 50%); border-color: var(--line-strong); }
 .d30[data-s="missed"] { background: var(--surface); border-color: var(--line-strong); }
 .d30[data-s="new"] { background: var(--surface); border-color: var(--primary); }
 .d30[data-today] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--primary); }
@@ -483,12 +487,12 @@ a.wg-cell:hover { border-color: var(--line-strong); color: var(--text); }
 .week-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .week-steps li { display: flex; gap: 10px; align-items: flex-start; }
 .ws-n {
-  flex: none; width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center;
+  flex: none; width: 22px; height: 22px; margin-top: 1px; border-radius: 6px; display: grid; place-items: center;
   font: 500 11.5px var(--mono); color: var(--muted); background: var(--surface); border: 1px solid var(--line-strong);
 }
 .ws-n .icon { width: 14px; height: 14px; }
-.week-steps li[data-s="done"] .ws-n { background: var(--ok); border-color: var(--ok); color: var(--surface); }
-.week-steps li[data-s="doing"] .ws-n { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+.week-steps li[data-s="done"] .ws-n { background: var(--accent); border-color: var(--edge); color: var(--on-accent); }
+.week-steps li[data-s="doing"] .ws-n { background: linear-gradient(to top, var(--accent) 0 25%, var(--accent-soft) 25%); border-color: var(--edge); color: var(--text); }
 /* The first step not done yet: the same ring as today's square in the 30-day grid. */
 .week-steps li[data-next] .ws-n { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--primary); }
 .week-steps li[data-next][data-s="todo"] .ws-n { color: var(--primary-text); }
@@ -723,12 +727,12 @@ body[data-dragging] .split-x::after, body[data-dragging] .split-y::after { backg
 .mini-ladder li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; min-width: 0; }
 .ml-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ml-n {
-  flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  flex: none; width: 20px; height: 20px; border-radius: 5px; display: grid; place-items: center;
   font: 500 11px var(--mono); color: var(--muted); background: var(--surface); border: 1px solid var(--line-strong);
 }
-.mini-ladder li[data-s="solved"] .ml-n { background: var(--ok); border-color: var(--ok); color: var(--surface); }
-.mini-ladder li[data-s="attempted"] .ml-n { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
-.mini-ladder li[data-s="locked"] .ml-n { background: var(--sunk); border-color: transparent; }
+:is(.mini-ladder, .ph-rungs) li[data-s="solved"] .ml-n { background: var(--accent); border-color: var(--edge); color: var(--on-accent); }
+:is(.mini-ladder, .ph-rungs) li[data-s="attempted"] .ml-n { background: linear-gradient(to top, var(--accent) 0 25%, var(--accent-soft) 25%); border-color: var(--edge); color: var(--text); }
+:is(.mini-ladder, .ph-rungs) li[data-s="locked"] .ml-n { background: var(--sunk); border-color: transparent; }
 
 .track-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: start; }
 .track-main h1 { font-size: 30px; letter-spacing: -0.02em; margin: 8px 0 20px; }
@@ -913,6 +917,8 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 
 /* Brand mark: three day squares stepping up (components/ui.tsx BrandMark, public/favicon.svg). */
 .brand .brand-mark { width: 28px; height: 28px; }
+/* Dark: the ink outline vanishes on the dark bar and the mark reads as two dots; outline in --edge instead. */
+.brand-mark rect { stroke: var(--edge); }
 
 /* ── pattern diagrams (components/PatternDiagram.tsx) ── */
 .pd { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -1096,9 +1102,6 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 body:has(.fluid) { min-width: 0; }
 .phone-note { display: none; }
 @media (max-width: 760px) {
-  body:has(.fluid) .topbar { flex-wrap: wrap; height: auto; padding: 10px 16px 0; gap: 4px 12px; }
-  body:has(.fluid) .topbar .nav { order: 3; width: calc(100% + 32px); margin: 0 -16px; padding: 6px 12px 8px; overflow-x: auto; scrollbar-width: none; }
-  body:has(.fluid) .topbar .who > a:not(.streak-chip) { display: none; }
   .page.fluid { padding: 20px 16px 48px; }
   .fluid .today-hero { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .fluid .today-main { padding: 22px 20px; }
@@ -1165,6 +1168,7 @@ body:has(.fluid) { min-width: 0; }
 a.lesson-rung { color: var(--primary-text); }
 span.lesson-rung { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 500; }
 span.lesson-rung .icon { width: 14px; height: 14px; }
+span.lesson-rung[data-open] { color: var(--text); font-weight: 600; }
 .pd[data-mode="steps"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 6px; border-radius: 6px; }
 .pd-ctrl .pd-arrow {
   width: 38px; height: 34px; display: inline-grid; place-items: center; border-radius: var(--r-sm);
@@ -1191,17 +1195,18 @@ span.lesson-rung .icon { width: 14px; height: 14px; }
 .history-heat { padding: 18px 22px; }
 .history-heat h2, .pattern-map h3 { font-size: 16px; }
 .history-heat h2 { margin-bottom: 12px; }
-.heatmap { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .hm-scroll { overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
-.hm-grid { display: grid; grid-auto-rows: 13px; gap: 3px; width: max-content; }
-.hm-month, .hm-dow { font-size: 10.5px; line-height: 13px; color: var(--muted); white-space: nowrap; overflow: visible; }
-.hm-sq { width: 13px; height: 13px; border-radius: 3px; background: var(--sunk); border: 1px solid var(--line); display: inline-block; }
+.heatmap { margin: 0; display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-end; gap: 12px 40px; min-width: 0; }
+.hm-scroll { flex: 0 1 auto; max-width: 100%; }
+.hm-grid { display: grid; grid-auto-rows: var(--hm, 13px); gap: 3px; width: max-content; }
+.hm-month, .hm-dow { font-size: 10.5px; line-height: var(--hm, 13px); color: var(--muted); white-space: nowrap; overflow: visible; }
+.hm-sq { width: var(--hm, 13px); height: var(--hm, 13px); border-radius: 3px; background: var(--sunk); border: 1px solid var(--line); display: inline-block; }
 .hm-sq[data-l="1"] { background: color-mix(in srgb, var(--accent) 40%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
 .hm-sq[data-l="2"] { background: color-mix(in srgb, var(--accent) 70%, var(--surface)); border-color: var(--accent); }
-.hm-sq[data-l="3"] { background: var(--accent); border-color: var(--c-ink); }
+.hm-sq[data-l="3"] { background: var(--accent); border-color: var(--accent); }
 .hm-sq[data-future] { background: transparent; border-color: transparent; }
 .hm-sq[data-today] { outline: 1.5px solid var(--text); outline-offset: 1px; }
-.hm-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.hm-foot { flex: 1 1 240px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .hm-key { display: inline-flex; align-items: center; gap: 3px; }
 .hm-key .hm-sq { width: 11px; height: 11px; }
 .pattern-map { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
@@ -1285,3 +1290,38 @@ span.lesson-rung .icon { width: 14px; height: 14px; }
 .check-row-top { align-items: flex-start; }
 .check-row-top input { margin-top: 2px; flex: none; }
 .check-hint { display: block; font-weight: 400; margin-top: 2px; }
+
+/* ── phones (2026-11-13): a small read-only app (pages/PhoneHome.tsx): the week at a glance and the lessons ── */
+.topbar-phone { padding: 0 12px 0 16px; gap: 8px; }
+.topbar-phone .who { gap: 6px; }
+.topbar-phone .who .icon-btn[aria-current="page"] { color: var(--text); background: var(--sunk); }
+.phone-home { display: flex; flex-direction: column; gap: 16px; }
+.phone-home .phone-note { margin: 0; }
+.ph-week { padding: 18px 16px; display: flex; flex-direction: column; gap: 16px; background: var(--accent-soft); }
+.ph-week-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.ph-today { max-width: 24ch; text-align: right; color: var(--text); }
+.ph-row-marks { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.ph-day { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0 8px; border-radius: 8px; font-size: 12px; color: var(--muted); }
+.ph-day[data-today] { color: var(--text); font-weight: 700; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--edge); }
+.ph-day .status-dot { width: 18px; height: 18px; border-radius: 5px; }
+.ph-ladder { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--text) 14%, transparent); }
+.ph-k { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.ph-rungs { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; }
+.ph-rungs .ml-n { width: 28px; height: 28px; font-size: 12.5px; border-width: 1.5px; }
+.ph-lesson { padding: 22px 20px; display: flex; flex-direction: column; gap: 14px; }
+.ph-lesson h1 { font-size: 40px; line-height: 1; letter-spacing: -0.035em; }
+.ph-more h2 { font-size: 22px; margin: 8px 0 10px; }
+.ph-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ph-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--text); text-decoration: none; }
+.ph-row:hover { color: var(--text); border-color: var(--edge); }
+.ph-row-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ph-row-t { font-weight: 600; font-size: 15.5px; }
+.ph-row .icon { width: 18px; height: 18px; flex: none; color: var(--muted); }
+.ph-wall { padding: 28px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.ph-wall > .icon { width: 32px; height: 32px; color: var(--primary-text); }
+.ph-wall h1 { font-size: 32px; }
+
+/* Streak card (2026-11-13): the next milestone under the number; the footer sits at the bottom. */
+.streak-goal { margin-top: 8px; color: var(--text); }
+/* The card sizes to what it holds; a new member's few squares don't stretch it to the hero's height. */
+.today-side { align-self: start; }

@@ -1,4 +1,4 @@
-# Binary Search
+# Binary search on the answer
 
 ## How to spot it
 

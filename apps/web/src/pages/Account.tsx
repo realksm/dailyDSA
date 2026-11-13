@@ -6,12 +6,15 @@ import { api, ApiErr, errorMessage } from "../api";
 import { DEFAULT_FONT, usePrefs, type Prefs } from "../prefs";
 import { Select } from "../components/Select";
 import { useAuth, useMe } from "../auth";
+import { usePhone } from "../phone";
 import { Field, Notice, Skeleton, useLoad, useTitle } from "../components/ui";
 
 export function Account() {
   useTitle("Account");
   const me = useMe();
   const { logout } = useAuth();
+  // Log out lives in the top bar; phones have no room for it there, so it's here instead.
+  const phone = usePhone();
   const [cur, setCur] = useState("");
   const [next, setNext] = useState("");
   const [again, setAgain] = useState("");
@@ -39,13 +42,13 @@ export function Account() {
   const top = err && !(err instanceof ApiErr && err.code === "invalid_request") ? errorMessage(err) : null;
 
   return (
-    <main className="page page-narrow">
+    <main className="page page-narrow fluid">
       <div className="page-head">
         <div>
           <h1>Account</h1>
           <p>{me.name} · {me.email} · <span style={{ textTransform: "capitalize" }}>{me.role}</span></p>
         </div>
-        <button className="btn" onClick={() => void logout()}>Log out</button>
+        {phone && <button className="btn btn-sm" onClick={() => void logout()}>Log out</button>}
       </div>
 
       <Preferences />
