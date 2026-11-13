@@ -16,6 +16,8 @@ export function HistoryPage() {
   const problem = search.get("problem") ?? undefined;
   const tab = problem || search.get("tab") === "submissions" ? "submissions" : "problems";
   const setTab = (t: string) => navigate(t === "problems" ? "/history" : "/history?tab=submissions", { replace: true });
+  const [seen, setSeen] = useState(() => new Set<string>([tab]));
+  if (!seen.has(tab)) setSeen(new Set(seen).add(tab));
 
   return (
     <main className="page">
@@ -30,7 +32,10 @@ export function HistoryPage() {
         <button role="tab" aria-selected={tab === "submissions"} onClick={() => setTab("submissions")}>Submissions</button>
         <TabInk />
       </div>
-      {tab === "problems" ? <Problems /> : <Submissions problem={problem} />}
+      {/* A tab stays mounted once opened, so switching back shows it as it was instead of refetching
+          and re-growing from a skeleton (the page height jumped on every switch). */}
+      {seen.has("problems") && <div className="tab-panel" role="tabpanel" hidden={tab !== "problems"}><Problems /></div>}
+      {seen.has("submissions") && <div className="tab-panel" role="tabpanel" hidden={tab !== "submissions"}><Submissions problem={problem} /></div>}
     </main>
   );
 }
@@ -44,7 +49,9 @@ function Problems() {
   const joined = useLoad(() => api.today().then((t) => t.joinedOn ?? null, () => null), []);
   const [chip, setChip] = useState<Chip>("all");
   if (h.error) return <LoadError error={h.error} retry={h.reload} />;
-  if (!h.data) return <SkeletonRows n={6} />;
+  // Wait for all three (tracks and joined can't fail the page) so it paints once, not in stages:
+  // the pattern map and the heatmap's start month used to pop in after the table.
+  if (!h.data || tracks.loading || joined.loading) return <SkeletonRows n={6} />;
   const ps = h.data.problems;
   if (ps.length === 0) {
     return (

@@ -127,6 +127,9 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; }
+/* Ordinary pages keep the scrollbar's room, so content doesn't shift sideways when a page grows past
+   the window (tab switches, loads). Not the solve page: it never scrolls, and would show a blank strip. */
+html:has(main.page) { scrollbar-gutter: stable; }
 body {
   background: var(--bg);
   color: var(--text);
