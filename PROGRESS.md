@@ -71,7 +71,7 @@ docker compose up -d --build        # judge on 127.0.0.1:5050, Postgres on 127.0
 pnpm install
 pnpm db:migrate                     # idempotent
 pnpm typecheck                      # tsc -b (packages + server) && tsc -p apps/web
-pnpm test                           # 154 tests; go-judge / db ones skip if those aren't up
+pnpm test                           # 156 tests; go-judge / db ones skip if those aren't up
 pnpm dsa list                       # problem states
 pnpm dsa template <slug> cpp > problems/<slug>/ref.cpp   # start a ref from the editor template
 pnpm dsa validate --all             # ~11 s per problem
@@ -199,14 +199,7 @@ The first milestone (platform + a handful of problems + one track) is reached. C
 - **Step 7, go live:** buy the server, setup script + guide, re-run `pnpm dsa validate --all` there, backups.
 - Smaller polish from the open questions below (CSP header).
 - Diagrams for the next patterns as their tracks get written (monotonic stack, BFS / DFS, 1D DP, heaps): one entry each in `DIAGRAMS` in `components/PatternDiagram.tsx`.
-- **Parked (2026-11-12) — Today: make the week's pattern and its lesson obvious.** Review of `pages/Today.tsx` found:
-  - The hero is the daily (e.g. Trail Days, binary search on the answer) with "Pattern hidden", so users assume it is the week's pattern; it usually isn't.
-  - The week's pattern is named only in the small eyebrow "Track: Two pointers · 1/5 solved" in the second card.
-  - The lesson is a bare "Read the lesson" button: no gist, no read/unread state (`TrackSummary` has only `hasLesson`).
-  - The rules are never stated: weekday dailies = mixed review, ladder = the week's pattern, weekend dailies = the week's pattern (only a weekend-only line on the hero says the last one).
-  - `TrackSummary.spotIt` (the lesson's "How to spot it" leads) already exists and is used on `/tracks` but not on Today.
-
-  Proposed, in order: (1) a "This week · <pattern>" band with 2–3 `spotIt` lines, ladder progress, the lesson button and next rung; (2) one line on the hero relating today's problem to the week ("Daily review: any pattern — this week's pattern is on the ladder below" / weekend: "Uses this week's pattern"); (3) a "Lesson" step before Ladder 1 with read/unread (needs a server-side "lesson opened" record). 1–2 are web-only. Decided: not the `build-awwwards-quality-sites` skill here (it's for marketing/landing pages: GSAP, smooth scroll, Three.js); the fix is hierarchy, and that skill may fit the public landing page later.
+- ~~Parked Today review (week's pattern and lesson not obvious)~~: **done 2026-11-13**, all three proposed fixes (see the session log). The `build-awwwards-quality-sites` skill was not used here (it's for marketing/landing pages); it may fit the public landing page later.
 
 ## Open questions / for later
 
@@ -218,10 +211,16 @@ The first milestone (platform + a handful of problems + one track) is reached. C
 - **Phones:** Archive, History, Submission, Account and Admin are not phone-ready (`.page`, not `.fluid`): at 390 px they scroll sideways (~630 px). That was already so before the backlog; Today, the statement and the tracks pages are fine.
 - **Weekly recap email** runs Monday 08:00 IST (`startWeeklyRecaps`); a server started on a Monday after 08:00 sends straight away (the `weekly_recaps` claim table stops repeats). Check the wording once real mail goes out.
 - **Schedule preview** is a simulation (the real pick rule in a rolled-back transaction); random tie-breaks on the day can still pick differently. Fine for "likely"; if admins want certainty, make the tie-break deterministic (e.g. hash of day + slug).
-- Dev DB: migrations 006–008 applied (prefs, notes, weekly recap). Spare dev servers started in this session were all stopped; the user's own `pnpm server` on :3000 still runs older code and needs a restart for the new routes.
+- Dev DB: migrations 006–009 applied (prefs, notes, weekly recap, lesson reads). Spare dev servers started in this session were all stopped; the user's own `pnpm server` on :3000 still runs older code and needs a restart for the new routes.
 - Go live: pick the SMTP provider (Brevo / Zoho / SES), set up SPF + DKIM for the domain so reset mails don't land in spam.
 
 ## Session log
+
+- **2026-11-13 (48)** — **Today: the week's pattern and its lesson are now obvious** (the review parked on 11-12, all three fixes).
+  - **"This week's pattern" band** at the top of the week card (`WeekBand` in `Today.tsx`): the pattern name at 34 px, linked to the track, with up to 3 "How to spot it" leads (`spotIt`). On the right are the week's three steps: **Lesson** (Not opened yet / Opened <day> / Coming soon), **Ladder n/5** (one rung opens each weekday) and **Weekend** (Saturday's and Sunday's dailies use it; on a weekend, whether today's does). Done steps get a green check; the first step not done gets the primary ring used for today's square. Under the steps is one plain button (`trackAction`; the page's one primary stays on the hero), plus "Read the lesson →" / "Open the lesson again →". With no track, the card says "No track this week: the dailies are mixed review".
+  - **Line on the hero** (`TodayWhy`): weekday → "Mixed review: weekday dailies can be any pattern. This week's pattern, **Two pointers**, is on the ladder below." Weekend + this week's pattern → "Uses this week's pattern, **Two pointers**, without the ladder's hints." and no "Pattern hidden" badge. Weekend + another pattern (a pin, or the track has no weekend problems) → "Weekend review: not this week's pattern this time." The line waits for the tracks call, so it never flashes the wrong text.
+  - **Server:** migration 009 `lesson_reads (user_id, track_id, read_at)`; `POST /api/tracks/:pattern/lesson-read` (same 404 rule as the lesson page; keeps the first time), sent by the lesson page on open when `lessonReadAt` is null. `TrackSummary.lessonReadAt` (ISO or null). `DailyToday.weekTrack` is sent **only on Sat/Sun**: the problem's pattern = this week's track pattern. It is never sent on weekdays, so it can't give a weekday pattern away. `trackAction` now says "Read the lesson" only while the lesson is unopened (`lessonUnread()` in `ladder.ts`), so the Tracks library card moves on to the ladder once it's opened.
+  - Tests: `tracks.test.ts` (lesson-read: 401/404, first time kept, per member) and `daily.test.ts` (weekTrack missing on a weekday, true on Saturday, false for a pinned other pattern on Sunday). Checked headless as `webcheck` on a spare server (:3013) + Vite (:5199): light, dark, 390 px (no sideways scroll); weekend lines via a patched response; opening the lesson flips the step to "Opened Fri, 13 Nov". No console errors. webcheck's lesson-read row was deleted afterwards. Typecheck, build and **156 tests** pass. The user's server on :3000 needs a restart for the new route.
 
 - **2026-11-12 (42–47)** — **UI backlog phases 3–9: all steps done** (the user asked to finish the remaining steps). One commit per phase; each phase checked in headless Chromium (light, dark, 390 px where it applies) on a spare server (:3013) + Vite (:5199). Typecheck, build and **154 tests** pass.
   - **Phase 3, Today:** `DailyToday` gained `hook` (`statementHook()` in shared/statement.ts: the statement's first sentence, not cut inside maths), `joinedOn` and `pulse.solvers` (name, time, `you`). The card shows the hook under the title. A repeat shown since you joined is one badge ("Back for review · shown Mon, 9 Nov"; "Review · …" next to Attempted/Solved). The 30-day grid starts on the join day ("Since you joined"), marks review days with an inset ring and has a key (Solved, Late, Missed, Review, Today). "Recent days" is gone, and a "Full archive →" link sits under the grid. The week header no longer repeats the ladder link: once the daily is solved, the card's primary button is "Next: Ladder n · Title". Hovering the pulse squares names who solved and when (text only).

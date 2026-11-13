@@ -233,6 +233,31 @@ describe.skipIf(!dbUp)("daily pick (needs db + migrations)", () => {
       expect(recent.body.days.map((d: { day: string }) => d.day)).toEqual([7, 6, 5, 4, 3].map((i) => addDays(MON, i)));
     }));
 
+  it("says on weekends whether today's problem has this week's track pattern", () =>
+    sandbox(async (db) => {
+      let clock = new Date(`${MON}T00:00:00+05:30`);
+      const app = createApp({
+        config, pool: db as unknown as pg.Pool, sessionStore: new session.MemoryStore(), mailer: memoryMailer(), now: () => clock,
+      });
+      const email = `w${Date.now()}@daily-test.local`;
+      await createUser(db, { email, name: "W", password: "whatever123", role: "solver" });
+      const agent = request.agent(app);
+      expect((await agent.post("/api/auth/login").send({ email, password: "whatever123" })).status).toBe(200);
+
+      await scheduleTrack(db, MON, "two-pointers");
+      await problem(db, { pattern: "two-pointers" }); // weekday, same pattern: still not said
+      await problem(db, { pool: "weekend", pattern: "two-pointers" });
+      const other = await problem(db, { pool: "weekend", pattern: "sliding-window" });
+      expect((await agent.get("/api/daily/today")).body).not.toHaveProperty("weekTrack");
+
+      clock = new Date(`${SAT}T09:00:00+05:30`);
+      expect((await agent.get("/api/daily/today")).body).toMatchObject({ day: SAT, weekTrack: true });
+
+      await db.query("INSERT INTO daily_schedule (day, problem_id) VALUES ($1, $2)", [SUN, other]); // a pin of another pattern
+      clock = new Date(`${SUN}T09:00:00+05:30`);
+      expect((await agent.get("/api/daily/today")).body).toMatchObject({ day: SUN, weekTrack: false });
+    }));
+
   it("counts the group's pulse: active members and how many solved", () =>
     sandbox(async (db) => {
       const p = await problem(db);

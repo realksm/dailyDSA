@@ -110,7 +110,7 @@ describe.skipIf(!dbUp)("tracks", () => {
       const [x] = (await lib()).tracks;
       expect(x).toEqual({
         pattern: { slug: "sliding-window", name: "Sliding window" }, title: "sliding-window",
-        weeks: [MON, addDays(MON, 7)], runningWeek: MON, released: true, hasLesson: false, spotIt: [], solved: 0,
+        weeks: [MON, addDays(MON, 7)], runningWeek: MON, released: true, hasLesson: false, lessonReadAt: null, spotIt: [], solved: 0,
         ladder: [
           { position: 1, open: true, opensOn: null, problem: { slug: t.problems[0]!.slug, title: "Step 1" }, status: "new", hints: 0, hintsUsed: 0 },
           { position: 2, open: true, opensOn: null, problem: { slug: t.problems[1]!.slug, title: "Step 2" }, status: "new", hints: 2, hintsUsed: 0 },
@@ -138,6 +138,32 @@ describe.skipIf(!dbUp)("tracks", () => {
       // A rerun week is the running week while it lasts.
       clock.t = at(addDays(MON, 13)); // Sunday of the second week
       expect((await lib()).tracks[0]!.runningWeek).toBe(addDays(MON, 7));
+    }));
+
+  it("records the first time a member opens the lesson", () =>
+    sandbox(async (db) => {
+      const clock = { t: at(addDays(MON, 1)) };
+      const { app, signIn } = harness(db, clock);
+      const a = await signIn();
+      const b = await signIn();
+      const t = await track(db, "sliding-window", [{}]);
+      const read = (who: typeof a) => who.agent.post("/api/tracks/sliding-window/lesson-read").send({});
+      const readAt = async (who: typeof a) => ((await who.agent.get("/api/tracks")).body as TrackLibrary).tracks[0]?.lessonReadAt;
+
+      expect((await request(app).post("/api/tracks/sliding-window/lesson-read").send({})).status).toBe(401);
+      expect((await read(a)).status).toBe(404); // not released yet: same as the page
+      expect((await a.agent.post("/api/tracks/nope/lesson-read").send({})).status).toBe(404);
+
+      await week(db, MON, t.id);
+      expect(await readAt(a)).toBeNull();
+      const first = await read(a);
+      expect(first.status).toBe(200);
+      expect(first.body.lessonReadAt).toEqual(expect.any(String));
+      // Opening it again keeps the first time; it's per member.
+      expect((await read(a)).body.lessonReadAt).toBe(first.body.lessonReadAt);
+      expect(await readAt(a)).toBe(first.body.lessonReadAt);
+      expect(((await a.agent.get("/api/tracks/sliding-window")).body as TrackView).lessonReadAt).toBe(first.body.lessonReadAt);
+      expect(await readAt(b)).toBeNull();
     }));
 
   it("orders the library and shows staff every track, released or not", () =>

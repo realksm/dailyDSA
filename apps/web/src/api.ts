@@ -1,7 +1,7 @@
 // Thin client for the server's /api. Every non-2xx answer becomes an ApiErr carrying the
 // server's { error: { code, message, details } } body (packages/shared/src/api.ts).
 import type {
-  AdminUser, DailyArchive, DailyEntry, DailyToday, History, InviteCode, Lang, Me, MeSettings, MeStreak, PasswordResetByAdmin,
+  AdminUser, DailyArchive, DailyEntry, DailyToday, History, InviteCode, Lang, LessonRead, Me, MeSettings, MeStreak, PasswordResetByAdmin,
   ProblemView, Role, Schedule, Solutions, ScheduleDay, StaffProblem, StaffTrack, SubmissionKind, SubmissionList,
   SubmissionQueued, SubmissionView, TrackLibrary, TrackView, TrackWeek, WeeklyRecap,
 } from "@dailydsa/shared";
@@ -98,6 +98,7 @@ export const api = {
   // tracks
   tracks: () => call<TrackLibrary>("GET", "/tracks"),
   track: (pattern: string) => call<TrackView>("GET", `/tracks/${enc(pattern)}`),
+  lessonRead: (pattern: string) => call<LessonRead>("POST", `/tracks/${enc(pattern)}/lesson-read`, {}),
 
   // admin
   admin: {

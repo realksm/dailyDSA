@@ -6,7 +6,7 @@ import { statementHook, type DailyArchive, type DailyToday, type MeStreak, type 
 import { me, requireUser } from "../auth.js";
 import { catchUpDaily, dailyEntries, dailyPulse, ensureDailyPick } from "../daily.js";
 import { HttpError, notFound, parse } from "../errors.js";
-import { isDay, isoWeekday, istDate, nextIstMidnight } from "../ist.js";
+import { isDay, isoWeekday, isWeekend, istDate, nextIstMidnight, weekStart } from "../ist.js";
 import { currentStreak } from "../reminders.js";
 import { lastWeek, weeklyRecap } from "../recap.js";
 
@@ -34,9 +34,13 @@ export function dailyRoutes({ pool, now }: { pool: pg.Pool; now: () => Date }): 
     if (!pick) throw noDaily();
     const [entry] = await dailyEntries(pool, { userId: me(req).id, today, day: today });
     if (!entry) throw noDaily();
-    const extra = await pool.query<{ statement_md: string; joined: Date }>(
-      "SELECT p.statement_md, u.created_at AS joined FROM problems p, users u WHERE p.id = $1 AND u.id = $2",
-      [pick.problemId, me(req).id],
+    // week_track: the problem's pattern is the one of this week's track (only sent on weekends).
+    const extra = await pool.query<{ statement_md: string; joined: Date; week_track: boolean }>(
+      `SELECT p.statement_md, u.created_at AS joined,
+              EXISTS (SELECT 1 FROM track_weeks w JOIN tracks t ON t.id = w.track_id
+                       WHERE w.week_start = $3::date AND t.pattern_slug = p.pattern_slug) AS week_track
+         FROM problems p, users u WHERE p.id = $1 AND u.id = $2`,
+      [pick.problemId, me(req).id, weekStart(today)],
     );
     const x = extra.rows[0]!;
     const body: DailyToday = {
@@ -45,6 +49,7 @@ export function dailyRoutes({ pool, now }: { pool: pg.Pool; now: () => Date }): 
       pulse: await dailyPulse(pool, pick.problemId, me(req).id),
       hook: statementHook(x.statement_md),
       joinedOn: istDate(x.joined),
+      ...(isWeekend(today) ? { weekTrack: x.week_track } : {}),
     };
     res.json(body);
   });

@@ -91,6 +91,17 @@ export interface DailyToday extends DailyEntry {
   hook: string | null;
   /** IST day the caller's account was made: the 30-day grid starts there. */
   joinedOn: string;
+  /**
+   * Saturday and Sunday only: whether today's problem has the pattern of this week's track (the
+   * usual pick), or is a review of another one (no weekend problem of it left, or a pin). Missing on
+   * weekdays, which mix every pattern, so it never gives a weekday pattern away.
+   */
+  weekTrack?: boolean;
+}
+
+/** POST /api/tracks/:pattern/lesson-read */
+export interface LessonRead {
+  lessonReadAt: string;
 }
 
 /** GET /api/daily?before=&limit= — newest first; pass `nextBefore` as `before` for the next page. */
@@ -404,6 +415,8 @@ export interface TrackSummary {
   /** One of its weeks has started. Solvers only ever see released tracks. */
   released: boolean;
   hasLesson: boolean;
+  /** When the caller first opened the lesson page (ISO), else null. */
+  lessonReadAt: string | null;
   /** The bold leads of the lesson's first "How to spot it" bullets (Markdown, may hold $maths$). */
   spotIt: string[];
   ladder: LadderStep[];

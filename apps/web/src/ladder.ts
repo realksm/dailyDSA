@@ -15,8 +15,11 @@ export function ladderNext(t: TrackSummary, today: string): { step: LadderStep; 
   return next ? { step: next, label: `Catch up: ladder ${next.position}` } : null;
 }
 
+/** The lesson exists and the user hasn't opened it yet (an older server sends no `lessonReadAt`: unread). */
+export const lessonUnread = (t: TrackSummary) => t.hasLesson && !t.lessonReadAt;
+
 export type TrackAction =
-  /** Nothing tried yet and there is a lesson: read it first. */
+  /** There is a lesson the user hasn't opened, and nothing on the ladder is tried yet: read it first. */
   | { kind: "lesson"; label: string; to: string; next: LadderStep | null }
   /** Go to the next rung (`next` is the rung to mark in the mini ladder). */
   | { kind: "rung"; label: string; to: string; next: LadderStep }
@@ -29,7 +32,7 @@ export function trackAction(t: TrackSummary, today: string): TrackAction {
   if (t.ladder.length > 0 && t.solved >= t.ladder.length) return { kind: "done", label: "Ladder done", next: null };
   const n = ladderNext(t, today)?.step ?? null;
   const started = t.ladder.some((s) => s.status !== "new");
-  if (!started && t.hasLesson) return { kind: "lesson", label: "Read the lesson", to: `/tracks/${t.pattern.slug}`, next: n };
+  if (!started && lessonUnread(t)) return { kind: "lesson", label: "Read the lesson", to: `/tracks/${t.pattern.slug}`, next: n };
   if (n?.problem) {
     const verb = started ? "Continue" : "Start";
     return { kind: "rung", label: `${verb}: Ladder ${n.position} · ${n.problem.title}`, to: `/p/${n.problem.slug}`, next: n };

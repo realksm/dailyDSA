@@ -16,6 +16,7 @@ interface TrackRow {
   lesson_md: string | null;
   updated_at: Date;
   weeks: string[];
+  lesson_read_at: Date | null;
 }
 
 interface StepRow {
@@ -49,11 +50,13 @@ async function loadTracks(
   const t = await db.query<TrackRow>(
     `SELECT t.id, t.title, pt.slug AS pattern_slug, pt.name AS pattern_name, pt.sort_order,
             t.lesson_md <> '' AS has_lesson, t.lesson_md, t.updated_at,
-            coalesce((SELECT array_agg(w.week_start::text ORDER BY w.week_start) FROM track_weeks w WHERE w.track_id = t.id), '{}') AS weeks
+            coalesce((SELECT array_agg(w.week_start::text ORDER BY w.week_start) FROM track_weeks w WHERE w.track_id = t.id), '{}') AS weeks,
+            lr.read_at AS lesson_read_at
        FROM tracks t JOIN patterns pt ON pt.slug = t.pattern_slug
+       LEFT JOIN lesson_reads lr ON lr.track_id = t.id AND lr.user_id = $4
       WHERE ($1::text IS NULL OR t.pattern_slug = $1)
         AND ($3 OR EXISTS (SELECT 1 FROM track_weeks w WHERE w.track_id = t.id AND w.week_start <= $2::date))`,
-    [o.pattern ?? null, o.today, staff],
+    [o.pattern ?? null, o.today, staff, o.user.id],
   );
   if (t.rowCount === 0) return [];
 
@@ -93,6 +96,7 @@ async function loadTracks(
       runningWeek: running,
       released: x.weeks.some((w) => w <= o.today),
       hasLesson: x.has_lesson,
+      lessonReadAt: x.lesson_read_at?.toISOString() ?? null,
       spotIt: lessonSpotIt(x.lesson_md ?? ""),
       ladder,
       solved: ladder.filter((y) => y.status === "solved").length,
@@ -122,6 +126,26 @@ export async function trackView(
   if (!x) return undefined;
   const { sortOrder: _s, ...rest } = x;
   return { ...rest, today: o.today };
+}
+
+/**
+ * Records that `user` opened the track's lesson (the first time only; later calls keep that time).
+ * Undefined when the track doesn't exist or isn't released to them, as for the lesson page.
+ */
+export async function markLessonRead(
+  db: Db,
+  o: { user: { id: number; role: Role }; today: string; pattern: string },
+): Promise<{ lessonReadAt: string } | undefined> {
+  const [x] = await loadTracks(db, o);
+  if (!x) return undefined;
+  const r = await db.query<{ read_at: Date }>(
+    `INSERT INTO lesson_reads (user_id, track_id)
+     SELECT $1, t.id FROM tracks t WHERE t.pattern_slug = $2
+     ON CONFLICT (user_id, track_id) DO UPDATE SET read_at = lesson_reads.read_at
+     RETURNING read_at`,
+    [o.user.id, o.pattern],
+  );
+  return { lessonReadAt: r.rows[0]!.read_at.toISOString() };
 }
 
 export type HintResult = "ok" | "no_hints" | "no_such_hint" | "out_of_order";

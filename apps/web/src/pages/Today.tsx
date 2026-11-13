@@ -1,13 +1,13 @@
 // Home: today's daily problem, the countdown to the next one, the streak, and this week (daily
 // problems and this week's track ladder) at a glance.
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { DailyEntry, DailyToday, TrackSummary } from "@dailydsa/shared";
 import { api, ApiErr } from "../api";
 import { addDays, dailyStreak, daysAgo, fmtDay, fmtDayLong, fmtStamp, fmtTime, istDay } from "../format";
 import { Icon } from "../components/Icon";
 import { Markdown } from "../components/Markdown";
 import { LoadError, Skeleton, StatusBadge, StatusDot, useLoad, useTitle } from "../components/ui";
-import { dowOf, ladderNext } from "../ladder";
+import { dowOf, ladderNext, lessonUnread, trackAction } from "../ladder";
 import { Link } from "../router";
 import { store } from "../store";
 
@@ -42,7 +42,7 @@ export function Today() {
     <main className="page fluid">
       <div className="today-hero">
         <section className="card card-hero today-main" aria-labelledby="today-title">
-          {t ? <TodayCard t={t} next={ladderFirst ? next : null} onRollover={() => { today.reload(); archive.reload(); }} /> : (
+          {t ? <TodayCard t={t} track={tracks.data ? running : undefined} next={ladderFirst ? next : null} onRollover={() => { today.reload(); archive.reload(); }} /> : (
             <div className="stack">
               <Skeleton h={14} w={180} />
               <Skeleton h={38} w="70%" />
@@ -57,13 +57,16 @@ export function Today() {
 
       {t && dowOf(t.day) === 0 && <Recap today={t.day} />}
 
-      {t && archive.data && tracks.data && <Week days={days} today={t.day} track={running} />}
+      {t && archive.data && tracks.data && <Week days={days} today={t.day} track={running} daily={t} />}
     </main>
   );
 }
 
-/** `next`: once today's daily is solved, the ladder rung to do next (it becomes the primary button). */
-function TodayCard({ t, next, onRollover }: { t: DailyToday; next: ReturnType<typeof ladderNext>; onRollover: () => void }) {
+/**
+ * `next`: once today's daily is solved, the ladder rung to do next (it becomes the primary button).
+ * `track`: this week's track (null: none runs; undefined: still loading).
+ */
+function TodayCard({ t, track, next, onRollover }: { t: DailyToday; track: TrackSummary | null | undefined; next: ReturnType<typeof ladderNext>; onRollover: () => void }) {
   const left = useCountdown(t.nextRolloverAt, onRollover);
   const cta = t.status === "solved" ? "Open again" : t.status === "attempted" ? "Continue" : "Solve it";
   const solved = t.status === "solved";
@@ -72,6 +75,8 @@ function TodayCard({ t, next, onRollover }: { t: DailyToday; next: ReturnType<ty
   // A repeat shown since the user joined: one badge instead of "New" next to "Review".
   const seenBefore = !!t.review && (!t.joinedOn || t.review.lastShownOn >= t.joinedOn);
   const nextRung = next?.step.problem ? next : null;
+  // A weekend problem of this week's pattern: the line under the badges names it, so no "hidden" badge.
+  const ofTheWeek = t.weekend && t.weekTrack === true && !!track;
   return (
     <>
       <div className="eyebrow">
@@ -86,11 +91,9 @@ function TodayCard({ t, next, onRollover }: { t: DailyToday; next: ReturnType<ty
         {seenBefore && (
           <span className="badge badge-info">{t.status === "new" ? "Back for review" : "Review"} · shown {fmtDay(t.review!.lastShownOn)}</span>
         )}
-        {t.pattern ? <span className="badge badge-primary">{t.pattern.name}</span> : <span className="badge">Pattern hidden</span>}
+        {t.pattern ? <span className="badge badge-primary">{t.pattern.name}</span> : !ofTheWeek && <span className="badge">Pattern hidden</span>}
       </div>
-      {t.weekend && !t.pattern && (
-        <p className="muted small">Weekend problems use the pattern of this week's track. The tag stays hidden until you solve it.</p>
-      )}
+      <TodayWhy t={t} track={track} />
       {t.status === "solved" && t.solvedAt && <p className="muted small">Solved {fmtStamp(t.solvedAt)}.</p>}
       <Pulse pulse={t.pulse} />
       <div className="actions">
@@ -105,6 +108,26 @@ function TodayCard({ t, next, onRollover }: { t: DailyToday; next: ReturnType<ty
       </div>
     </>
   );
+}
+
+/**
+ * One line relating today's problem to the week, so the daily isn't taken for the week's pattern:
+ * weekday dailies are mixed review; weekend ones use this week's pattern (when the server says so).
+ */
+function TodayWhy({ t, track }: { t: DailyToday; track: TrackSummary | null | undefined }) {
+  if (track === undefined) return null; // tracks still loading: don't flash the wrong line
+  const name = track ? <Link to={`/tracks/${track.pattern.slug}`}>{track.title}</Link> : null;
+  let line;
+  if (!t.weekend) {
+    line = name ? <>Mixed review: weekday dailies can be any pattern. This week's pattern, {name}, is on the ladder below.</> : <>Mixed review: weekday dailies can be any pattern.</>;
+  } else if (t.weekTrack === true && name) {
+    line = <>Uses this week's pattern, {name}, without the ladder's hints.</>;
+  } else if (t.weekTrack === false) {
+    line = name ? <>Weekend review: not this week's pattern this time.</> : <>Weekend review: any pattern.</>;
+  } else {
+    line = <>Weekend problems use the pattern of this week's track.</>; // a server without `weekTrack`
+  }
+  return <p className="muted small today-why">{line}</p>;
 }
 
 /** hh:mm:ss */
@@ -222,7 +245,7 @@ function Stats({ days, today, joinedOn }: { days: DailyEntry[]; today: string; j
  * Monday to Sunday of the current IST week: the daily problem of each day and, while a track
  * runs, its ladder (problem n opens on day n; Saturday and Sunday are for catching up).
  */
-function Week({ days, today, track }: { days: DailyEntry[]; today: string; track: TrackSummary | null }) {
+function Week({ days, today, track, daily }: { days: DailyEntry[]; today: string; track: TrackSummary | null; daily: DailyToday }) {
   const next = track ? ladderNext(track, today) : null;
   const monday = addDays(today, -dowOf(today));
   const tomorrow = addDays(today, 1);
@@ -232,21 +255,12 @@ function Week({ days, today, track }: { days: DailyEntry[]; today: string; track
 
   return (
     <section className="card week" aria-labelledby="week-h">
-      <div className="week-head">
-        <div className="stack-sm" style={{ gap: 4 }}>
+      {track ? <WeekBand track={track} today={today} monday={monday} daily={daily} weekendDays={[byDay.get(week[5]!), byDay.get(week[6]!)]} /> : (
+        <div className="week-head">
           <h2 id="week-h">This week</h2>
-          {track && (
-            <div className="eyebrow">
-              <span>Track: <Link to={`/tracks/${track.pattern.slug}`}>{track.title}</Link></span>
-              <span aria-hidden>·</span>
-              <span className="num"><b style={{ color: "var(--text)", fontWeight: 500 }}>{track.solved}</b>/{track.ladder.length} solved</span>
-            </div>
-          )}
+          <span className="muted small">No track this week: the dailies are mixed review.</span>
         </div>
-        {track && (
-          <Link to={`/tracks/${track.pattern.slug}`} className="btn">{track.hasLesson ? "Read the lesson" : "Open the track"}</Link>
-        )}
-      </div>
+      )}
 
       <div className="week-grid" role="table" aria-label="This week">
         <div role="row" className="wg-row">
@@ -322,6 +336,79 @@ function Week({ days, today, track }: { days: DailyEntry[]; today: string; track
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * The week's pattern, named big, with the lesson's "how to spot it" leads and the week's three
+ * steps: the lesson, the ladder (one rung a weekday), then the weekend dailies of the same pattern.
+ * (Weekday dailies are mixed review; the line on today's card says so.)
+ */
+function WeekBand({ track, today, monday, daily, weekendDays }: {
+  track: TrackSummary; today: string; monday: string; daily: DailyToday;
+  /** This week's Saturday and Sunday dailies, where shown already. */
+  weekendDays: [DailyEntry | undefined, DailyEntry | undefined];
+}) {
+  const action = trackAction(track, today);
+  const to = `/tracks/${track.pattern.slug}`;
+  const unread = lessonUnread(track);
+  const weekend = dowOf(today) >= 5;
+  const ladderDone = track.ladder.length > 0 && track.solved >= track.ladder.length;
+  // On a weekend the server says whether today's problem really is of this pattern (a pin may not be).
+  const weekendNote = !weekend ? "Saturday's and Sunday's dailies use it" : daily.weekTrack === false ? "Today's is review: another pattern" : "Today's daily uses it";
+  const steps: { title: ReactNode; sub: string; state: "todo" | "doing" | "done" | "none"; to?: string }[] = [
+    {
+      title: "Lesson",
+      sub: !track.hasLesson ? "Coming soon" : unread ? "Not opened yet" : `Opened ${fmtDay(istDay(track.lessonReadAt!))}`,
+      state: !track.hasLesson ? "none" : unread ? "todo" : "done",
+      ...(track.hasLesson ? { to } : {}),
+    },
+    {
+      title: <>Ladder <span className="num">{track.solved}/{track.ladder.length}</span></>,
+      sub: "One rung opens each weekday",
+      state: ladderDone ? "done" : track.solved > 0 ? "doing" : "todo",
+    },
+    // Done once Sunday's daily (and Saturday's, if there was one) is solved.
+    { title: "Weekend", sub: weekendNote, state: weekendDays[1]?.status === "solved" && (!weekendDays[0] || weekendDays[0].status === "solved") ? "done" : "todo" },
+  ];
+  const nextStep = steps.findIndex((s) => s.state === "todo" || s.state === "doing");
+  return (
+    <div className="week-band">
+      <div className="week-band-text">
+        <div className="eyebrow">
+          <span>This week's pattern</span>
+          <span aria-hidden>·</span>
+          <span>{fmtDay(monday)} – {fmtDay(addDays(monday, 6))}</span>
+        </div>
+        <h2 id="week-h"><Link to={to}>{track.title}</Link></h2>
+        {track.spotIt.length > 0 && (
+          <div className="track-spot week-spot">
+            <span className="week-k">How to spot it</span>
+            <Markdown>{track.spotIt.slice(0, 3).map((s) => `- ${s}`).join("\n")}</Markdown>
+          </div>
+        )}
+      </div>
+      <div className="week-band-side">
+        <ol className="week-steps" aria-label="This week's steps">
+          {steps.map((s, i) => (
+            <li key={i} data-s={s.state} data-next={i === nextStep || undefined}>
+              <span className="ws-n" aria-hidden>{s.state === "done" ? <Icon name="check" /> : i + 1}</span>
+              <span className="ws-body">
+                {s.to ? <Link to={s.to} className="ws-t">{s.title}</Link> : <span className="ws-t">{s.title}</span>}
+                <span className="ws-sub">{s.sub}</span>
+              </span>
+              <span className="sr-only">{s.state === "done" ? ", done" : i === nextStep ? ", next" : ""}</span>
+            </li>
+          ))}
+        </ol>
+        {"to" in action ? (
+          <Link to={action.to} className="btn">{action.label}</Link>
+        ) : (
+          <span className="small muted">{action.label}</span>
+        )}
+        {action.kind !== "lesson" && track.hasLesson && <Link to={to} className="small">{unread ? "Read the lesson" : "Open the lesson again"} →</Link>}
+      </div>
+    </div>
   );
 }
 

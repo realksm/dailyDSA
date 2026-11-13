@@ -198,6 +198,10 @@ export function TrackPage({ pattern }: { pattern: string }) {
 
 function Track({ t }: { t: TrackView }) {
   const staff = isStaff(useMe());
+  // Opening the lesson counts as reading it: Today and the library stop sending people here first.
+  useEffect(() => {
+    if (t.hasLesson && !t.lessonReadAt) api.lessonRead(t.pattern.slug).catch(() => {});
+  }, [t.pattern.slug, t.hasLesson, t.lessonReadAt]);
   return (
     <main className="page track-page fluid">
       <div className="track-layout">
