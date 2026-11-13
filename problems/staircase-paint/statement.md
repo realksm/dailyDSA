@@ -10,7 +10,7 @@ Find the height of every column after all steps.
 
 The first line contains two integers $n$ and $q$.
 
-Each of the next $q$ lines contains three integers $l$, $r$ and $v$ — one step.
+Each of the next $q$ lines contains three integers $l$, $r$ and $v$: one step.
 
 ## Output
 

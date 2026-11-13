@@ -8,11 +8,11 @@ Find the length of that stretch.
 
 The first line contains two integers $n$ and $k$.
 
-The second line contains $n$ integers $b_1, b_2, \ldots, b_n$ — the badge numbers in scan order.
+The second line contains $n$ integers $b_1, b_2, \ldots, b_n$: the badge numbers in scan order.
 
 ## Output
 
-Print one integer — the largest number of consecutive scans in which every badge number appears at most $k$ times.
+Print one integer: the largest number of consecutive scans in which every badge number appears at most $k$ times.
 
 ## Constraints
 

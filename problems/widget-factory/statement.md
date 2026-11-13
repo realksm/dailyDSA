@@ -10,7 +10,7 @@ The second line contains $m$ integers $s_1, s_2, \ldots, s_m$.
 
 ## Output
 
-Print one integer — the smallest $T$ with $\lfloor T/s_1 \rfloor + \ldots + \lfloor T/s_m \rfloor \ge G$.
+Print one integer: the smallest $T$ with $\lfloor T/s_1 \rfloor + \ldots + \lfloor T/s_m \rfloor \ge G$.
 
 ## Constraints
 

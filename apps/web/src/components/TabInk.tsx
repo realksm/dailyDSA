@@ -23,11 +23,12 @@ export function TabInk() {
         return;
       }
       if (!shown) delete ink.dataset.slide; // jump into place, then slide from the next change on
-      ink.style.width = `${tab.offsetWidth}px`;
-      ink.style.transform = `translateX(${tab.offsetLeft}px)`;
+      ink.style.transform = `translateX(${tab.offsetLeft}px) scaleX(${tab.offsetWidth / 100})`;
       ink.style.opacity = "1";
-      if (!shown) {
-        shown = true;
+      const wasShown = shown;
+      shown = true;
+      // Under reduced motion it always jumps.
+      if (!wasShown && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         void ink.offsetWidth; // commit the jump before turning the transition back on
         ink.dataset.slide = "";
       }

@@ -14,7 +14,7 @@ The second line contains $n$ integers $c_1, c_2, \ldots, c_n$.
 
 ## Output
 
-Print one integer — the number of stretches whose total is divisible by $m$.
+Print one integer: the number of stretches whose total is divisible by $m$.
 
 ## Constraints
 

@@ -3,7 +3,7 @@
 // with a tab per language (lessonParts, shared with the CLI check), shown in a read-only editor like
 // the Solutions tab. The tab starts on the language the solver last used in the editor.
 import { useState, type ReactNode } from "react";
-import { LANG_LABEL, LANGS, lessonParts, type Lang, type LadderStep } from "@dailydsa/shared";
+import { LANG_LABEL, LANGS, lessonParts, solvePart, type Lang, type LadderStep } from "@dailydsa/shared";
 import { fmtDay } from "../format";
 import { Link } from "../router";
 import { Icon } from "./Icon";
@@ -70,7 +70,11 @@ function CodeTabs({ blocks }: { blocks: { lang: Lang; code: string }[] }) {
     const want = preferredLang();
     return Math.max(0, blocks.findIndex((b) => b.lang === want));
   });
+  // Folded by default: the input-reading main() is the same in every block and says nothing about the pattern.
+  const [full, setFull] = useState(false);
   const b = blocks[Math.min(pick, blocks.length - 1)]!;
+  const part = solvePart(b.lang, b.code);
+  const shown = part && !full ? part.code : b.code;
   return (
     <div className="code-tabs">
       <div className="code-tabs-head">
@@ -87,7 +91,13 @@ function CodeTabs({ blocks }: { blocks: { lang: Lang; code: string }[] }) {
         <span className="grow" />
         <CopyButton text={b.code} />
       </div>
-      <CodeEditor key={pick} lang={b.lang} value={b.code} onChange={() => {}} readOnly autoHeight />
+      <CodeEditor key={`${pick}-${full}`} lang={b.lang} value={shown} onChange={() => {}} readOnly autoHeight />
+      {part && (
+        <button type="button" className="code-fold" aria-expanded={full} onClick={() => setFull((x) => !x)}>
+          <Icon name="chevron" />
+          {full ? "Fold the includes and main()" : `Show the whole program (${part.hidden} more lines: includes, input and output)`}
+        </button>
+      )}
     </div>
   );
 }

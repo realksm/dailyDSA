@@ -46,6 +46,12 @@ describe.skipIf(!dbUp)("auth (needs db + migrations)", () => {
     expect(r.body.error.code).toBe("unauthorized");
   });
 
+  it("answers /session with null when signed out (no 401 on the landing page)", async () => {
+    const r = await request(setup().app).get("/api/session");
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({ user: null });
+  });
+
   it("signs up with an invite code; the code decides the role and counts uses", async () => {
     const { app } = setup();
     const code = await invite({ maxUses: 1, role: "setter" });
@@ -55,6 +61,7 @@ describe.skipIf(!dbUp)("auth (needs db + migrations)", () => {
     expect(r.status).toBe(201);
     expect(r.body).toMatchObject({ email: e, name: "Asha", role: "setter" });
     expect((await agent.get("/api/me")).body.email).toBe(e);
+    expect((await agent.get("/api/session")).body.user.email).toBe(e);
 
     const usedUp = await request(app).post("/api/auth/signup").send({ email: email(), name: "B", password: PW, inviteCode: code });
     expect(usedUp.body.error).toMatchObject({ code: "invalid_invite", message: expect.stringMatching(/used up/) });

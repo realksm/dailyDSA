@@ -8,13 +8,13 @@ The harbour master wants all lamps checked as early as possible. If the guards p
 
 The first line contains two integers $n$ and $m$.
 
-The second line contains $n$ integers $g_1, \ldots, g_n$ — the guards' starting positions.
+The second line contains $n$ integers $g_1, \ldots, g_n$: the guards' starting positions.
 
-The third line contains $m$ integers $p_1, \ldots, p_m$ — the lamp positions.
+The third line contains $m$ integers $p_1, \ldots, p_m$: the lamp positions.
 
 ## Output
 
-Print one integer — the smallest number of seconds after which all lamps can have been checked.
+Print one integer: the smallest number of seconds after which all lamps can have been checked.
 
 ## Constraints
 

@@ -8,11 +8,11 @@ Answer all $q$ questions.
 
 The first line contains two integers $R$ and $C$.
 
-Each of the next $R$ lines contains $C$ integers — row $i$ holds $t_{i,1}, \ldots, t_{i,C}$.
+Each of the next $R$ lines contains $C$ integers: row $i$ holds $t_{i,1}, \ldots, t_{i,C}$.
 
 The next line contains one integer $q$.
 
-Each of the next $q$ lines contains four integers $r_1$, $c_1$, $r_2$, $c_2$ — one plot.
+Each of the next $q$ lines contains four integers $r_1$, $c_1$, $r_2$, $c_2$: one plot.
 
 ## Output
 

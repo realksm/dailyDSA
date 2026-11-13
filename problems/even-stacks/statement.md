@@ -10,11 +10,11 @@ What is the smallest number of merges that makes the row balanced? (A single sta
 
 The first line contains one integer $n$.
 
-The second line contains $n$ integers $a_1, \ldots, a_n$ — the weights of the stacks from left to right.
+The second line contains $n$ integers $a_1, \ldots, a_n$: the weights of the stacks from left to right.
 
 ## Output
 
-Print one integer — the smallest number of merges.
+Print one integer: the smallest number of merges.
 
 ## Constraints
 

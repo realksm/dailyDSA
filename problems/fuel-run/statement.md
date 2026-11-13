@@ -6,13 +6,13 @@ What is the largest number of **consecutive** legs the van can drive on one tank
 
 ## Input
 
-The first line contains two integers $n$ and $T$ — the number of legs and the tank size.
+The first line contains two integers $n$ and $T$: the number of legs and the tank size.
 
-The second line contains $n$ integers $f_1, f_2, \ldots, f_n$ — the fuel each leg burns, in route order.
+The second line contains $n$ integers $f_1, f_2, \ldots, f_n$: the fuel each leg burns, in route order.
 
 ## Output
 
-Print one integer — the maximum number of consecutive legs whose total fuel is at most $T$, or $0$ if no single leg fits.
+Print one integer: the maximum number of consecutive legs whose total fuel is at most $T$, or $0$ if no single leg fits.
 
 ## Constraints
 

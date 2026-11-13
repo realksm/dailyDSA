@@ -127,9 +127,9 @@ importers:
         specifier: 6.0.0
         version: 6.0.0
     devDependencies:
-      '@iconify-json/solar':
-        specifier: 1.2.13
-        version: 1.2.13
+      '@iconify-json/lucide':
+        specifier: 1.2.151
+        version: 1.2.151
       '@types/react':
         specifier: 19.3.0
         version: 19.3.0
@@ -380,8 +380,8 @@ packages:
   '@fontsource/ibm-plex-sans@5.3.0':
     resolution: {integrity: sha512-CbE4CbbEEZJX860XyUiRpsksXIQR8Rp2XDva2VO53NJox9tVNtusrysd2x5YkUEY3ErQ66W1IiiQL8/wihhw5w==}
 
-  '@iconify-json/solar@1.2.13':
-    resolution: {integrity: sha512-/ZWb6xRib6pzxD/qTkKWYhuzSU2yu0bY+EN0spgtz1NM3d5f4eYueQZpL3PfCdsg5uVfm4Ldtt3cAyQL+YI8/Q==}
+  '@iconify-json/lucide@1.2.151':
+    resolution: {integrity: sha512-OCp+cNzynOlOI7zHq8bFGhBBzmSSWFICvOSTxZrajhFJC4YizvlLiBJMbaLzzlpMaGRidmZmAA8GpovoDKiy/w==}
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
@@ -2295,7 +2295,7 @@ snapshots:
 
   '@fontsource/ibm-plex-sans@5.3.0': {}
 
-  '@iconify-json/solar@1.2.13':
+  '@iconify-json/lucide@1.2.151':
     dependencies:
       '@iconify/types': 2.0.0
 

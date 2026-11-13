@@ -6,11 +6,11 @@ Answer all of their questions.
 
 ## Input
 
-The first line contains two integers $n$ and $q$ — the number of days in the ledger and the number of questions.
+The first line contains two integers $n$ and $q$: the number of days in the ledger and the number of questions.
 
-The second line contains $n$ integers $a_1, a_2, \ldots, a_n$ — the rainfall on each day.
+The second line contains $n$ integers $a_1, a_2, \ldots, a_n$: the rainfall on each day.
 
-Each of the next $q$ lines contains two integers $l$ and $r$ — one question.
+Each of the next $q$ lines contains two integers $l$ and $r$: one question.
 
 ## Output
 

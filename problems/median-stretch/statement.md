@@ -12,7 +12,7 @@ The second line contains $n$ integers $r_1, r_2, \ldots, r_n$.
 
 ## Output
 
-Print one integer — the largest median of a stretch of at least $k$ consecutive days.
+Print one integer: the largest median of a stretch of at least $k$ consecutive days.
 
 ## Constraints
 

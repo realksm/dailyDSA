@@ -12,7 +12,7 @@ The second line contains $n$ integers $a_1, a_2, \ldots, a_n$.
 
 ## Output
 
-Print one integer — the length of the shortest block to remove, $0$ if nothing needs to be removed, or $-1$ if it is impossible.
+Print one integer: the length of the shortest block to remove, $0$ if nothing needs to be removed, or $-1$ if it is impossible.
 
 ## Constraints
 

@@ -297,11 +297,12 @@ select { padding-right: 28px; }
 .tabs[data-ink] { position: relative; }
 .tabs[data-ink] button[aria-selected="true"] { border-bottom-color: transparent; }
 .tab-ink {
-  position: absolute; left: 0; bottom: -1px; height: 3px; width: 0;
-  background: var(--primary); border-radius: 3px 3px 0 0; pointer-events: none; opacity: 0;
+  /* 100px wide, scaled to the tab: only transform and opacity animate. */
+  position: absolute; left: 0; bottom: -1px; height: 3px; width: 100px; transform-origin: left center;
+  background: var(--primary); border-radius: 2px 2px 0 0; pointer-events: none; opacity: 0;
   transition: opacity 120ms ease-out;
 }
-.tab-ink[data-slide] { transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), width 260ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 120ms ease-out; }
+.tab-ink[data-slide] { transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 120ms ease-out; }
 /* The new panel under a tab bar fades in. */
 .tab-panel { animation: fade 180ms ease-out; }
 
@@ -374,7 +375,7 @@ body:has(.auth) { min-width: 0; }
 .auth .afield-box input {
   flex: 1; min-width: 0; height: 46px; padding: 0 14px; font-size: 15px;
   border: 1.5px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface);
-  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+  transition: border-color 120ms ease-out;
 }
 .auth .afield-box input:hover { border-color: var(--text); }
 .auth .afield-box input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-color: var(--focus); box-shadow: none; }
@@ -793,7 +794,7 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
    this week's track). Every other card is flat with a hairline outline. */
 .card { border: 1.5px solid var(--line-strong); }
 .card-hero { border: 2px solid var(--ink); box-shadow: var(--hard); }
-.btn { height: 38px; border: 2px solid var(--ink); font-weight: 600; box-shadow: 2px 2px 0 var(--ink); transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out; }
+.btn { height: 38px; border: 2px solid var(--ink); font-weight: 600; box-shadow: 2px 2px 0 var(--ink); transition: transform 120ms ease-out, background-color 120ms ease-out; }
 .btn-lg { height: 46px; padding: 0 22px; font-size: 16px; box-shadow: 3px 3px 0 var(--ink); }
 .btn-sm { height: 30px; box-shadow: none; }
 .btn-ghost { border-color: transparent; box-shadow: none; }
@@ -828,7 +829,7 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
   display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 14px;
   font: 600 14px/1 var(--font); color: var(--muted);
   background: transparent; border: 2px solid transparent; border-radius: 999px; cursor: pointer;
-  transition: color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out, transform 120ms ease-out, box-shadow 120ms ease-out;
+  transition: color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out, transform 120ms ease-out;
 }
 .logout svg { width: 16px; height: 16px; transition: transform 120ms ease-out; }
 .logout:focus-visible { color: var(--text); border-color: var(--edge); }
@@ -982,7 +983,7 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .reveal-stats { color: var(--muted); font-size: 14px; }
 .reveal-day { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .reveal-sq { width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px solid var(--c-ink); background: var(--accent); animation: sq-pop 520ms 450ms cubic-bezier(0.3, 1.5, 0.5, 1) both; }
-@keyframes sq-pop { from { transform: scale(0.2); opacity: 0; } }
+@keyframes sq-pop { from { transform: scale(0.6); opacity: 0; } }
 .reveal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .badge-reveal { animation: badge-flip 600ms cubic-bezier(0.3, 1.3, 0.5, 1) both; }
 @keyframes badge-flip { from { transform: rotateX(90deg); } }
@@ -1016,7 +1017,7 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .track-feature {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 32px; align-items: center;
   padding: 28px 32px; text-decoration: none; color: var(--text); background: var(--primary-soft);
-  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+  transition: transform 120ms ease-out;
 }
 .track-feature-text { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .track-feature h2 { font-size: 38px; line-height: 1; }
@@ -1055,7 +1056,7 @@ h1, h2 { font-weight: 800; letter-spacing: -0.035em; }
 .track-row {
   display: grid; grid-template-columns: 240px minmax(0, 1fr) 200px; gap: 24px; align-items: center;
   padding: 18px 22px; text-decoration: none; color: var(--text);
-  transition: border-color 120ms ease-out, transform 120ms ease-out, box-shadow 120ms ease-out;
+  transition: border-color 120ms ease-out, transform 120ms ease-out;
 }
 .track-row h3 { font: 800 22px/1.1 var(--display); letter-spacing: -0.03em; }
 .track-row-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -1325,3 +1326,20 @@ span.lesson-rung[data-open] { color: var(--text); font-weight: 600; }
 .streak-goal { margin-top: 8px; color: var(--text); }
 /* The card sizes to what it holds; a new member's few squares don't stretch it to the hero's height. */
 .today-side { align-self: start; }
+
+/* Admin schedule (2026-11-13): the pin control shows on hover or focus, so ~56 identical "Automatic"
+   menus don't fill the calendar. Pinned days keep it; keyboard focus still reaches every one. */
+@media (hover: hover) {
+  .cal-pin-row:not([data-pinned]) { opacity: 0; transition: opacity 120ms ease-out; }
+  .cal-day:hover .cal-pin-row, .cal-day:focus-within .cal-pin-row, .cal-pin-row:has([data-state="open"]) { opacity: 1; }
+}
+
+/* Lesson code (2026-11-13): solve() and its helpers show; the includes and main() fold behind this bar. */
+.code-fold {
+  display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 12px; border: 0; border-top: 1px solid var(--line);
+  background: var(--bg); color: var(--muted); font: 500 12.5px var(--font); text-align: left; cursor: pointer;
+  transition: color 120ms ease-out;
+}
+.code-fold:hover { color: var(--text); }
+.code-fold .icon { width: 14px; height: 14px; transform: rotate(-90deg); }
+.code-fold[aria-expanded="true"] .icon { transform: none; }

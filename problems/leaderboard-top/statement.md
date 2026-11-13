@@ -8,9 +8,9 @@ Print the total shown after every game.
 
 ## Input
 
-The first line contains two integers $n$ and $k$ — the number of games and the size of the leaderboard.
+The first line contains two integers $n$ and $k$: the number of games and the size of the leaderboard.
 
-The second line contains $n$ integers $a_1, \ldots, a_n$ — the scores, in the order the games end.
+The second line contains $n$ integers $a_1, \ldots, a_n$: the scores, in the order the games end.
 
 ## Output
 

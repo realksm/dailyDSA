@@ -12,7 +12,7 @@ The second line contains $n$ integers $w_1, w_2, \ldots, w_n$.
 
 ## Output
 
-Print one integer — the smallest capacity $C$ that needs at most $T$ trips.
+Print one integer: the smallest capacity $C$ that needs at most $T$ trips.
 
 ## Constraints
 

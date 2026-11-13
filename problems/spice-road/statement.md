@@ -8,11 +8,11 @@ Find the smallest number of consecutive stalls that together sell all $K$ kinds.
 
 The first line contains two integers $n$ and $K$.
 
-The second line contains $n$ integers $s_1, s_2, \ldots, s_n$ — the kind of spice each stall sells.
+The second line contains $n$ integers $s_1, s_2, \ldots, s_n$: the kind of spice each stall sells.
 
 ## Output
 
-Print one integer — the length of the shortest block of consecutive stalls that sells every kind.
+Print one integer: the length of the shortest block of consecutive stalls that sells every kind.
 
 ## Constraints
 

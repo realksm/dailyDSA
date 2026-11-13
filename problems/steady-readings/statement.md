@@ -9,11 +9,11 @@ $$\max(t_l, \ldots, t_r) - \min(t_l, \ldots, t_r) \le D.$$
 
 The first line contains two integers $n$ and $D$.
 
-The second line contains $n$ integers $t_1, t_2, \ldots, t_n$ — the readings in order.
+The second line contains $n$ integers $t_1, t_2, \ldots, t_n$: the readings in order.
 
 ## Output
 
-Print one integer — the number of steady stretches.
+Print one integer: the number of steady stretches.
 
 ## Constraints
 

@@ -6,13 +6,13 @@ The owner wants to print a menu card that lists all $n \cdot m$ combos, cheapest
 
 The first line contains three integers $n$, $m$ and $k$.
 
-The second line contains $n$ integers $a_1, \ldots, a_n$ — the prices of the mains.
+The second line contains $n$ integers $a_1, \ldots, a_n$: the prices of the mains.
 
-The third line contains $m$ integers $b_1, \ldots, b_m$ — the prices of the drinks.
+The third line contains $m$ integers $b_1, \ldots, b_m$: the prices of the drinks.
 
 ## Output
 
-Print one integer — the $k$-th smallest of the $n \cdot m$ sums $a_i + b_j$.
+Print one integer: the $k$-th smallest of the $n \cdot m$ sums $a_i + b_j$.
 
 ## Constraints
 

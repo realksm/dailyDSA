@@ -1,9 +1,10 @@
 // Track lessons in git: how they split into Markdown and code groups, what `dsa track check`
 // demands, and what `dsa track import` writes (in a rolled-back transaction).
+import { readdirSync, readFileSync } from "node:fs";
 import type pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPool } from "@dailydsa/db";
-import { editorTemplate, lessonParts, lessonSpotIt, type InputSpec, type Lang } from "@dailydsa/shared";
+import { editorTemplate, lessonParts, lessonSpotIt, solvePart, type InputSpec, type Lang } from "@dailydsa/shared";
 import { checkLesson, importLesson, lessonOutline, type LadderSpec } from "../src/lesson.js";
 
 const spec: InputSpec = { vars: [{ name: "n", type: "int" }, { name: "a", type: "long[]", length: "n" }], returns: "long" };
@@ -121,3 +122,32 @@ describe.skipIf(!dbUp)("importLesson", () => {
     }
   });
 });
+
+describe("solvePart (lesson code folded to solve() and its helpers)", () => {
+  it("keeps what sits between the includes and main(), dedented", () => {
+    const cpp = "#include <bits/stdc++.h>\nusing namespace std;\n\nlong long solve(int n) {\n    return n;\n}\n\nint main() {\n    int n; cin >> n;\n}\n";
+    expect(solvePart("cpp", cpp)).toEqual({ code: "long long solve(int n) {\n    return n;\n}", hidden: 7 });
+    const java = "import java.io.*;\n\npublic class Main {\n    static int solve(int n) {\n        return n;\n    }\n\n    public static void main(String[] a) {\n    }\n}";
+    expect(solvePart("java", java)!.code).toBe("static int solve(int n) {\n    return n;\n}");
+    expect(solvePart("py", "def solve(n):\n    return n\n")).toBeNull(); // no main(): nothing to fold
+  });
+
+  it("folds every code block of every lesson in git down to its definitions", () => {
+    const dir = new URL("../../../problems/_tracks/", import.meta.url);
+    let n = 0;
+    for (const f of readdirSync(dir).filter((x) => x.endsWith(".md"))) {
+      for (const p of lessonParts(readFileSync(new URL(f, dir), "utf8"))) {
+        if (!("code" in p)) continue;
+        for (const b of p.code) {
+          const r = solvePart(b.lang, b.code);
+          if (!r) continue;
+          n++;
+          expect(r.code, `${f} ${b.lang}`).not.toMatch(/\bmain\s*\(|#include|^import /m);
+          expect(r.code, `${f} ${b.lang}`).toMatch(/^(def |static |long |int |bool |vector|using |class |template|const |[A-Za-z_][\w<>:, ]*\s+\w+\s*\()/);
+        }
+      }
+    }
+    expect(n).toBeGreaterThan(0);
+  });
+});
+

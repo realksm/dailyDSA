@@ -18,15 +18,15 @@ import { useAuth } from "../auth";
 import { BrandMark, useTitle } from "../components/ui";
 import { hasDiagram, PatternDiagram } from "../components/PatternDiagram";
 import { Link, useRouter } from "../router";
-import { SOLAR, type SolarName } from "./solar";
+import { ICONS, type IconName } from "../icons";
 import { Countdown } from "./countdown";
 // Each track's ladder titles, first "How to spot it" clue and weekend count, read from problems/_tracks/ at build time.
 import { PLANNED, TRACKS } from "virtual:landing-tracks";
 
 gsap.registerPlugin(ScrollTrigger);
 
-function Icon({ name, className }: { name: SolarName; className?: string }) {
-  return <svg viewBox="0 0 24 24" aria-hidden="true" className={className ?? "lp-icon"} dangerouslySetInnerHTML={{ __html: SOLAR[name] }} />;
+function Icon({ name, className }: { name: IconName; className?: string }) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" className={className ?? "lp-icon"} dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
 }
 
 /** A heading whose words can rise one by one. Assistive tech reads the unsplit text; the split copy is
@@ -68,7 +68,7 @@ const WEEK:{ day: string; lead?: ReactNode; ladder?: number; items: ReactNode[] 
   { day: "Sun", items: ["Another one, tag still hidden", "Catch up on the ladder"] },
 ];
 
-const STEPS: { icon: SolarName; title: string; body: string }[] = [
+const STEPS: { icon: IconName; title: string; body: string }[] = [
   { icon: "read", title: "Read it cold", body: "It lands at midnight IST with its pattern hidden. Working out which idea it needs is half the exercise." },
   { icon: "run", title: "Run on the samples", body: "The input is already read into variables; you write solve(). Run checks the samples and your own input." },
   { icon: "submit", title: "Submit to every test", body: "Hidden tests included, with time and memory for each." },
@@ -597,25 +597,20 @@ export default function Landing() {
               <li><i className="m-t" />Today</li>
             </ul>
           </figure>
-          <div className="lp-rules" data-reveal-group>
-            <div>
-              <h3><Icon name="streak" />The streak</h3>
-              <p>A day counts when you solve its daily before that day ends in IST. Solving a missed day later doesn't mend it.</p>
-            </div>
-            <div>
-              <h3><Icon name="archive" />The archive</h3>
-              <p>Every past daily stays open. When a problem comes round again, it's marked as review.</p>
-            </div>
-            <div>
-              <h3><Icon name="hint" />Honest history</h3>
-              <p>Stuck? Open the solutions after a real submit. Hints and early peeks are recorded.</p>
-            </div>
-          </div>
+          <dl className="lp-rules" data-reveal-group>
+            <dt>The streak</dt>
+            <dd>A day counts when you solve its daily before that day ends in IST. Solving a missed day later doesn't mend it.</dd>
+            <dt>The archive</dt>
+            <dd>Every past daily stays open. When a problem comes round again, it's marked as review.</dd>
+            <dt>Honest history</dt>
+            <dd>Stuck? Open the solutions after a real submit. Hints and early peeks are recorded.</dd>
+          </dl>
         </section>
 
         {/* 7 · Final call */}
         <section className="lp-final" aria-labelledby="final-title">
           <div className="lp-final-card" data-reveal-group>
+            <div className="lp-final-text">
             {signedIn ? (
               <>
                 <h2 id="final-title">You're already in.</h2>
@@ -643,11 +638,12 @@ export default function Landing() {
                 </div>
               </>
             )}
-            {!signedIn && (
-              <p className="lp-final-by">
-                Built and run by <a href={GITHUB} rel="noreferrer" target="_blank">realksm<span className="sr-only"> on GitHub (opens in a new tab)</span><Icon name="arrow" className="lp-icon lp-arrow" /></a>
-              </p>
-            )}
+            </div>
+            <ol className="lp-final-week" aria-hidden="true">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => (
+                <li key={d} data-on={i < 4 || undefined} data-today={i === 4 || undefined}><i />{d}</li>
+              ))}
+            </ol>
           </div>
         </section>
       </main>
@@ -656,10 +652,6 @@ export default function Landing() {
         <div className="brand"><BrandMark /><span>daily<b>DSA</b></span></div>
         <p>One problem a day, one pattern a week. All problems are original.</p>
         <p>Made by <a className="lp-footer-author" href={GITHUB} rel="noreferrer" target="_blank">realksm<span className="sr-only"> on GitHub (opens in a new tab)</span></a></p>
-        <p className="lp-credit">
-          Icons: <a href="https://www.figma.com/community/file/1166831539721848736" rel="noreferrer" target="_blank">Solar</a> by 480 Design,{" "}
-          <a href="https://creativecommons.org/licenses/by/4.0/" rel="noreferrer" target="_blank">CC BY 4.0</a>.
-        </p>
       </footer>
     </div>
   );

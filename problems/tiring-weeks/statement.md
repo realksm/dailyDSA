@@ -12,7 +12,7 @@ The second line contains $n$ integers $h_1, h_2, \ldots, h_n$.
 
 ## Output
 
-Print one integer — the largest number of consecutive days with more heavy days than light days.
+Print one integer: the largest number of consecutive days with more heavy days than light days.
 
 ## Constraints
 

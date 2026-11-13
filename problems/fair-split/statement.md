@@ -11,11 +11,11 @@ Find the smallest possible imbalance.
 
 The first line contains one integer $n$.
 
-The second line contains $n$ integers $w_1, w_2, \ldots, w_n$ — the weights in belt order.
+The second line contains $n$ integers $w_1, w_2, \ldots, w_n$: the weights in belt order.
 
 ## Output
 
-Print one integer — the smallest imbalance over all $n - 1$ ways to split.
+Print one integer: the smallest imbalance over all $n - 1$ ways to split.
 
 ## Constraints
 

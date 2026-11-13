@@ -8,7 +8,7 @@ Find the fewest steps the robot needs to get from the dock to the packing statio
 
 The first line contains two integers $r$ and $c$.
 
-Each of the next $r$ lines contains a string of length $c$ made of the characters `.`, `#`, `S` and `E` — one row of the floor, from top to bottom. There is exactly one `S` and exactly one `E`.
+Each of the next $r$ lines contains a string of length $c$ made of the characters `.`, `#`, `S` and `E`: one row of the floor, from top to bottom. There is exactly one `S` and exactly one `E`.
 
 ## Output
 

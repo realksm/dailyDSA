@@ -6,13 +6,13 @@ What is the smallest number of car trips needed to get everyone to the top?
 
 ## Input
 
-The first line contains two integers $n$ and $C$ — the number of tourists and the weight limit of a car.
+The first line contains two integers $n$ and $C$: the number of tourists and the weight limit of a car.
 
-The second line contains $n$ integers $w_1, \ldots, w_n$ — the tourists' weights.
+The second line contains $n$ integers $w_1, \ldots, w_n$: the tourists' weights.
 
 ## Output
 
-Print one integer — the smallest number of trips.
+Print one integer: the smallest number of trips.
 
 ## Constraints
 

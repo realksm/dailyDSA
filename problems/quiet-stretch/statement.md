@@ -6,13 +6,13 @@ Find the smallest total noise of any $k$ consecutive minutes.
 
 ## Input
 
-The first line contains two integers $n$ and $k$ — the number of readings and the session length.
+The first line contains two integers $n$ and $k$: the number of readings and the session length.
 
-The second line contains $n$ integers $a_1, a_2, \ldots, a_n$ — the readings in order.
+The second line contains $n$ integers $a_1, a_2, \ldots, a_n$: the readings in order.
 
 ## Output
 
-Print one integer — the smallest sum of $k$ consecutive readings.
+Print one integer: the smallest sum of $k$ consecutive readings.
 
 ## Constraints
 

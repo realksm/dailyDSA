@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setSessionLostHandler(() => setUser(null));
-    api.me().then(setUser, (e: unknown) => {
+    api.session().then((x) => setUser(x.user), (e: unknown) => {
       if (e instanceof ApiErr && e.code === "unauthorized") setUser(null);
       else {
         setBootError(e instanceof Error ? e.message : "Can't reach the server.");

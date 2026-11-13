@@ -2,7 +2,7 @@ A courier company moves parcels through a junction where three railway lines mee
 
 Today's timetables are known: trains of line A arrive at minutes $a_1, \ldots, a_{n_a}$, trains of line B at minutes $b_1, \ldots, b_{n_b}$, and trains of line C at minutes $c_1, \ldots, c_{n_c}$. The lists are not sorted.
 
-Choose one train from each line so that the courier's wait — the time between the earliest and the latest of the three arrivals — is as short as possible. Print that wait:
+Choose one train from each line so that the courier's wait (the time between the earliest and the latest of the three arrivals) is as short as possible. Print that wait:
 
 $$\min_{i, j, k} \Big( \max(a_i, b_j, c_k) - \min(a_i, b_j, c_k) \Big).$$
 
@@ -14,7 +14,7 @@ The next three lines contain the arrival times of lines A, B and C, in that orde
 
 ## Output
 
-Print one integer — the shortest possible wait.
+Print one integer: the shortest possible wait.
 
 ## Constraints
 

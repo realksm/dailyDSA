@@ -8,15 +8,15 @@ How many minutes in total are **both** of them free?
 
 The first line contains two integers $n$ and $m$.
 
-Each of the next $n$ lines contains two integers $s_i$ and $e_i$ — Asha's slots.
+Each of the next $n$ lines contains two integers $s_i$ and $e_i$: Asha's slots.
 
-Each of the next $m$ lines contains two integers $t_j$ and $f_j$ — Ravi's slots.
+Each of the next $m$ lines contains two integers $t_j$ and $f_j$: Ravi's slots.
 
 Each list is given in time order and its slots don't overlap: $s_1 < e_1 \le s_2 < e_2 \le \cdots \le s_n < e_n$, and the same for $t$ and $f$. (One slot may end exactly when the next one starts.)
 
 ## Output
 
-Print one integer — the total number of minutes when both are free.
+Print one integer: the total number of minutes when both are free.
 
 ## Constraints
 

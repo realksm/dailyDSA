@@ -8,11 +8,11 @@ What is the largest possible smallest distance?
 
 The first line contains two integers $n$ and $k$.
 
-The second line contains $n$ distinct integers $x_1, x_2, \ldots, x_n$ — the positions of the spots, in no particular order.
+The second line contains $n$ distinct integers $x_1, x_2, \ldots, x_n$: the positions of the spots, in no particular order.
 
 ## Output
 
-Print one integer — the largest possible minimum distance between two of the $k$ tents.
+Print one integer: the largest possible minimum distance between two of the $k$ tents.
 
 ## Constraints
 

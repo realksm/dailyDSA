@@ -8,11 +8,11 @@ She wants the hardest day to be as easy as possible. What is the smallest possib
 
 The first line contains two integers $n$ and $d$.
 
-The second line contains $n$ integers $\ell_1, \ldots, \ell_n$ — the lengths of the stretches in order.
+The second line contains $n$ integers $\ell_1, \ldots, \ell_n$: the lengths of the stretches in order.
 
 ## Output
 
-Print one integer — the smallest possible length of the longest day, in metres.
+Print one integer: the smallest possible length of the longest day, in metres.
 
 ## Constraints
 

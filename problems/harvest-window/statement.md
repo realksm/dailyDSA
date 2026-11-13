@@ -12,7 +12,7 @@ The second line contains $n$ integers $p_1, p_2, \ldots, p_n$.
 
 ## Output
 
-Print one integer — the largest total over all allowed blocks. It may be negative.
+Print one integer: the largest total over all allowed blocks. It may be negative.
 
 ## Constraints
 

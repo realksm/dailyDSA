@@ -110,6 +110,11 @@ export function authRoutes({ pool, config, mailer, logError }: AuthDeps): Router
     res.json({ ok: true });
   });
 
+  /** Who is signed in, or null: the app's first call, so a signed-out visit logs no 401 in the console. */
+  r.get("/session", (req, res) => {
+    res.json({ user: req.user ?? null });
+  });
+
   r.get("/me", requireUser, (req, res) => {
     res.json(me(req));
   });

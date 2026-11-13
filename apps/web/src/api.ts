@@ -63,6 +63,8 @@ const enc = encodeURIComponent;
 export const api = {
   // auth
   me: () => call<Me>("GET", "/me"),
+  /** 200 either way: the signed-in user, or null. */
+  session: () => call<{ user: Me | null }>("GET", "/session"),
   login: (email: string, password: string) => call<Me>("POST", "/auth/login", { email, password }),
   signup: (b: { email: string; name: string; password: string; inviteCode: string }) => call<Me>("POST", "/auth/signup", b),
   logout: () => call<{ ok: true }>("POST", "/auth/logout"),

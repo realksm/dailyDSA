@@ -8,7 +8,7 @@ For every tower, find the tower it relays to.
 
 The first line contains one integer $n$.
 
-The second line contains $n$ integers $h_1, \ldots, h_n$ — the heights from west to east.
+The second line contains $n$ integers $h_1, \ldots, h_n$: the heights from west to east.
 
 ## Output
 

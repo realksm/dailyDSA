@@ -8,9 +8,9 @@ Find how many different species the best stretch has.
 
 ## Input
 
-The first line contains two integers $n$ and $k$ — the number of sightings and the length of the stretch.
+The first line contains two integers $n$ and $k$: the number of sightings and the length of the stretch.
 
-The second line contains $n$ integers $b_1, \ldots, b_n$ — the species of each sighting, in order.
+The second line contains $n$ integers $b_1, \ldots, b_n$: the species of each sighting, in order.
 
 ## Output
 

@@ -80,3 +80,25 @@ export function lessonParts(src: string): LessonPart[] {
   flushMd();
   return parts;
 }
+
+const MAIN: Record<Lang, RegExp> = { cpp: /^int\s+main\s*\(/, java: /^\s*public\s+static\s+void\s+main\s*\(/, py: /^def\s+main\s*\(/ };
+const PREAMBLE = /^\s*$|^#include\b|^using\s+namespace\b|^import\b|^from\s+\S+\s+import\b|^(public\s+)?(final\s+)?class\s+Main\b.*\{\s*$/;
+
+/**
+ * The part of a lesson program worth reading (the lesson page folds the rest): what sits between the
+ * includes / imports and main() — solve() and any helpers — dedented. Null when there is no main() to fold.
+ */
+export function solvePart(lang: Lang, code: string): { code: string; hidden: number } | null {
+  const lines = code.replace(/\r\n/g, "\n").replace(/\n+$/, "").split("\n");
+  const end = lines.findIndex((l) => MAIN[lang].test(l));
+  if (end <= 0) return null;
+  let start = 0;
+  while (start < end && PREAMBLE.test(lines[start]!)) start++;
+  let stop = end;
+  while (stop > start && !lines[stop - 1]!.trim()) stop--;
+  if (stop <= start) return null;
+  const body = lines.slice(start, stop);
+  const indent = Math.min(...body.filter((l) => l.trim()).map((l) => /^\s*/.exec(l)![0].length));
+  return { code: body.map((l) => l.slice(indent)).join("\n"), hidden: lines.length - body.length };
+}
+

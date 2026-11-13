@@ -8,7 +8,7 @@ The stage manager wants to know where every lamp ends up after the whole script 
 
 The first line contains two integers $n$ and $q$.
 
-Each of the next $q$ lines contains three integers $l$, $r$ and $v$ — one command.
+Each of the next $q$ lines contains three integers $l$, $r$ and $v$: one command.
 
 ## Output
 

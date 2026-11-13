@@ -8,11 +8,11 @@ Count the varied segments, that is the pairs $(l, r)$ with $1 \le l \le r \le n$
 
 The first line contains three integers $n$, $A$ and $B$.
 
-The second line contains $n$ integers $g_1, g_2, \ldots, g_n$ — the genres in playlist order.
+The second line contains $n$ integers $g_1, g_2, \ldots, g_n$: the genres in playlist order.
 
 ## Output
 
-Print one integer — the number of varied segments.
+Print one integer: the number of varied segments.
 
 ## Constraints
 

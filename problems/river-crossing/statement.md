@@ -10,7 +10,7 @@ Count the different crossings. The count can be huge, so print it modulo $10^9 +
 
 The first line contains two integers $n$ and $m$.
 
-The second line contains $m$ distinct integers $d_1, \ldots, d_m$ — the allowed strides.
+The second line contains $m$ distinct integers $d_1, \ldots, d_m$: the allowed strides.
 
 The third line contains a string $s$ of length $n$ made of the characters `o` and `~`. Its $i$-th character describes spot $i$.
 

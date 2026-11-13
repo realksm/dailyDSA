@@ -199,7 +199,7 @@ function DayCell({ day, today, d, likely, repeat, pinnable, a }: {
         </span>
       )}
       {future && (
-        <div className="row" style={{ gap: 6, marginTop: "auto" }}>
+        <div className="row cal-pin-row" data-pinned={d?.pinnedBy ? "" : undefined} style={{ gap: 6, marginTop: "auto" }}>
           <Select
             className="cal-pin"
             aria-label={`Pin a problem on ${day}`}

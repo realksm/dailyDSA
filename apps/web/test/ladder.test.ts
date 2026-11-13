@@ -38,9 +38,9 @@ describe("trackAction", () => {
     expect(a.next?.position).toBe(4);
   });
 
-  it("starts the ladder when there is no lesson", () => {
+  it("starts on today's rung when there is no lesson, and says it is today's", () => {
     expect(trackAction(track(["new", "new", "new", "new", "new"], { hasLesson: false }), THU))
-      .toMatchObject({ kind: "rung", label: "Start: Ladder 4 · Problem 4", to: "/p/p4" });
+      .toMatchObject({ kind: "rung", label: "Today's rung: Ladder 4 · Problem 4", to: "/p/p4" });
   });
 
   it("continues on the next rung once started", () => {
