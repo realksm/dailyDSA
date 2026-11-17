@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Me } from "@dailydsa/shared";
 import { api, ApiErr, setSessionLostHandler } from "./api";
+import { LANDING_ONLY } from "./site";
 
 interface AuthState {
   /** undefined = still loading; null = signed out. */
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [bootError, setBootError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (LANDING_ONLY) return setUser(null); // no server to ask
     setSessionLostHandler(() => setUser(null));
     api.session().then((x) => setUser(x.user), (e: unknown) => {
       if (e instanceof ApiErr && e.code === "unauthorized") setUser(null);

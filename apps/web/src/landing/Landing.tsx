@@ -20,6 +20,7 @@ import { hasDiagram, PatternDiagram } from "../components/PatternDiagram";
 import { Link, useRouter } from "../router";
 import { ICONS, type IconName } from "../icons";
 import { Countdown } from "./countdown";
+import { LANDING_ONLY } from "../site";
 // Each track's ladder titles, first "How to spot it" clue and weekend count, read from problems/_tracks/ at build time.
 import { PLANNED, TRACKS } from "virtual:landing-tracks";
 
@@ -203,7 +204,7 @@ export default function Landing() {
   const { user } = useAuth();
   const { search } = useRouter();
   const signedIn = !!user;
-  const code = signedIn ? null : inviteCode(search.get("code"));
+  const code = signedIn || LANDING_ONLY ? null : inviteCode(search.get("code"));
   const signupTo = code ? `/signup?code=${encodeURIComponent(code)}` : "/signup";
   const root = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -407,10 +408,12 @@ export default function Landing() {
         </Link>
         <nav aria-label="Sections" id="lp-menu" className={menuOpen ? "open" : undefined}>
           {NAV.map((n) => <a key={n.href} href={n.href}>{n.label}</a>)}
-          {!signedIn && !code && <Link to="/signup" className="lp-nav-invite"><Icon name="invite" />I have an invite</Link>}
+          {!signedIn && !code && !LANDING_ONLY && <Link to="/signup" className="lp-nav-invite"><Icon name="invite" />I have an invite</Link>}
         </nav>
         <div className="lp-nav-end">
-          {signedIn ? (
+          {LANDING_ONLY ? (
+            <span className="lp-soon"><Icon name="clock" />Opening soon</span>
+          ) : signedIn ? (
             <Link to="/" className="btn btn-primary">Today</Link>
           ) : code ? (
             <Link to={signupTo} className="btn btn-primary">Claim your spot</Link>
@@ -450,7 +453,9 @@ export default function Landing() {
               pattern gets a lesson and a five-step ladder.
             </p>
             <div className="lp-cta" data-settle>
-              {signedIn ? (
+              {LANDING_ONLY ? (
+                <p className="lp-soon lp-soon-lg"><Icon name="clock" />Opening soon. The first group is being set up now.</p>
+              ) : signedIn ? (
                 <Link to="/" className="btn btn-primary btn-lg">Open today's problem<Icon name="arrow" className="lp-icon lp-arrow" /></Link>
               ) : code ? (
                 <>
@@ -611,7 +616,12 @@ export default function Landing() {
         <section className="lp-final" aria-labelledby="final-title">
           <div className="lp-final-card" data-reveal-group>
             <div className="lp-final-text">
-            {signedIn ? (
+            {LANDING_ONLY ? (
+              <>
+                <h2 id="final-title">Opening soon.</h2>
+                <p>dailyDSA is invite-only, and the first group is being set up now. Invites go out from the admin who runs a group.</p>
+              </>
+            ) : signedIn ? (
               <>
                 <h2 id="final-title">You're already in.</h2>
                 <p>Today's problem is waiting, and so is the rest of this week's ladder.</p>

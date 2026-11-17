@@ -459,3 +459,7 @@ body:has(.lp) { min-width: 0; }
 
 /* Each track card carries its pattern diagram (components/PatternDiagram.tsx). */
 .lp-track-pd { padding: 16px 16px 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--bg); }
+
+/* Landing-only build (src/site.ts): no server yet, so a quiet note stands where the log-in buttons go. */
+.lp-soon { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 8px 14px; border: 1.5px solid var(--line-strong); border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--primary-text); white-space: nowrap; }
+.lp-soon-lg { padding: 12px 18px; font-size: 16px; white-space: normal; }

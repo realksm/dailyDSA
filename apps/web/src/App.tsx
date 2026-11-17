@@ -18,6 +18,7 @@ import { ProblemPage } from "./pages/Problem";
 import { SubmissionPage } from "./pages/Submission";
 import { Today } from "./pages/Today";
 import { TrackPage, TracksPage } from "./pages/Tracks";
+import { LANDING_ONLY } from "./site";
 
 /** Pages reachable without an account. "/" is the landing page while signed out. */
 const PUBLIC = ["/welcome", "/login", "/signup", "/forgot-password", "/reset-password"];
@@ -31,10 +32,11 @@ export function App() {
   const isPublic = PUBLIC.includes(path);
   // While /api/me is in flight, a browser that was signed out last time gets the landing page straight away.
   const [hintOut] = useState(wasSignedOut);
-  const isLanding = path === "/welcome" || (path === "/" && (user === null || (user === undefined && hintOut)));
+  const isLanding = LANDING_ONLY || path === "/welcome" || (path === "/" && (user === null || (user === undefined && hintOut)));
 
   // Signed out on a private page: go to login and come back afterwards.
   useEffect(() => {
+    if (LANDING_ONLY) return;
     if (user === null && !isPublic && path !== "/") {
       navigate(`/login?next=${encodeURIComponent(path + window.location.search)}`, { replace: true });
     }
